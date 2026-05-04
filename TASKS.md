@@ -7,15 +7,16 @@
 
 ## Now
 
-- [ ] Phase 2.3 — Stages + Slots + Sets (lineup builder: stages CRUD, slots
-      per day per stage, sets connecting artists to slots with status +
-      announce batch)
+- [ ] Phase 2.4 — Flights CRUD (arrival + departure legs per person, AI parse
+      stub deferred to Phase 4)
 
 ## Next
 
-- [ ] Phase 2 remaining CRUD modules — Flights, Hotels, Ground, Payments,
-      Riders, Contracts, Guestlist, Documents
-- [ ] Stage / set status filters on /artists once Lineup module exists
+- [ ] Phase 2 remaining CRUD modules — Hotels, Ground, Payments, Riders,
+      Contracts, Guestlist, Documents
+- [ ] Stage / set status filters on /artists now that lineup ships
+- [ ] Drag-to-reorder slots within a stage column (currently sortOrder is
+      stored but only respected on read)
 - [ ] Phase 3 import script `scripts/import-2024.ts`
 
 ## Later
@@ -28,6 +29,32 @@
 ---
 
 ## Done
+
+- 2026-05-04 — Phase 2.3: Lineup builder shipped (Stages + Slots + Sets).
+  Three tables, one screen. `getCurrentEdition()` now also seeds the four
+  default stages on first call (Main / Alternative / Select Pool /
+  Collectives) via `INSERT ... ON CONFLICT (slug) DO NOTHING`. Six
+  endpoints: `/api/stages`, `/api/stages/[id]`, `/api/slots`,
+  `/api/slots/[id]`, `/api/sets`, `/api/sets/[id]` — all auth-gated by
+  `lineup` permission, full + partial PATCH, soft validation rules
+  (slot start != end, HH:MM format, slug constraints, RFC 4122 UUIDs).
+  `getLineupGrid(editionId, day)` joins stages -> slots -> sets -> artists
+  in 3 round-trips for the board view. UI: `/lineup` shows day tabs
+  (Friday/Saturday/Sunday URL-driven) + four stage columns; each slot
+  card has "+ set" / delete buttons; sets show artist name, agency,
+  status pill (mint/gold/coral), click to edit. `AddSlotDialog`,
+  `AddSetDialog`, `EditSetDialog` are inline modal client components in
+  `LineupBoard.tsx` (one big island instead of nested ones to keep
+  state simple). Time inputs use `step={60}` for 1-minute granularity
+  (no 30-min snap). `/lineup/stages` admin sub-page renames/recolours/
+  deletes stages. Tests: 33 cases in `tests/unit/lineup.test.ts` cover
+  all 6 endpoints, mocked repo + session + edition. `requests/lineup.http`
+  has 21 cases. **`npm run check` green (lint + typecheck + 88 tests)**.
+  Live-probed against Neon as `booking@aegisfestival.com`: created
+  Saturday 23:00-01:00 Main slot, linked Hiroko set with $2500 USD fee,
+  confirmed status via partial PATCH, `/lineup?day=saturday` HTML
+  rendered Hiroko / Confirmed / Main Stage / Saturday. New helper
+  `scripts/dev-query.ts` runs ad-hoc SQL via `npx tsx`.
 
 - 2026-05-04 — Phase 2.2: Crew CRUD shipped, then narrowed. **Crew now
   means travelling production only**: tour managers, photographers,

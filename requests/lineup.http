@@ -1,0 +1,172 @@
+### Aegis lineup API — stages, slots, sets
+### Run with REST Client extension. Replace cookie after sign-in.
+
+@host = http://localhost:3000
+@cookie = better-auth.session_token=...replace_after_signin...
+
+### ── Stages (global, not per-edition) ──────────────────────────────
+
+### List stages
+GET {{host}}/api/stages
+Cookie: {{cookie}}
+
+### Create stage — success
+POST {{host}}/api/stages
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "name": "Beach", "slug": "beach", "color": "#7C9EFF", "sortOrder": 4 }
+
+### Create stage — failure: bad slug
+POST {{host}}/api/stages
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "name": "X", "slug": "Has Spaces" }
+
+### Create stage — failure: duplicate slug
+POST {{host}}/api/stages
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "name": "Main", "slug": "main" }
+
+### Stage one — replace ID
+@stageId = REPLACE_WITH_STAGE_ID
+GET {{host}}/api/stages/{{stageId}}
+Cookie: {{cookie}}
+
+### Update stage (partial)
+PATCH {{host}}/api/stages/{{stageId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "color": "#16D060" }
+
+### Delete stage
+DELETE {{host}}/api/stages/{{stageId}}
+Cookie: {{cookie}}
+
+### ── Slots (per edition + stage + day) ─────────────────────────────
+
+### List all slots for current edition
+GET {{host}}/api/slots
+Cookie: {{cookie}}
+
+### List slots filtered by day
+GET {{host}}/api/slots?day=friday
+Cookie: {{cookie}}
+
+### Create slot — success
+POST {{host}}/api/slots
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "stageId": "{{stageId}}",
+  "day": "friday",
+  "startTime": "22:00",
+  "endTime": "23:30"
+}
+
+### Create slot — failure: bad time format
+POST {{host}}/api/slots
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "stageId": "{{stageId}}",
+  "day": "friday",
+  "startTime": "10pm",
+  "endTime": "11:30"
+}
+
+### Create slot — failure: same start and end
+POST {{host}}/api/slots
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "stageId": "{{stageId}}",
+  "day": "friday",
+  "startTime": "22:00",
+  "endTime": "22:00"
+}
+
+### Slot one — replace ID
+@slotId = REPLACE_WITH_SLOT_ID
+GET {{host}}/api/slots/{{slotId}}
+Cookie: {{cookie}}
+
+### Update slot (partial)
+PATCH {{host}}/api/slots/{{slotId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "endTime": "00:00" }
+
+### Update slot — failure: empty body
+PATCH {{host}}/api/slots/{{slotId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{}
+
+### Delete slot
+DELETE {{host}}/api/slots/{{slotId}}
+Cookie: {{cookie}}
+
+### ── Sets (artist <-> slot) ────────────────────────────────────────
+
+### List sets for a slot
+GET {{host}}/api/sets?slotId={{slotId}}
+Cookie: {{cookie}}
+
+### List sets for an artist
+@artistId = REPLACE_WITH_ARTIST_ID
+GET {{host}}/api/sets?artistId={{artistId}}
+Cookie: {{cookie}}
+
+### Create set — success
+POST {{host}}/api/sets
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "slotId": "{{slotId}}",
+  "artistId": "{{artistId}}",
+  "status": "option",
+  "announceBatch": "Batch 1",
+  "feeAmountCents": 250000,
+  "feeCurrency": "USD"
+}
+
+### Create set — failure: missing slotId/artistId
+POST {{host}}/api/sets
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "status": "confirmed" }
+
+### Set one — replace ID
+@setId = REPLACE_WITH_SET_ID
+GET {{host}}/api/sets/{{setId}}
+Cookie: {{cookie}}
+
+### Update set — partial: confirm
+PATCH {{host}}/api/sets/{{setId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "status": "confirmed" }
+
+### Update set — partial: clear announce batch
+PATCH {{host}}/api/sets/{{setId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "announceBatch": "" }
+
+### Delete set
+DELETE {{host}}/api/sets/{{setId}}
+Cookie: {{cookie}}
