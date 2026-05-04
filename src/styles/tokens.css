@@ -1,0 +1,43 @@
+/* Aegis System — design tokens
+ * Locked. Don't add or change without updating AGENT.md §3 first.
+ */
+
+@theme {
+  /* brand */
+  --color-brand: #e5b85a;        /* warm gold — sunset over Byblos sea */
+  --color-brand-fg: #0a0a0b;     /* on-brand text */
+
+  /* surfaces */
+  --color-bg: #0a0a0b;
+  --color-surface: #111113;
+  --color-surface-raised: #1a1a1d;
+  --color-surface-overlay: #232328;
+
+  /* text */
+  --color-fg: #e6e6ea;
+  --color-fg-muted: #9a9aa2;
+  --color-fg-subtle: #6a6a72;
+
+  /* borders */
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-subtle: rgba(255, 255, 255, 0.06);
+
+  /* status */
+  --color-success: #4ade80;
+  --color-warning: #facc15;
+  --color-danger:  #ef4444;
+  --color-info:    #7c9eff;
+
+  /* stages */
+  --color-stage-main: #e5b85a;
+  --color-stage-alt:  #7c9eff;
+  --color-stage-pool: #a78bfa;
+  --color-stage-coll: #f472b6;
+
+  /* radius — only md is used */
+  --radius-md: 8px;
+
+  /* fonts (set in layout.tsx via Geist) */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}

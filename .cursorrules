@@ -1,0 +1,60 @@
+# Cursor rules — Aegis System
+# Read AGENT.md and HANDOFF.md before any non-trivial change.
+# These rules apply to Tab, Cmd-K, Composer, and chat.
+
+## Style
+
+- TypeScript strict. No `any`, no `@ts-ignore` without an adjacent comment explaining why.
+- Small diffs. Touching > 3 files = stop and confirm plan first.
+- Explicit over clever. No new dependencies without asking.
+- Concise replies. No preamble, no emojis.
+- Output changed lines only, not whole files.
+- If unsure about a library API, say so; don't guess.
+
+## Environment
+
+- Windows 11 native. Node 20. **npm** (not pnpm, not yarn).
+- Terminal: Cursor integrated terminal (Ctrl+`).
+
+## Patterns
+
+- API routes under `src/app/api/<slug>/route.ts`. Every POST/PATCH validated
+  with Zod; return 400 + `flatten()` on failure.
+- Auth first: every protected route/action starts with `getAppSession()`.
+- UI: shadcn/ui primitives + Tailwind v4 + tokens from `src/styles/tokens.css`.
+  Don't hand-roll what shadcn covers.
+- Components colocated by feature in `src/components/<feature>/`.
+- AI calls always through `src/lib/ai/`. Never import `@anthropic-ai/sdk`
+  outside that folder.
+- DB access through `src/db/client.ts`. No raw SQL in route files.
+- AI never writes to the DB directly — always operator-confirmed (except
+  Phase 6 explicit-named writes via Cmd+K agent).
+- Money in **cents**. Currency on the row.
+- Dates in UTC. UI conversion via `date-fns-tz` to `Asia/Beirut`.
+- Geist Mono font for all numbers / dates / flight numbers.
+- `rounded-md` only. Brand color `#E5B85A` only. No cyan.
+- "Artist", "Set", "Slot", "Stage", "Pickup", "Roadsheet" — see AGENT.md §4.
+
+## Testing
+
+- Any new API route requires a matching `requests/<feature>.http` with
+  success + failure cases.
+- Non-trivial handlers require a Vitest test in `tests/unit/`.
+
+## Never
+
+- Commit secrets or `.env*` files (except `.env.example`).
+- Skip Zod validation.
+- Skip auth on protected routes.
+- Call AI SDKs from React components.
+- Refer to artists as "users".
+- Use cyan, neon green, or any color outside the brand palette.
+- Run `db:push` against production.
+- Use em-dashes / box-drawing chars in `.ts` files (esbuild chokes; safe in `.tsx`).
+
+## When finishing a task
+
+- Mentally run `npm run lint && npx tsc --noEmit`; call out likely failures.
+- Update `TASKS.md` Now → Done with today's date.
+- Propose one follow-up (test, refactor, doc update).
+- Commit message: `feat(slug): ...` / `fix(slug): ...` / `chore: ...`.
