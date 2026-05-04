@@ -7,7 +7,6 @@
 
 ## Now
 
-- [ ] Phase 1.1 — wire better-auth (email + password)
 - [ ] Phase 1.3 — dashboard layout shell (left rail, top bar, brand tokens)
 
 ## Next
@@ -32,6 +31,16 @@
   Neon (Postgres 17, eu-central-1) connected, custom domain + HTTPS active.
 - 2026-05-04 — Phase 1.2: initial Drizzle migration applied to Neon —
   20 tables + 14 enums (drizzle/0000_messy_zarek.sql).
+- 2026-05-04 — Phase 1.1: better-auth wired (email + password). Server in
+  `src/lib/auth.ts`, client in `src/lib/auth-client.ts`, catchall handler at
+  `/api/auth/[...all]`. Brand-aligned `/sign-in` + `/sign-up` (gold submit,
+  Newsreader H1, mono labels, blueprint corner). `getAppSession()` real, owner
+  resolved by email match (`booking@aegisfestival.com`). Auth schema generated
+  to `drizzle/0001_auth.sql` via `@better-auth/cli` — apply with
+  `npx tsx scripts/apply-auth-sql.ts`. Signup gated by `NEXT_PUBLIC_ALLOW_SIGNUP`
+  (true in `.env.development.local`, unset in prod). `requests/auth.http`
+  covers signup/signin/signout success + failure cases. Lint + typecheck
+  clean.
 
 ---
 

@@ -1,0 +1,76 @@
+### Aegis auth — request examples
+### Run with the REST Client extension (humao.rest-client) or any HTTP client.
+### Replace @host with your env: localhost:3000 or logistics.aegisfestival.com.
+
+@host = http://localhost:3000
+@email = booking@aegisfestival.com
+@password = changeme-please-12345
+@badPassword = nope
+
+### Sign up — success (only works when NEXT_PUBLIC_ALLOW_SIGNUP=true)
+# @name signup
+POST {{host}}/api/auth/sign-up/email
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "name": "Eli"
+}
+
+### Sign up — failure: weak password (better-auth rejects < 8 chars)
+POST {{host}}/api/auth/sign-up/email
+Content-Type: application/json
+
+{
+  "email": "weak@example.com",
+  "password": "1234",
+  "name": "Weak"
+}
+
+### Sign up — failure: duplicate email
+POST {{host}}/api/auth/sign-up/email
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "name": "Dup"
+}
+
+### Sign in — success
+# @name signin
+POST {{host}}/api/auth/sign-in/email
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Sign in — failure: wrong password
+POST {{host}}/api/auth/sign-in/email
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{badPassword}}"
+}
+
+### Sign in — failure: unknown email
+POST {{host}}/api/auth/sign-in/email
+Content-Type: application/json
+
+{
+  "email": "ghost@example.com",
+  "password": "{{password}}"
+}
+
+### Get session — must run after sign-in (cookies must persist in client)
+GET {{host}}/api/auth/get-session
+Cookie: better-auth.session_token=...replace_with_cookie_from_signin...
+
+### Sign out
+POST {{host}}/api/auth/sign-out
+Content-Type: application/json
+Cookie: better-auth.session_token=...replace_with_cookie_from_signin...
