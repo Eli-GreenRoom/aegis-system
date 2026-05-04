@@ -129,7 +129,7 @@ edition, batch.
 | Term           | Means                                                                    |
 | -------------- | ------------------------------------------------------------------------ |
 | **Artist**     | Anyone performing — solo DJ, B2B, live act                               |
-| **Crew**       | Stage managers, photographers, volunteers, sound, ops                    |
+| **Crew**       | Travelling production: tour managers, media (photo/video/social), FOH. NOT festival-supplied stage hands or volunteers. |
 | **Person**     | Either Artist or Crew (used for flights/hotels/ground)                   |
 | **Stage**      | One of: Main Stage, Alternative Stage, Select Pool, Collectives          |
 | **Slot**       | A time block on a stage on a day (e.g. Friday 22:00–00:00 Main Stage)    |
@@ -296,7 +296,7 @@ column from these files. Sheet → table mapping:
 | `Aegis Logistics 2024 / payments` | `payments` |
 | `Aegis Logistics 2024 / pending payments` | `payments` (status='pending') |
 | `Aegis Logistics 2024 / BYBLOS TAXI / LuxCars / Aqua / BSM` | `vendors` + per-pickup vendor FK |
-| `Aegis Logistics 2024 / Stage Managers / Volunteers` | `crew` |
+| `Aegis Logistics 2024 / Stage Managers / Volunteers` | OUT OF SCOPE — festival-supplied stage hands and volunteers are not modeled. `crew` is travelling production only. |
 | `Aegis Festival Line Up 2024 / Line-Up` | `sets` (with status: confirmed / option / not_available) |
 | `Aegis Festival Line Up 2024 / Batch 1..N` | `sets` (announce batch metadata on `sets`) |
 | `AF2024 GUESTLIST` (multiple sheets) | `guestlist_entries` (category enum) |

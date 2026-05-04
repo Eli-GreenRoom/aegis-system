@@ -1,0 +1,92 @@
+### Aegis crew API
+### Crew = travelling production: tour managers, photographers,
+### videographers, social media, FOH engineers. Not stage hands or volunteers.
+### Run with REST Client extension. Replace cookie after sign-in.
+
+@host = http://localhost:3000
+@cookie = better-auth.session_token=...replace_after_signin...
+
+### List — success
+GET {{host}}/api/crew
+Cookie: {{cookie}}
+
+### List with filters — success
+GET {{host}}/api/crew?search=mira&role=Tour%20manager&archived=archived
+Cookie: {{cookie}}
+
+### List — failure: unauthenticated
+GET {{host}}/api/crew
+
+### Create — success
+# @name createCrew
+POST {{host}}/api/crew
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "name": "Mira",
+  "role": "Tour manager",
+  "email": "mira@example.com",
+  "days": ["Friday", "Saturday", "Sunday"]
+}
+
+### Create — failure: validation (missing role)
+POST {{host}}/api/crew
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "name": "No Role" }
+
+### Create — failure: unauthenticated
+POST {{host}}/api/crew
+Content-Type: application/json
+
+{ "name": "Anon", "role": "ops" }
+
+### Get one — success (replace ID with one from the list)
+@crewId = REPLACE_WITH_ID
+GET {{host}}/api/crew/{{crewId}}
+Cookie: {{cookie}}
+
+### Get one — failure: 404
+GET {{host}}/api/crew/00000000-0000-0000-0000-000000000000
+Cookie: {{cookie}}
+
+### Update — partial: rename only
+PATCH {{host}}/api/crew/{{crewId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "name": "Mira (renamed)" }
+
+### Update — partial: clear phone with empty string
+PATCH {{host}}/api/crew/{{crewId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "phone": "" }
+
+### Update — partial: clear days with empty array
+PATCH {{host}}/api/crew/{{crewId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "days": [] }
+
+### Update — failure: empty body
+PATCH {{host}}/api/crew/{{crewId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{}
+
+### Archive — success (soft delete)
+DELETE {{host}}/api/crew/{{crewId}}
+Cookie: {{cookie}}
+
+### Restore — success
+DELETE {{host}}/api/crew/{{crewId}}?action=unarchive
+Cookie: {{cookie}}
+
+### Archive — failure: unauthenticated
+DELETE {{host}}/api/crew/{{crewId}}

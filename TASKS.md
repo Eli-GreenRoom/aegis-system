@@ -7,13 +7,15 @@
 
 ## Now
 
-- [ ] Phase 2.1 — Artists CRUD (list page with filter by stage/status/agency,
-      detail page, create/edit form)
+- [ ] Phase 2.3 — Stages + Slots + Sets (lineup builder: stages CRUD, slots
+      per day per stage, sets connecting artists to slots with status +
+      announce batch)
 
 ## Next
 
-- [ ] Phase 2 remaining CRUD modules — Crew, Stages/Slots/Sets, Flights,
-      Hotels, Ground, Payments, Riders, Contracts, Guestlist, Documents
+- [ ] Phase 2 remaining CRUD modules — Flights, Hotels, Ground, Payments,
+      Riders, Contracts, Guestlist, Documents
+- [ ] Stage / set status filters on /artists once Lineup module exists
 - [ ] Phase 3 import script `scripts/import-2024.ts`
 
 ## Later
@@ -27,6 +29,48 @@
 
 ## Done
 
+- 2026-05-04 — Phase 2.2: Crew CRUD shipped, then narrowed. **Crew now
+  means travelling production only**: tour managers, photographers,
+  videographers, social media, FOH engineers — NOT festival-supplied stage
+  hands or volunteers. They're treated like artists for travel/hotel
+  purposes. Initial implementation included `stages[]` and `dailyRateCents`;
+  both dropped in migration `0002_crew_drop_stages_rate.sql` after the
+  scope clarification. Final shape: name, role, email, phone, days[],
+  comments — plus `editionId` + `archivedAt`. List at `/crew` with search
+  (name/role/email/phone) + role filter + active/archived/all toggle.
+  Detail, create, edit pages. Form uses RHF + Zod with a comma-separated
+  text input for days (split client-side). Same pattern as artists:
+  edition-scoped, soft archive, partial PATCH (`crewPatchSchema` +
+  `toDbPatchValues()` so omitted fields stay untouched). Tests: 23 cases
+  cover happy + auth-fail + validation-fail + 404 + partial-PATCH + empty-
+  array clears days to null. `requests/crew.http` updated. New helper
+  `scripts/check-migrations.ts` queries `drizzle.__drizzle_migrations`.
+  **`npm run check` green (lint + typecheck + 55 tests)**. Live-probed
+  against Neon as `booking@aegisfestival.com`: full CRUD, role filter,
+  archive/restore, partial PATCH (rename preserved role/email/days). Note:
+  the journal `idx` had to be bumped past the manually-added
+  `0001_auth.sql` (better-auth one-off, not drizzle-managed) — future
+  migrations continue from idx=3.
+- 2026-05-04 — Phase 2.1: Artists CRUD shipped. List page at `/artists` with
+  search (name/agency/slug/email/legal-name) + agency filter + active/archived/
+  all toggle, all driven by URL params via `ArtistsFilters` client island.
+  Detail page `/artists/[id]`, create at `/artists/new`, edit at
+  `/artists/[id]/edit`. Archive is soft (sets `archived_at`), restore via
+  `?action=unarchive`. New `getCurrentEdition()` helper in `src/lib/edition.ts`
+  upserts the 2026 edition row on first call. `artistInputSchema` keeps form
+  and DB types decoupled — `toDbValues()` normalises empty strings to null at
+  the route boundary so RHF + zodResolver type cleanly. **PATCH is a true
+  partial update**: separate `artistPatchSchema` (every field optional,
+  rejects empty body) + `toDbPatchValues()` only sends keys the caller
+  actually included, so omitted fields stay untouched in the DB. Empty
+  string still clears an optional field to null (unambiguous). Stage/status
+  filters deferred to once Lineup ships. Tests: 26 cases in
+  `tests/unit/artists.test.ts` cover happy + auth-fail + validation-fail +
+  404 + 409-duplicate-slug + 4 partial-PATCH cases, repo + session + edition
+  mocked. `requests/artists.http` has 14 cases. **`npm run check` green
+  (lint + typecheck + 32 tests)**. Live-probed against Neon as
+  `booking@aegisfestival.com`: full CRUD, search, archive, restore, partial
+  PATCH preserving omitted fields, empty-body 400 — all verified.
 - 2026-05-04 — Testing infra: GitHub Actions CI at
   `.github/workflows/ci.yml` running lint + typecheck + vitest on every push
   and PR (with placeholder env so module-load doesn't crash). Added

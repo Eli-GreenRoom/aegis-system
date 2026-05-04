@@ -190,6 +190,12 @@ export const artists = pgTable("artists", {
   archivedAt:       timestamp("archived_at"),
 });
 
+/**
+ * Crew = travelling production (tour managers, media crew — photographers,
+ * videographers, social, FOH engineers). NOT stage hands / volunteers.
+ * They get hotels + flights + ground like artists do, hence the same
+ * `editionId` scoping and `archivedAt` soft-delete pattern.
+ */
 export const crew = pgTable("crew", {
   id:           uuid("id").primaryKey().defaultRandom(),
   editionId:    uuid("edition_id").notNull().references(() => festivalEditions.id, { onDelete: "cascade" }),
@@ -197,9 +203,7 @@ export const crew = pgTable("crew", {
   role:         text("role").notNull(),
   email:        text("email"),
   phone:        text("phone"),
-  stages:       jsonb("stages"),
   days:         jsonb("days"),
-  dailyRateCents: integer("daily_rate_cents"),
   comments:     text("comments"),
   createdAt:    timestamp("created_at").notNull().defaultNow(),
   archivedAt:   timestamp("archived_at"),

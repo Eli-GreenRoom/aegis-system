@@ -8,6 +8,13 @@
       "when": 1777918738760,
       "tag": "0000_messy_zarek",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777924979769,
+      "tag": "0002_crew_drop_stages_rate",
+      "breakpoints": true
     }
   ]
 }
