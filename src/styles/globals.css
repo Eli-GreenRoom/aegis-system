@@ -2,7 +2,8 @@
 @import "./tokens.css";
 
 @layer base {
-  html, body {
+  html,
+  body {
     background: var(--color-bg);
     color: var(--color-fg);
     font-family: var(--font-sans);
@@ -14,6 +15,8 @@
     color: var(--color-brand-fg);
   }
 }
+
+/* Brand color utilities */
 
 @utility text-brand {
   color: var(--color-brand);
@@ -27,7 +30,31 @@
   border-color: var(--color-brand);
 }
 
+@utility text-cream {
+  color: var(--color-brand-cream);
+}
+
+@utility bg-cream {
+  background-color: var(--color-brand-cream);
+}
+
+@utility text-coral {
+  color: var(--color-brand-coral);
+}
+
+@utility text-mint {
+  color: var(--color-brand-mint);
+}
+
+/* Typography utilities */
+
 @utility text-mono {
   font-family: var(--font-mono);
   font-feature-settings: "tnum" 1;
+}
+
+@utility text-display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }

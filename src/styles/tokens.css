@@ -1,43 +1,68 @@
 /* Aegis System — design tokens
+ * Aligned to the Aegis brand book (Hammerspace, Feb 2026).
  * Locked. Don't add or change without updating AGENT.md §3 first.
+ *
+ * Philosophy for the ops dashboard: brand-aligned but restrained.
+ * The brand book is for the festival's outward face; this app is the back
+ * office. Use the palette, keep the density operator-grade, no marketing
+ * flourish. Serif only for the wordmark and page H1 — never body or data.
  */
 
 @theme {
-  /* brand */
-  --color-brand: #e5b85a;        /* warm gold — sunset over Byblos sea */
-  --color-brand-fg: #0a0a0b;     /* on-brand text */
+  /* ── Brand palette ─────────────────────────────────────────────────── */
+  /* Deep indigo — the brand canvas. */
+  --color-brand-indigo: #1b0e5c;
+  --color-brand-indigo-deep: #150a48;       /* one step darker for app bg */
 
-  /* surfaces */
-  --color-bg: #0a0a0b;
-  --color-surface: #111113;
-  --color-surface-raised: #1a1a1d;
-  --color-surface-overlay: #232328;
+  /* Cream — used on inverse surfaces (light cards, print, exports). */
+  --color-brand-cream: #faf3ec;
 
-  /* text */
-  --color-fg: #e6e6ea;
-  --color-fg-muted: #9a9aa2;
-  --color-fg-subtle: #6a6a72;
+  /* Warm gold — primary accent (kept from prior spec, matches brand). */
+  --color-brand: #e5b85a;
+  --color-brand-fg: #150a48;                /* indigo on gold reads better than black */
 
-  /* borders */
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-subtle: rgba(255, 255, 255, 0.06);
+  /* Coral — tension / urgent / destructive. From "HOWEVER" page. */
+  --color-brand-coral: #e73e54;
 
-  /* status */
-  --color-success: #4ade80;
-  --color-warning: #facc15;
-  --color-danger:  #ef4444;
+  /* Mint — momentum / success. From "OF THIS LAND" poster. */
+  --color-brand-mint: #16d060;
+
+  /* ── Surfaces (dark mode is default) ───────────────────────────────── */
+  --color-bg:              #150a48;         /* deepest indigo, page bg */
+  --color-surface:         #1d1158;         /* card surface */
+  --color-surface-raised:  #271968;         /* raised card / popover */
+  --color-surface-overlay: #2f2078;         /* modal / overlay */
+
+  /* ── Text on dark ──────────────────────────────────────────────────── */
+  --color-fg:        #f3edf9;               /* high-contrast white-violet */
+  --color-fg-muted:  #b0a8d4;               /* secondary */
+  --color-fg-subtle: #7a72a3;               /* tertiary, captions */
+
+  /* ── Borders ───────────────────────────────────────────────────────── */
+  --color-border:        rgba(243, 237, 249, 0.10);
+  --color-border-subtle: rgba(243, 237, 249, 0.06);
+  --color-border-strong: rgba(243, 237, 249, 0.18);
+
+  /* ── Status ────────────────────────────────────────────────────────── */
+  /* Map to brand colors, not generic Tailwind hues. */
+  --color-success: var(--color-brand-mint);
+  --color-warning: var(--color-brand);       /* gold doubles as warning */
+  --color-danger:  var(--color-brand-coral);
   --color-info:    #7c9eff;
 
-  /* stages */
-  --color-stage-main: #e5b85a;
-  --color-stage-alt:  #7c9eff;
-  --color-stage-pool: #a78bfa;
-  --color-stage-coll: #f472b6;
+  /* ── Stages (used sparingly — only on stage chips/badges) ──────────── */
+  --color-stage-main: var(--color-brand);     /* gold */
+  --color-stage-alt:  #7c9eff;                /* blue */
+  --color-stage-pool: #a78bfa;                /* violet */
+  --color-stage-coll: #f472b6;                /* pink */
 
-  /* radius — only md is used */
-  --radius-md: 8px;
+  /* ── Radius ────────────────────────────────────────────────────────── */
+  --radius-md: 8px;                           /* only radius used */
 
-  /* fonts (set in layout.tsx via Geist) */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* ── Fonts ─────────────────────────────────────────────────────────── */
+  /* Geist Sans for body/UI, Geist Mono for numbers/dates/flight numbers,
+   * Newsreader (Google Fonts) for the wordmark + page H1 ONLY. */
+  --font-sans:    var(--font-geist-sans);
+  --font-mono:    var(--font-geist-mono);
+  --font-display: var(--font-newsreader);
 }

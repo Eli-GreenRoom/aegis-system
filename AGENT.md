@@ -57,26 +57,70 @@ so patterns can be lifted across.
 
 ## 3. Brand & Design System
 
-This is a festival ops tool. It must look serious, fast, and dense — not a
-consumer app, not a marketing site.
+This is a festival ops tool, aligned to the Aegis brand book (Hammerspace,
+Feb 2026). Brand-aligned but restrained — the brand book is for the
+festival's outward face; this app is the back office. Operator-grade density.
+No marketing flourish.
 
-- **Aesthetic:** dark-first, near-black background, restrained color
-- **Brand accent:** `#E5B85A` (warm gold — sunset over Byblos sea, ties to the brand)
-  - Class aliases: `text-brand`, `bg-brand`, `border-brand`
-- **Background:** `#0A0A0B` **Surface:** `#111113` **Surface raised:** `#1A1A1D`
-- **Borders:** `rgba(255,255,255,0.08)` standard, `rgba(255,255,255,0.06)` subtle
-- **Stage colors** (use sparingly, only for stage badges/filters):
-  - Main Stage: `#E5B85A` (gold)
-  - Alternative Stage: `#7C9EFF` (blue)
-  - Select Pool: `#A78BFA` (violet)
-  - Collectives: `#F472B6` (pink)
-- **Fonts:** Geist Sans (UI) + Geist Mono (numbers, dates, times, flight numbers, fees)
-- **Border radius:** `rounded-md` (8px) ONLY — never `rounded-xl` / `rounded-2xl`
-- **No emoji, no exclamation points, no marketing language.**
-- **Operator vocabulary:** artist, set, slot, stage, lineup, advance, rider, roadsheet,
-  PoP (proof of payment), guestlist, leg (of a flight), pickup, dropoff, room block.
+Full rationale: `docs/BRAND.md`. Tokens: `src/styles/tokens.css`.
 
-Tokens live in `src/styles/tokens.css`.
+### Palette
+
+- **Background (page):** `#150A48` (deep indigo). The brand canvas, slightly
+  deeper than the brand book's hero indigo for screen comfort.
+- **Surface:** `#1D1158`  **Surface raised:** `#271968`  **Overlay:** `#2F2078`
+- **Brand accent (gold):** `#E5B85A` — primary call-to-action, highlights,
+  warning state. Aliases `text-brand`, `bg-brand`, `border-brand`.
+- **Coral:** `#E73E54` — destructive / urgent / overdue. Alias `text-coral`.
+- **Mint:** `#16D060` — success / paid / confirmed. Alias `text-mint`.
+- **Cream:** `#FAF3EC` — inverse surfaces (print, exports, light cards only).
+  Aliases `bg-cream`, `text-cream`.
+- **Text:** `#F3EDF9` (high contrast), `#B0A8D4` muted, `#7A72A3` subtle.
+- **Borders:** `rgba(243,237,249,0.10)` standard, `0.06` subtle, `0.18` strong.
+
+**Status mapping:** `success → mint`, `warning → gold`, `danger → coral`.
+Don't use generic Tailwind `red-500` / `green-500`.
+
+### Stage colors (use sparingly — only on stage chips/badges/filters)
+
+- Main Stage: `#E5B85A` (gold) — `var(--color-stage-main)`
+- Alternative Stage: `#7C9EFF` (blue) — `var(--color-stage-alt)`
+- Select Pool: `#A78BFA` (violet) — `var(--color-stage-pool)`
+- Collectives: `#F472B6` (pink) — `var(--color-stage-coll)`
+
+### Typography
+
+- **Geist Sans** — body, labels, buttons, nav, every form input.
+- **Geist Mono** — every number, date, time, flight number, fee, ID,
+  confirmation code. Apply with `text-mono` utility or
+  `style={{ fontFamily: "var(--font-mono)" }}`.
+- **Newsreader (Google Fonts)** — DISPLAY ONLY. The product wordmark and the
+  H1 of major pages. Never inside cards, never on buttons, never on data.
+  Apply with `text-display` utility.
+
+### Layout & shape
+
+- **Border radius:** `rounded-md` (8px) ONLY. Never `rounded-xl` / `rounded-2xl`.
+- **Borders not shadows** — flat surfaces, hairline borders.
+- **Density** — generous whitespace at the page level (the brand book uses a
+  lot of empty space), tight inside data tables.
+- **Blueprint motif** (dotted construction lines, square + circle from the
+  cover) — use sparingly: empty states, auth screens, the 404 page only.
+  Never as ambient decoration on data pages.
+
+### Don'ts
+
+- No emoji. No exclamation points. No marketing copy.
+- No cyan, no neon green, no brand colors not in the palette above.
+- No serif on data, buttons, body, or anything inside a card.
+- No `rounded-xl` or larger.
+- Don't refer to artists as "users" — see §4.
+
+### Operator vocabulary
+
+artist, crew, set, slot, stage, lineup, advance, rider, roadsheet, PoP (proof
+of payment), guestlist, leg (of a flight), pickup, dropoff, room block,
+edition, batch.
 
 ---
 
