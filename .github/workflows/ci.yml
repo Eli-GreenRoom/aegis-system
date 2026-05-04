@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref so PRs don't queue.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, typecheck, test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Placeholder env so modules that read process.env at import time don't
+    # crash the test runner. CI tests must NOT hit real services — mock them.
+    env:
+      DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+      ANTHROPIC_API_KEY: sk-ant-placeholder
+      BETTER_AUTH_SECRET: placeholder-secret-for-ci-only-do-not-use-in-prod
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:3000
+      BLOB_READ_WRITE_TOKEN: vercel_blob_rw_placeholder
+      RESEND_API_KEY: re_placeholder
+      EMAIL_FROM: Aegis CI <ci@aegisfestival.com>
+      NEXT_PUBLIC_APP_NAME: Aegis System
+      NEXT_PUBLIC_APP_TZ: Asia/Beirut
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test:run

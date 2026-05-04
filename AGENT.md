@@ -288,21 +288,21 @@ any write, verify with `tail -10`. Never use `printf >>` to append.
 These were uploaded by Eli on session start. The schema must accommodate every
 column from these files. Sheet → table mapping:
 
-| Sheet                                                       | Tables that absorb it                                         |
-| ----------------------------------------------------------- | ------------------------------------------------------------- |
-| `Aegis Logistics 2024 / General`                            | `sets` (timetable + stage + status flags)                     |
-| `Aegis Logistics 2024 / Flights`                            | `flights` (split arrival vs departure into 2 rows per person) |
-| `Aegis Logistics 2024 / Ground Transportation`              | `pickups`                                                     |
-| `Aegis Logistics 2024 / payments`                           | `payments`                                                    |
-| `Aegis Logistics 2024 / pending payments`                   | `payments` (status='pending')                                 |
-| `Aegis Logistics 2024 / BYBLOS TAXI / LuxCars / Aqua / BSM` | `vendors` + per-pickup vendor FK                              |
-| `Aegis Logistics 2024 / Stage Managers / Volunteers`        | `crew`                                                        |
-| `Aegis Festival Line Up 2024 / Line-Up`                     | `sets` (with status: confirmed / option / not_available)      |
-| `Aegis Festival Line Up 2024 / Batch 1..N`                  | `sets` (announce batch metadata on `sets`)                    |
-| `AF2024 GUESTLIST` (multiple sheets)                        | `guestlist_entries` (category enum)                           |
-| `Aegis Artist Hotel Options`                                | `hotels` + `room_blocks`                                      |
-| `Byblos Sur Mer`                                            | `hotel_bookings`                                              |
-| `Big Bang Emails`                                           | `email_threads` (Phase 2)                                     |
+| Sheet | Tables that absorb it |
+|---|---|
+| `Aegis Logistics 2024 / General` | `sets` (timetable + stage + status flags) |
+| `Aegis Logistics 2024 / Flights` | `flights` (split arrival vs departure into 2 rows per person) |
+| `Aegis Logistics 2024 / Ground Transportation` | `pickups` |
+| `Aegis Logistics 2024 / payments` | `payments` |
+| `Aegis Logistics 2024 / pending payments` | `payments` (status='pending') |
+| `Aegis Logistics 2024 / BYBLOS TAXI / LuxCars / Aqua / BSM` | `vendors` + per-pickup vendor FK |
+| `Aegis Logistics 2024 / Stage Managers / Volunteers` | `crew` |
+| `Aegis Festival Line Up 2024 / Line-Up` | `sets` (with status: confirmed / option / not_available) |
+| `Aegis Festival Line Up 2024 / Batch 1..N` | `sets` (announce batch metadata on `sets`) |
+| `AF2024 GUESTLIST` (multiple sheets) | `guestlist_entries` (category enum) |
+| `Aegis Artist Hotel Options` | `hotels` + `room_blocks` |
+| `Byblos Sur Mer` | `hotel_bookings` |
+| `Big Bang Emails` | `email_threads` (Phase 2) |
 
 A migration script in `scripts/import-2024.ts` should backfill the 2024 data so
 the system starts populated. Spec lives in `docs/DATA-IMPORT.md`.
@@ -311,14 +311,37 @@ the system starts populated. Spec lives in `docs/DATA-IMPORT.md`.
 
 ## 11. Definition of done (per feature)
 
-- TypeScript clean — `npx tsc --noEmit` passes
-- Lint clean — `npm run lint` passes
+A feature is NOT done until **`npm run check`** passes locally with the diff
+in place. That single command runs lint + typecheck + vitest.
+
+Hard requirements per shipped feature:
+
+- `npm run check` passes — lint + typecheck + tests, all green
 - Zod validation on every POST/PATCH input
-- Auth check on every protected route
-- A `requests/<feature>.http` with success + failure cases
-- A Vitest unit test for any non-trivial handler (`tests/unit/`)
-- Updated `TASKS.md` (move from Now → Done with date)
+- Auth check (`getAppSession`) on every protected route
+- A `requests/<feature>.http` with at least one success and one failure case
+- A Vitest unit test in `tests/unit/<feature>.test.ts` for every non-trivial
+  handler — at minimum: happy path, auth-fail path, validation-fail path
+- Mock the DB and external services in tests — never hit Neon, Anthropic,
+  Resend, or Blob from a unit test
+- Updated `TASKS.md` (move Now to Done with today's date)
 - Commit message format: `feat(slug): ...` / `fix(slug): ...` / `chore: ...`
+
+CI runs the same `npm run check` on every push and PR
+(`.github/workflows/ci.yml`). A red CI run blocks merge to main.
+
+### Testing rules (non-negotiable)
+
+- Every API route ships with a unit test alongside it. No exceptions.
+- Every server action that writes to the DB ships with a unit test.
+- Every parser in `src/lib/ai/` ships with a fixture file in
+  `tests/fixtures/` and a snapshot test of the parsed output.
+- Don't claim done until you've actually run `npm run check` and pasted
+  the output. "Tests should pass" is not the same as "tests do pass".
+- Reproduce bugs as failing tests first, then fix.
+
+End-to-end tests (Playwright) come in Phase 2.5 once enough pages exist —
+not now. Until then, `requests/*.http` files are the smoke tests.
 
 ---
 

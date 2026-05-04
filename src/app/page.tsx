@@ -1,4 +1,10 @@
-export default function HomePage() {
+import { redirect } from "next/navigation";
+import { getAppSession } from "@/lib/session";
+
+export default async function HomePage() {
+  const session = await getAppSession();
+  if (session) redirect("/lineup");
+
   return (
     <main className="min-h-screen flex items-center justify-center px-6">
       <div className="max-w-xl w-full">

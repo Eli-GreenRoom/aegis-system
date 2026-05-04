@@ -57,7 +57,7 @@ export default function SignUpPage() {
       return;
     }
 
-    router.push("/");
+    router.push("/lineup");
     router.refresh();
   }
 

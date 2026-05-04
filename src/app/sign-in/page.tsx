@@ -31,7 +31,7 @@ export default function SignInPage() {
       return;
     }
 
-    router.push("/");
+    router.push("/lineup");
     router.refresh();
   }
 
