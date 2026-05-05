@@ -1,0 +1,22 @@
+From: billing@bsm-hotel.com
+To: booking@aegisfestival.com
+Subject: Invoice BSM-1042 — Aegis Festival 2026
+
+Byblos Sur Mer
+Old Souks, Byblos, Lebanon
+
+INVOICE
+Number: BSM-1042
+Issued: April 14, 2026
+Due: May 1, 2026
+
+Aegis Festival 2026 — artist accommodation block
+
+  10 x Deluxe Sea View, 3 nights @ $250/night         $7,500.00
+  Breakfast surcharge (incl. for 2)                       $0.00
+
+  Subtotal                                            $7,500.00
+  VAT (11%)                                             $825.00
+  TOTAL DUE                                           $8,325.00 USD
+
+Payment terms: Net 17 days. Wire to BLF account #...

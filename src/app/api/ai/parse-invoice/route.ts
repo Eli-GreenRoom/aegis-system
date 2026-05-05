@@ -1,0 +1,46 @@
+import { NextRequest } from "next/server";
+import { z } from "zod";
+import { getAppSession, requirePermission } from "@/lib/session";
+import { parseInvoiceText } from "@/lib/ai/parse-invoice";
+
+const inputSchema = z.object({
+  text: z.string().min(20).max(50_000),
+});
+
+/**
+ * POST /api/ai/parse-invoice
+ * Body: `{ text: string }` (paste the invoice email body or extracted PDF text).
+ * Returns the parsed structured JSON (see ParsedInvoice). The operator
+ * reviews, then submits the regular invoice form to write to DB.
+ *
+ * Spec: AGENT.md §6.
+ */
+export async function POST(req: NextRequest) {
+  const session = await getAppSession();
+  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "payments");
+  if (denied) return denied;
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = inputSchema.safeParse(body);
+  if (!parsed.success) {
+    return Response.json(
+      { error: "Validation failed", issues: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const result = await parseInvoiceText(parsed.data.text);
+    return Response.json({ parsed: result });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Parse failed";
+    return Response.json({ error: message }, { status: 502 });
+  }
+}

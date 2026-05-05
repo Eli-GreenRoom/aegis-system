@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/ui/FileUpload";
+import AIParseDialog from "@/components/ui/AIParseDialog";
 import type { Flight } from "@/lib/flights/repo";
 import type { Person } from "@/lib/people";
 
@@ -40,11 +41,13 @@ export default function FlightForm({ flight, people }: Props) {
   const isEdit = !!flight;
   const [serverError, setServerError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FlightInput>({
     resolver: zodResolver(flightInputSchema),
@@ -129,8 +132,40 @@ export default function FlightForm({ flight, people }: Props) {
     label: `${p.name} (${p.kind})${p.agency ? ` - ${p.agency}` : ""}`,
   }));
 
+  function applyParsed(p: Record<string, unknown>) {
+    if (typeof p.airline === "string")
+      setValue("airline", p.airline, { shouldValidate: true });
+    if (typeof p.flightNumber === "string")
+      setValue("flightNumber", p.flightNumber, { shouldValidate: true });
+    if (typeof p.fromAirport === "string")
+      setValue("fromAirport", p.fromAirport, { shouldValidate: true });
+    if (typeof p.toAirport === "string")
+      setValue("toAirport", p.toAirport, { shouldValidate: true });
+    if (typeof p.scheduledDt === "string")
+      setValue("scheduledDt", toDtLocal(p.scheduledDt), {
+        shouldValidate: true,
+      });
+    if (typeof p.pnr === "string")
+      setValue("pnr", p.pnr, { shouldValidate: true });
+    if (typeof p.seat === "string")
+      setValue("seat", p.seat, { shouldValidate: true });
+    if (p.direction === "inbound" || p.direction === "outbound")
+      setValue("direction", p.direction, { shouldValidate: true });
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
+      {!isEdit && (
+        <div className="flex items-center justify-end">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setAiOpen(true)}
+          >
+            Parse with AI
+          </Button>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <Field label="Person" error={errors.personKind?.message ?? errors.personId?.message} required>
           <select
@@ -285,6 +320,15 @@ export default function FlightForm({ flight, people }: Props) {
           </Button>
         )}
       </div>
+
+      {aiOpen && (
+        <AIParseDialog
+          title="Parse flight confirmation with AI"
+          endpoint="/api/ai/parse-flight"
+          onApply={applyParsed}
+          onClose={() => setAiOpen(false)}
+        />
+      )}
     </form>
   );
 }

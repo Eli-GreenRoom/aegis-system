@@ -11,7 +11,6 @@ _(Pick from Later, or call something out by hand.)_
 
 ## Later
 
-- [ ] Phase 4 AI parsers
 - [ ] Phase 5 festival-day mode (one-tap rows, card view, PWA prompt)
 - [ ] Phase 6 Cmd+K agent
 - [ ] Phase 7 polish + comms
@@ -20,6 +19,22 @@ _(Pick from Later, or call something out by hand.)_
 
 ## Done
 
+- 2026-05-05 — Phase 4: AI parsers (invoices + flights only, per Eli's
+  scope direction). Two parsers in `src/lib/ai/`:
+  - `parseInvoiceText` — extracts vendor / number / amount / currency /
+    issue+due dates / line items / issuer kind from any pasted invoice
+    text or extracted PDF body.
+  - `parseFlightText` — extracts passenger / airline / flight number /
+    IATA codes / scheduled datetime / PNR / seat / direction
+    (inbound/outbound relative to BEY) from confirmation emails.
+  Both wrap `claude-sonnet-4-6`, validate output with Zod, throw on
+  malformed JSON or invalid fields. AI never writes - parsers return
+  structured JSON; reusable `<AIParseDialog>` shows the result, the
+  operator clicks Apply to fill the form, then submits normally to
+  persist. "Parse with AI" button on the new-invoice and new-flight
+  pages (hidden in edit mode). Routes auth-gated by `payments` and
+  `flights` permissions respectively. 26 new tests; suite up to 389
+  (was 363).
 - 2026-05-05 — Drag-to-reorder slots within a stage column. Native
   HTML5 drag-and-drop (no new dep) inside `LineupBoard`: each slot
   is `draggable`, on drag-over the column reorders optimistically via

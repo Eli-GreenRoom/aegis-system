@@ -1,0 +1,18 @@
+From: noreply@airfrance.com
+To: booking@aegisfestival.com
+Subject: Booking confirmation — TK826
+
+AIR FRANCE
+Confirmation: ABC123
+
+Passenger: Hiroko Yamamura
+
+OUTBOUND
+Flight TK826
+Paris CDG -> Beirut BEY
+Departs: 15 August 2026, 20:45 CEST
+Seat: 14A
+
+Booking reference (PNR): ABC123
+
+Have a pleasant flight.

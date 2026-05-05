@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/ui/FileUpload";
+import AIParseDialog from "@/components/ui/AIParseDialog";
 import type { Invoice } from "@/lib/payments/repo";
 
 interface Props {
@@ -48,11 +49,13 @@ export default function InvoiceForm({ invoice }: Props) {
   const isEdit = !!invoice;
   const [serverError, setServerError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -124,8 +127,34 @@ export default function InvoiceForm({ invoice }: Props) {
     router.refresh();
   }
 
+  function applyParsed(p: Record<string, unknown>) {
+    if (typeof p.invoiceNumber === "string")
+      setValue("number", p.invoiceNumber, { shouldValidate: true });
+    if (typeof p.issuerKind === "string")
+      setValue("issuerKind", p.issuerKind, { shouldValidate: true });
+    if (typeof p.issueDate === "string")
+      setValue("issueDate", p.issueDate, { shouldValidate: true });
+    if (typeof p.dueDate === "string")
+      setValue("dueDate", p.dueDate, { shouldValidate: true });
+    if (typeof p.amount === "number")
+      setValue("amount", p.amount.toFixed(2), { shouldValidate: true });
+    if (p.currency === "USD" || p.currency === "EUR")
+      setValue("currency", p.currency, { shouldValidate: true });
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
+      {!isEdit && (
+        <div className="flex items-center justify-end">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setAiOpen(true)}
+          >
+            Parse with AI
+          </Button>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <Field label="Number" error={errors.number?.message}>
           <Input {...register("number")} placeholder="INV-001" />
@@ -233,6 +262,15 @@ export default function InvoiceForm({ invoice }: Props) {
           </Button>
         )}
       </div>
+
+      {aiOpen && (
+        <AIParseDialog
+          title="Parse invoice with AI"
+          endpoint="/api/ai/parse-invoice"
+          onApply={applyParsed}
+          onClose={() => setAiOpen(false)}
+        />
+      )}
     </form>
   );
 }
