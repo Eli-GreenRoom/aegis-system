@@ -18,7 +18,6 @@
 
 ## Next
 
-- [ ] Phase 2.7 — Payments + Invoices (coral / gold / mint will pop)
 - [ ] Phase 2.8 — Riders, Contracts, Guestlist, Documents (finish CRUD)
 - [ ] **Phase 2.9 — Aggregators** (`src/lib/aggregators/`): `getArtistRoadsheet`,
       `getOpenIssues`, `getPickupsInWindow`, `getNowAndNext`, `getArrivalsToday`,
@@ -40,6 +39,25 @@
 
 ## Done
 
+- 2026-05-05 — Phase 2.7: Payments + Invoices module shipped (39 tests).
+  `src/lib/payments/{schema,repo}.ts` + 4 routes (`/api/invoices`,
+  `/api/payments` with `[id]` siblings). Both PATCH routes wire status
+  changes through `recordTransition` from 2.5a stage 2 - audit rows on
+  every payment status flip, and on invoice status flips too (added
+  `'invoice'` to `AuditEntityType`). Payment PATCH auto-stamps `paidAt`
+  to server `now()` on a `→ paid` transition, but only when the patch
+  doesn't already include an explicit `paidAt`. Aggregator
+  `getPaymentsSummary(editionId)` returns counts + totals per status,
+  partitioned by currency (USD/EUR; never converted). Dashboard:
+  `/payments` page with four summary cards (pending/due/paid/overdue
+  in muted/brand/mint/coral), filter row, payments table; sub-route
+  `/payments/invoices` with its own list + filters; payment + invoice
+  forms with display-unit money inputs that convert to cents on
+  submit. 257 tests green (was 218 after 2.5). Probed: ran `npm run
+  check` - clean. **Not yet wired:** invoice file URL + payment
+  popUrl are still free-text URLs (Phase 2.65 documents API will
+  retrofit). No production migration needed - both tables already
+  existed in the initial schema.
 - 2026-05-05 — Phase 2.5: Hotels module shipped (3 resources, 57 tests).
   `src/lib/hotels/{schema,repo}.ts` + 6 routes (`/api/hotels`,
   `/api/room-blocks`, `/api/hotel-bookings` with their `[id]` siblings).

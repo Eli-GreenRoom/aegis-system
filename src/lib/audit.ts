@@ -23,6 +23,7 @@ export type AuditEntityType =
   | "set"
   | "contract"
   | "payment"
+  | "invoice"
   | "hotel_booking";
 
 /** Loose `Db` shape so this module is import-safe in tests with mocked clients. */
