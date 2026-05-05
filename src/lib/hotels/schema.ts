@@ -242,6 +242,10 @@ export interface HotelBookingDbValues {
   creditsAmountCents: number | null;
   creditsCurrency: string | null;
   status: HotelBookingStatus;
+  /** Click-time check-in/out stamps. Server-side only; see
+   *  `/api/hotel-bookings/[id]/advance`. */
+  checkedInAt: Date | null;
+  checkedOutAt: Date | null;
   confirmationUrl: string | null;
   comments: string | null;
 }
@@ -274,6 +278,8 @@ export function hotelBookingToDbValues(
         ? null
         : input.creditsCurrency,
     status: input.status ?? "booked",
+    checkedInAt: null,
+    checkedOutAt: null,
     confirmationUrl: null,
     comments: null,
   };

@@ -11,7 +11,9 @@ _(Pick from Later, or call something out by hand.)_
 
 ## Later
 
-- [ ] Phase 5 festival-day mode (one-tap rows, card view, PWA prompt)
+- [ ] Phase 5 polish: stage filter chips on Now/Pickups, polling /
+      pull-to-refresh, PWA install prompt, roadsheet PDF export,
+      coral-pulse animations on overdue rows.
 - [ ] Phase 6 Cmd+K agent
 - [ ] Phase 7 polish + comms
 
@@ -19,6 +21,44 @@ _(Pick from Later, or call something out by hand.)_
 
 ## Done
 
+- 2026-05-05 — Phase 5 MVP: festival-day mode shipped (413 tests).
+  - `isFestivalMode` / `autoFestivalMode` helpers in
+    `src/lib/festival-mode.ts`. Active on date range OR force-on flag.
+  - Sidebar swaps to a 5-item festival nav (Now / Pickups / Arrivals
+    / Issues / Roadsheets) when on; planning modules collapse into a
+    "Planning" submenu so they're still reachable. Wordmark badge
+    flips Ops -> Live (mint). Settings page grew a force-on toggle
+    that flips `festivalEditions.festivalModeActive`.
+  - Five festival routes under `/festival/`:
+    - Now: per-stage now+next, pickups in next 2h, currently-checked-in
+      bookings, top-5 open issues. Pure read board.
+    - Pickups: next 2h emphasised + later today, with one-tap status
+      advance buttons (Dispatch -> Picked up -> Delivered).
+    - Arrivals: inbound flights today, with one-tap (Boarded -> In
+      air -> Landed). Coral ring on rows where flight landed but
+      linked pickup is still scheduled.
+    - Issues: severity-sorted (high coral / medium brand / low
+      muted), with scope chips today/week/all and per-row deep links
+      to the relevant entity.
+    - Roadsheets: searchable artist list -> per-artist day-of bundle
+      from `getArtistRoadsheet`. Web-rendered, print-friendly CSS.
+  - Three new advance routes wire into `recordTransition` for audit:
+    - POST /api/flights/[id]/advance: server stamps `actualDt` on
+      the landed transition (per spec - never trust user typing).
+    - POST /api/pickups/[id]/advance: stamps dispatchedAt /
+      inTransitAt / completedAt on the matching transition.
+    - POST /api/hotel-bookings/[id]/advance: stamps checkedInAt /
+      checkedOutAt.
+    All three reject 409 at terminal forward states; the planning UI
+    is the way to revise. PickupDbValues + HotelBookingDbValues
+    extended with the new timestamp fields (table columns already
+    existed since Phase 2.5a; only the typed shape was missing).
+  - 24 new tests; suite up to 413.
+
+  **Deferred to "Phase 5 polish":** stage filter chips wiring on
+  Now/Pickups (component exists but unused), polling / pull-to-
+  refresh, PWA install prompt, roadsheet PDF export, coral-pulse
+  animations on overdue rows.
 - 2026-05-05 — Phase 4: AI parsers (invoices + flights only, per Eli's
   scope direction). Two parsers in `src/lib/ai/`:
   - `parseInvoiceText` — extracts vendor / number / amount / currency /

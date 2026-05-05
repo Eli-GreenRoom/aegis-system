@@ -159,6 +159,11 @@ export interface PickupDbValues {
   costAmountCents: number | null;
   costCurrency: string | null;
   status: PickupStatus;
+  /** Click-time transition stamps. Server-side only (never set from form
+   *  input); see `/api/pickups/[id]/advance`. */
+  dispatchedAt: Date | null;
+  inTransitAt: Date | null;
+  completedAt: Date | null;
   comments: string | null;
 }
 
@@ -196,6 +201,9 @@ export function pickupToDbValues(input: PickupInput): PickupDbValues {
         ? null
         : input.costCurrency,
     status: input.status ?? "scheduled",
+    dispatchedAt: null,
+    inTransitAt: null,
+    completedAt: null,
     comments: null,
   };
   for (const k of NULLABLE_PICKUP_STRINGS) {
