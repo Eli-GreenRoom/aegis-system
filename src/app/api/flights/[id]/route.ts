@@ -4,7 +4,14 @@ import {
   flightPatchSchema,
   flightToDbPatchValues,
 } from "@/lib/flights/schema";
-import { deleteFlight, getFlight, updateFlight } from "@/lib/flights/repo";
+import {
+  buildUpdateFlight,
+  deleteFlight,
+  getFlight,
+  updateFlight,
+} from "@/lib/flights/repo";
+import { db } from "@/db/client";
+import { recordTransition } from "@/lib/audit";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -48,7 +55,23 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   const existing = await getFlight(id);
   if (!existing) return Response.json({ error: "Not found" }, { status: 404 });
 
-  const updated = await updateFlight(id, flightToDbPatchValues(parsed.data));
+  const patch = flightToDbPatchValues(parsed.data);
+  const statusChanged =
+    "status" in patch && patch.status !== undefined && patch.status !== existing.status;
+
+  if (statusChanged) {
+    const [rows] = await db.batch([
+      buildUpdateFlight(id, patch),
+      recordTransition(db, {
+        actorId: session.user.id,
+        entity: { type: "flight", id },
+        diff: { field: "status", from: existing.status, to: patch.status },
+      }),
+    ]);
+    return Response.json({ flight: rows[0] ?? null });
+  }
+
+  const updated = await updateFlight(id, patch);
   return Response.json({ flight: updated });
 }
 

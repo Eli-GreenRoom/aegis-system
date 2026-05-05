@@ -175,6 +175,52 @@ describe("POST /api/crew", () => {
     const res = await createPOST(req);
     expect(res.status).toBe(400);
   });
+
+  it("accepts the new parity fields (nationality, visa, press kit, passport)", async () => {
+    const res = await createPOST(
+      jsonReq("http://test/api/crew", "POST", {
+        ...validInput,
+        nationality: "FR",
+        visaStatus: "approved",
+        pressKitUrl: "https://drive.google.com/crew",
+        passportFileUrl: "https://example.com/p.pdf",
+      })
+    );
+    expect(res.status).toBe(201);
+    expect(mocks.repo.createCrewMember).toHaveBeenCalledWith(
+      FIXTURE_EDITION_ID,
+      expect.objectContaining({
+        nationality: "FR",
+        visaStatus: "approved",
+        pressKitUrl: "https://drive.google.com/crew",
+        passportFileUrl: "https://example.com/p.pdf",
+      })
+    );
+  });
+
+  it("rejects malformed passportFileUrl", async () => {
+    const res = await createPOST(
+      jsonReq("http://test/api/crew", "POST", {
+        ...validInput,
+        passportFileUrl: "not a url",
+      })
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.issues.fieldErrors.passportFileUrl).toBeDefined();
+  });
+
+  it("rejects unknown visaStatus", async () => {
+    const res = await createPOST(
+      jsonReq("http://test/api/crew", "POST", {
+        ...validInput,
+        visaStatus: "maybe",
+      })
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.issues.fieldErrors.visaStatus).toBeDefined();
+  });
 });
 
 // ── /api/crew/[id] ─────────────────────────────────────────────────────
@@ -278,6 +324,44 @@ describe("PATCH /api/crew/[id]", () => {
       { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
     );
     expect(res.status).toBe(401);
+  });
+
+  it("partial PATCH sets nationality and clears pressKitUrl", async () => {
+    await onePATCH(
+      jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "PATCH", {
+        nationality: "DE",
+        pressKitUrl: "",
+      }),
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+    );
+    expect(mocks.repo.updateCrewMember).toHaveBeenCalledWith(FIXTURE_CREW_ID, {
+      nationality: "DE",
+      pressKitUrl: null,
+    });
+  });
+
+  it("partial PATCH sets visaStatus to pending", async () => {
+    await onePATCH(
+      jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "PATCH", {
+        visaStatus: "pending",
+      }),
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+    );
+    expect(mocks.repo.updateCrewMember).toHaveBeenCalledWith(FIXTURE_CREW_ID, {
+      visaStatus: "pending",
+    });
+  });
+
+  it("partial PATCH with visaStatus empty string clears it to null", async () => {
+    await onePATCH(
+      jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "PATCH", {
+        visaStatus: "",
+      }),
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+    );
+    expect(mocks.repo.updateCrewMember).toHaveBeenCalledWith(FIXTURE_CREW_ID, {
+      visaStatus: null,
+    });
   });
 });
 

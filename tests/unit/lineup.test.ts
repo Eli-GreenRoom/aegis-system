@@ -29,6 +29,21 @@ vi.mock("@/lib/edition", () => ({
   })),
 }));
 
+// db.batch returns whatever batchImpl is set to before the call. Tests that
+// exercise a status transition install a fake that returns `[[updatedRow]]`.
+const batchImpl = vi.fn(async (_queries: unknown[]): Promise<unknown[]> => []);
+
+vi.mock("@/db/client", () => ({
+  db: {
+    batch: (queries: unknown[]) => batchImpl(queries),
+  },
+  schema: {},
+}));
+
+vi.mock("@/lib/audit", () => ({
+  recordTransition: vi.fn(() => ({ __auditBuilder: true })),
+}));
+
 vi.mock("@/lib/lineup/repo", () => ({
   // stages
   listStages: vi.fn(async () => [fixtureStage]),
@@ -57,6 +72,7 @@ vi.mock("@/lib/lineup/repo", () => ({
     id: FIXTURE_SET_ID,
   })),
   updateSet: vi.fn(async (_id, input) => ({ ...fixtureSet, ...input })),
+  buildUpdateSet: vi.fn((_id, input) => ({ __updateBuilder: "set", input })),
   deleteSet: vi.fn(async () => fixtureSet),
   // grid (not exercised in unit tests; LineupBoard isn't a route)
   getLineupGrid: vi.fn(async () => []),
@@ -64,6 +80,7 @@ vi.mock("@/lib/lineup/repo", () => ({
 
 import * as session from "@/lib/session";
 import * as repo from "@/lib/lineup/repo";
+import * as audit from "@/lib/audit";
 
 import {
   GET as stagesListGET,
@@ -98,6 +115,7 @@ import {
 const mocks = {
   session: vi.mocked(session),
   repo: vi.mocked(repo),
+  audit: vi.mocked(audit),
 };
 
 const fakeSession = {
@@ -119,6 +137,14 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
 beforeEach(() => {
   mocks.session.getAppSession.mockResolvedValue(fakeSession);
   mocks.session.requirePermission.mockReturnValue(null);
+  // Default: db.batch returns [[updatedRow], [auditRow]]. Tests that need
+  // failure (rollback, partial result) override per-test.
+  batchImpl.mockReset();
+  batchImpl.mockImplementation(async (queries: unknown[]) => {
+    if (queries.length === 2) return [[fixtureSet], [{}]];
+    return [];
+  });
+  mocks.audit.recordTransition.mockClear();
 });
 
 // ── stages ───────────────────────────────────────────────────────────────
@@ -409,14 +435,68 @@ describe("/api/sets", () => {
 describe("/api/sets/[id]", () => {
   const ctx = { params: Promise.resolve({ id: FIXTURE_SET_ID }) };
 
-  it("PATCH partial status only", async () => {
-    await setPATCH(
+  it("PATCH status change goes via db.batch and records the transition", async () => {
+    const res = await setPATCH(
       jsonReq("http://test/api/sets/x", "PATCH", { status: "confirmed" }),
       ctx
     );
-    expect(mocks.repo.updateSet).toHaveBeenCalledWith(FIXTURE_SET_ID, {
+    expect(res.status).toBe(200);
+    expect(batchImpl).toHaveBeenCalledTimes(1);
+    expect(mocks.repo.buildUpdateSet).toHaveBeenCalledWith(FIXTURE_SET_ID, {
       status: "confirmed",
     });
+    expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        actorId: "u1",
+        entity: { type: "set", id: FIXTURE_SET_ID },
+        diff: { field: "status", from: "option", to: "confirmed" },
+      }
+    );
+    // The transition path skips the awaited updateSet helper.
+    expect(mocks.repo.updateSet).not.toHaveBeenCalled();
+  });
+
+  it("PATCH accepts the new festival-day statuses", async () => {
+    for (const status of ["live", "done", "withdrawn"] as const) {
+      mocks.repo.buildUpdateSet.mockClear();
+      mocks.audit.recordTransition.mockClear();
+      await setPATCH(
+        jsonReq("http://test/api/sets/x", "PATCH", { status }),
+        ctx
+      );
+      expect(mocks.repo.buildUpdateSet).toHaveBeenCalledWith(FIXTURE_SET_ID, {
+        status,
+      });
+      expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          diff: { field: "status", from: "option", to: status },
+        })
+      );
+    }
+  });
+
+  it("PATCH with no status change skips audit and uses updateSet directly", async () => {
+    await setPATCH(
+      jsonReq("http://test/api/sets/x", "PATCH", { announceBatch: "Batch 1" }),
+      ctx
+    );
+    expect(batchImpl).not.toHaveBeenCalled();
+    expect(mocks.audit.recordTransition).not.toHaveBeenCalled();
+    expect(mocks.repo.updateSet).toHaveBeenCalledWith(FIXTURE_SET_ID, {
+      announceBatch: "Batch 1",
+    });
+  });
+
+  it("PATCH where db.batch rejects propagates the error (no partial commit)", async () => {
+    batchImpl.mockRejectedValueOnce(new Error("constraint violation"));
+    await expect(
+      setPATCH(
+        jsonReq("http://test/api/sets/x", "PATCH", { status: "confirmed" }),
+        ctx
+      )
+    ).rejects.toThrow("constraint violation");
   });
 
   it("PATCH normalises empty announceBatch to null", async () => {

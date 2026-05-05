@@ -223,6 +223,33 @@ describe("POST /api/artists", () => {
     const body = await res.json();
     expect(body.issues.fieldErrors.pressKitUrl).toBeDefined();
   });
+
+  it("accepts visaStatus as one of the enum values", async () => {
+    const res = await createPOST(
+      jsonReq("http://test/api/artists", "POST", {
+        ...validInput,
+        slug: "hiroko-visa",
+        visaStatus: "approved",
+      })
+    );
+    expect(res.status).toBe(201);
+    expect(mocks.repo.createArtist).toHaveBeenCalledWith(
+      FIXTURE_EDITION_ID,
+      expect.objectContaining({ visaStatus: "approved" })
+    );
+  });
+
+  it("rejects unknown visaStatus value", async () => {
+    const res = await createPOST(
+      jsonReq("http://test/api/artists", "POST", {
+        ...validInput,
+        visaStatus: "maybe",
+      })
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.issues.fieldErrors.visaStatus).toBeDefined();
+  });
 });
 
 // ── /api/artists/[id] ────────────────────────────────────────────────────
@@ -373,6 +400,41 @@ describe("PATCH /api/artists/[id]", () => {
       pressKitUrl: "https://drive.google.com/x",
       passportFileUrl: null,
     });
+  });
+
+  it("partial PATCH sets visaStatus to pending", async () => {
+    await onePATCH(
+      jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "PATCH", {
+        visaStatus: "pending",
+      }),
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+    );
+    expect(mocks.repo.updateArtist).toHaveBeenCalledWith(FIXTURE_ARTIST_ID, {
+      visaStatus: "pending",
+    });
+  });
+
+  it("partial PATCH with visaStatus empty string clears it to null", async () => {
+    await onePATCH(
+      jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "PATCH", {
+        visaStatus: "",
+      }),
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+    );
+    expect(mocks.repo.updateArtist).toHaveBeenCalledWith(FIXTURE_ARTIST_ID, {
+      visaStatus: null,
+    });
+  });
+
+  it("rejects PATCH with invalid visaStatus", async () => {
+    const res = await onePATCH(
+      jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "PATCH", {
+        visaStatus: "almost",
+      }),
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+    );
+    expect(res.status).toBe(400);
+    expect(mocks.repo.updateArtist).not.toHaveBeenCalled();
   });
 });
 

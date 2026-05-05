@@ -98,6 +98,11 @@ export async function updateFlight(
   return row ?? null;
 }
 
+/** Unawaited update builder for use inside `db.batch([..., recordTransition])`. */
+export function buildUpdateFlight(id: string, input: Partial<FlightDbValues>) {
+  return db.update(flights).set(input).where(eq(flights.id, id)).returning();
+}
+
 export async function deleteFlight(id: string): Promise<Flight | null> {
   const [row] = await db.delete(flights).where(eq(flights.id, id)).returning();
   return row ?? null;

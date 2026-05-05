@@ -134,6 +134,18 @@ export async function updatePickup(
   return row ?? null;
 }
 
+/** Unawaited update builder for use inside `db.batch([..., recordTransition])`. */
+export function buildUpdatePickup(
+  id: string,
+  input: Partial<PickupDbValues>
+) {
+  return db
+    .update(groundTransportPickups)
+    .set(input)
+    .where(eq(groundTransportPickups.id, id))
+    .returning();
+}
+
 export async function deletePickup(id: string): Promise<Pickup | null> {
   const [row] = await db
     .delete(groundTransportPickups)

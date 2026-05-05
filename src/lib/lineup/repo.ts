@@ -153,6 +153,14 @@ export async function updateSet(
   return row ?? null;
 }
 
+/**
+ * Unawaited update builder. Compose with `db.batch([..., recordTransition(...)])`
+ * so the state change and the audit row commit atomically.
+ */
+export function buildUpdateSet(id: string, input: Partial<SetDbValues>) {
+  return db.update(sets).set(input).where(eq(sets.id, id)).returning();
+}
+
 export async function deleteSet(id: string): Promise<SetRow | null> {
   const [row] = await db.delete(sets).where(eq(sets.id, id)).returning();
   return row ?? null;

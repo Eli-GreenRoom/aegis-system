@@ -27,6 +27,19 @@ vi.mock("@/lib/edition", () => ({
   })),
 }));
 
+const batchImpl = vi.fn(async (_queries: unknown[]): Promise<unknown[]> => []);
+
+vi.mock("@/db/client", () => ({
+  db: {
+    batch: (queries: unknown[]) => batchImpl(queries),
+  },
+  schema: {},
+}));
+
+vi.mock("@/lib/audit", () => ({
+  recordTransition: vi.fn(() => ({ __auditBuilder: true })),
+}));
+
 vi.mock("@/lib/ground/repo", () => ({
   // vendors
   listVendors: vi.fn(async () => [fixtureVendor]),
@@ -47,11 +60,13 @@ vi.mock("@/lib/ground/repo", () => ({
     id: FIXTURE_PICKUP_ID,
   })),
   updatePickup: vi.fn(async (_id, input) => ({ ...fixturePickup, ...input })),
+  buildUpdatePickup: vi.fn((_id, input) => ({ __updateBuilder: "pickup", input })),
   deletePickup: vi.fn(async () => fixturePickup),
 }));
 
 import * as session from "@/lib/session";
 import * as repo from "@/lib/ground/repo";
+import * as audit from "@/lib/audit";
 import {
   GET as vendorsListGET,
   POST as vendorsPOST,
@@ -74,6 +89,7 @@ import {
 const mocks = {
   session: vi.mocked(session),
   repo: vi.mocked(repo),
+  audit: vi.mocked(audit),
 };
 
 const fakeSession = {
@@ -95,6 +111,12 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
 beforeEach(() => {
   mocks.session.getAppSession.mockResolvedValue(fakeSession);
   mocks.session.requirePermission.mockReturnValue(null);
+  batchImpl.mockReset();
+  batchImpl.mockImplementation(async (queries: unknown[]) => {
+    if (queries.length === 2) return [[fixturePickup], [{}]];
+    return [];
+  });
+  mocks.audit.recordTransition.mockClear();
 });
 
 // ── Vendors ──────────────────────────────────────────────────────────
@@ -272,14 +294,65 @@ describe("/api/pickups", () => {
 describe("/api/pickups/[id]", () => {
   const ctx = { params: Promise.resolve({ id: FIXTURE_PICKUP_ID }) };
 
-  it("PATCH partial only sends provided keys", async () => {
-    await pickupPATCH(
+  it("PATCH status change goes via db.batch and records the transition", async () => {
+    const res = await pickupPATCH(
       jsonReq("http://test/api/pickups/x", "PATCH", { status: "completed" }),
       ctx
     );
+    expect(res.status).toBe(200);
+    expect(batchImpl).toHaveBeenCalledTimes(1);
+    expect(mocks.repo.buildUpdatePickup).toHaveBeenCalledWith(
+      FIXTURE_PICKUP_ID,
+      { status: "completed" }
+    );
+    expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        actorId: "u1",
+        entity: { type: "pickup", id: FIXTURE_PICKUP_ID },
+        diff: { field: "status", from: "scheduled", to: "completed" },
+      }
+    );
+    expect(mocks.repo.updatePickup).not.toHaveBeenCalled();
+  });
+
+  it("PATCH accepts in_transit status with audit", async () => {
+    await pickupPATCH(
+      jsonReq("http://test/api/pickups/x", "PATCH", { status: "in_transit" }),
+      ctx
+    );
+    expect(mocks.repo.buildUpdatePickup).toHaveBeenCalledWith(
+      FIXTURE_PICKUP_ID,
+      { status: "in_transit" }
+    );
+    expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        diff: { field: "status", from: "scheduled", to: "in_transit" },
+      })
+    );
+  });
+
+  it("PATCH non-status field uses updatePickup directly", async () => {
+    await pickupPATCH(
+      jsonReq("http://test/api/pickups/x", "PATCH", { driverName: "Sami" }),
+      ctx
+    );
+    expect(batchImpl).not.toHaveBeenCalled();
+    expect(mocks.audit.recordTransition).not.toHaveBeenCalled();
     expect(mocks.repo.updatePickup).toHaveBeenCalledWith(FIXTURE_PICKUP_ID, {
-      status: "completed",
+      driverName: "Sami",
     });
+  });
+
+  it("PATCH where db.batch rejects propagates the error", async () => {
+    batchImpl.mockRejectedValueOnce(new Error("constraint violation"));
+    await expect(
+      pickupPATCH(
+        jsonReq("http://test/api/pickups/x", "PATCH", { status: "completed" }),
+        ctx
+      )
+    ).rejects.toThrow("constraint violation");
   });
 
   it("PATCH 400 empty body", async () => {

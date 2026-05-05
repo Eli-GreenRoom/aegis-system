@@ -25,6 +25,19 @@ vi.mock("@/lib/edition", () => ({
   })),
 }));
 
+const batchImpl = vi.fn(async (_queries: unknown[]): Promise<unknown[]> => []);
+
+vi.mock("@/db/client", () => ({
+  db: {
+    batch: (queries: unknown[]) => batchImpl(queries),
+  },
+  schema: {},
+}));
+
+vi.mock("@/lib/audit", () => ({
+  recordTransition: vi.fn(() => ({ __auditBuilder: true })),
+}));
+
 vi.mock("@/lib/flights/repo", () => ({
   listFlights: vi.fn(async () => [fixtureFlight]),
   listFlightsForPerson: vi.fn(async () => [fixtureFlight]),
@@ -35,11 +48,13 @@ vi.mock("@/lib/flights/repo", () => ({
     id: FIXTURE_FLIGHT_ID,
   })),
   updateFlight: vi.fn(async (_id, input) => ({ ...fixtureFlight, ...input })),
+  buildUpdateFlight: vi.fn((_id, input) => ({ __updateBuilder: "flight", input })),
   deleteFlight: vi.fn(async () => fixtureFlight),
 }));
 
 import * as session from "@/lib/session";
 import * as repo from "@/lib/flights/repo";
+import * as audit from "@/lib/audit";
 import { GET as listGET, POST as createPOST } from "@/app/api/flights/route";
 import {
   GET as oneGET,
@@ -50,6 +65,7 @@ import {
 const mocks = {
   session: vi.mocked(session),
   repo: vi.mocked(repo),
+  audit: vi.mocked(audit),
 };
 
 const fakeSession = {
@@ -80,6 +96,12 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
 beforeEach(() => {
   mocks.session.getAppSession.mockResolvedValue(fakeSession);
   mocks.session.requirePermission.mockReturnValue(null);
+  batchImpl.mockReset();
+  batchImpl.mockImplementation(async (queries: unknown[]) => {
+    if (queries.length === 2) return [[fixtureFlight], [{}]];
+    return [];
+  });
+  mocks.audit.recordTransition.mockClear();
 });
 
 describe("GET /api/flights", () => {
@@ -186,6 +208,43 @@ describe("POST /api/flights", () => {
     const res = await createPOST(req);
     expect(res.status).toBe(400);
   });
+
+  it("accepts delayMinutes on create", async () => {
+    const res = await createPOST(
+      jsonReq("http://test/api/flights", "POST", {
+        ...validInput,
+        status: "delayed",
+        delayMinutes: 45,
+      })
+    );
+    expect(res.status).toBe(201);
+    expect(mocks.repo.createFlight).toHaveBeenCalledWith(
+      FIXTURE_EDITION_ID,
+      expect.objectContaining({ status: "delayed", delayMinutes: 45 })
+    );
+  });
+
+  it("rejects negative delayMinutes", async () => {
+    const res = await createPOST(
+      jsonReq("http://test/api/flights", "POST", {
+        ...validInput,
+        delayMinutes: -10,
+      })
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.issues.fieldErrors.delayMinutes).toBeDefined();
+  });
+
+  it("defaults delayMinutes to null when omitted on create", async () => {
+    await createPOST(
+      jsonReq("http://test/api/flights", "POST", validInput)
+    );
+    expect(mocks.repo.createFlight).toHaveBeenCalledWith(
+      FIXTURE_EDITION_ID,
+      expect.objectContaining({ delayMinutes: null })
+    );
+  });
 });
 
 describe("/api/flights/[id]", () => {
@@ -205,14 +264,48 @@ describe("/api/flights/[id]", () => {
     expect(res.status).toBe(404);
   });
 
-  it("PATCH partial only sends provided keys", async () => {
-    await onePATCH(
+  it("PATCH status change goes via db.batch and records the transition", async () => {
+    const res = await onePATCH(
       jsonReq("http://test/api/flights/x", "PATCH", { status: "landed" }),
       ctx
     );
+    expect(res.status).toBe(200);
+    expect(batchImpl).toHaveBeenCalledTimes(1);
+    expect(mocks.repo.buildUpdateFlight).toHaveBeenCalledWith(
+      FIXTURE_FLIGHT_ID,
+      { status: "landed" }
+    );
+    expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        actorId: "u1",
+        entity: { type: "flight", id: FIXTURE_FLIGHT_ID },
+        diff: { field: "status", from: "scheduled", to: "landed" },
+      }
+    );
+    expect(mocks.repo.updateFlight).not.toHaveBeenCalled();
+  });
+
+  it("PATCH non-status field uses updateFlight directly", async () => {
+    await onePATCH(
+      jsonReq("http://test/api/flights/x", "PATCH", { airline: "MEA" }),
+      ctx
+    );
+    expect(batchImpl).not.toHaveBeenCalled();
+    expect(mocks.audit.recordTransition).not.toHaveBeenCalled();
     expect(mocks.repo.updateFlight).toHaveBeenCalledWith(FIXTURE_FLIGHT_ID, {
-      status: "landed",
+      airline: "MEA",
     });
+  });
+
+  it("PATCH where db.batch rejects propagates the error", async () => {
+    batchImpl.mockRejectedValueOnce(new Error("constraint violation"));
+    await expect(
+      onePATCH(
+        jsonReq("http://test/api/flights/x", "PATCH", { status: "landed" }),
+        ctx
+      )
+    ).rejects.toThrow("constraint violation");
   });
 
   it("PATCH normalises empty pnr to null", async () => {
@@ -241,6 +334,26 @@ describe("/api/flights/[id]", () => {
       ctx
     );
     expect(res.status).toBe(400);
+  });
+
+  it("PATCH sets delayMinutes", async () => {
+    await onePATCH(
+      jsonReq("http://test/api/flights/x", "PATCH", { delayMinutes: 30 }),
+      ctx
+    );
+    expect(mocks.repo.updateFlight).toHaveBeenCalledWith(FIXTURE_FLIGHT_ID, {
+      delayMinutes: 30,
+    });
+  });
+
+  it("PATCH clears delayMinutes when explicitly null", async () => {
+    await onePATCH(
+      jsonReq("http://test/api/flights/x", "PATCH", { delayMinutes: null }),
+      ctx
+    );
+    expect(mocks.repo.updateFlight).toHaveBeenCalledWith(FIXTURE_FLIGHT_ID, {
+      delayMinutes: null,
+    });
   });
 
   it("DELETE removes", async () => {

@@ -1,7 +1,14 @@
 import { NextRequest } from "next/server";
 import { getAppSession, requirePermission } from "@/lib/session";
 import { pickupPatchSchema, pickupToDbPatchValues } from "@/lib/ground/schema";
-import { deletePickup, getPickup, updatePickup } from "@/lib/ground/repo";
+import {
+  buildUpdatePickup,
+  deletePickup,
+  getPickup,
+  updatePickup,
+} from "@/lib/ground/repo";
+import { db } from "@/db/client";
+import { recordTransition } from "@/lib/audit";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -45,7 +52,23 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   const existing = await getPickup(id);
   if (!existing) return Response.json({ error: "Not found" }, { status: 404 });
 
-  const updated = await updatePickup(id, pickupToDbPatchValues(parsed.data));
+  const patch = pickupToDbPatchValues(parsed.data);
+  const statusChanged =
+    "status" in patch && patch.status !== undefined && patch.status !== existing.status;
+
+  if (statusChanged) {
+    const [rows] = await db.batch([
+      buildUpdatePickup(id, patch),
+      recordTransition(db, {
+        actorId: session.user.id,
+        entity: { type: "pickup", id },
+        diff: { field: "status", from: existing.status, to: patch.status },
+      }),
+    ]);
+    return Response.json({ pickup: rows[0] ?? null });
+  }
+
+  const updated = await updatePickup(id, patch);
   return Response.json({ pickup: updated });
 }
 

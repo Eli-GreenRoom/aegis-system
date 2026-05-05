@@ -1,7 +1,14 @@
 import { NextRequest } from "next/server";
 import { getAppSession, requirePermission } from "@/lib/session";
 import { setPatchSchema, setToDbPatchValues } from "@/lib/lineup/schema";
-import { deleteSet, getSet, updateSet } from "@/lib/lineup/repo";
+import {
+  buildUpdateSet,
+  deleteSet,
+  getSet,
+  updateSet,
+} from "@/lib/lineup/repo";
+import { db } from "@/db/client";
+import { recordTransition } from "@/lib/audit";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -45,7 +52,23 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   const existing = await getSet(id);
   if (!existing) return Response.json({ error: "Not found" }, { status: 404 });
 
-  const updated = await updateSet(id, setToDbPatchValues(parsed.data));
+  const patch = setToDbPatchValues(parsed.data);
+  const statusChanged =
+    "status" in patch && patch.status !== undefined && patch.status !== existing.status;
+
+  if (statusChanged) {
+    const [rows] = await db.batch([
+      buildUpdateSet(id, patch),
+      recordTransition(db, {
+        actorId: session.user.id,
+        entity: { type: "set", id },
+        diff: { field: "status", from: existing.status, to: patch.status },
+      }),
+    ]);
+    return Response.json({ set: rows[0] ?? null });
+  }
+
+  const updated = await updateSet(id, patch);
   return Response.json({ set: updated });
 }
 
