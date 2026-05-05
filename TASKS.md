@@ -7,17 +7,12 @@
 
 ## Now
 
-- [ ] **Phase 2.9 — Aggregators** (`src/lib/aggregators/`): `getArtistRoadsheet`,
-      `getOpenIssues`, `getPickupsInWindow`, `getNowAndNext`, `getArrivalsToday`,
-      `getCurrentlyActiveBookings`. Each unit-tested with mocked DB. Powers
-      Festival-day mode — spec in `docs/OPERATIONS-FLOW.md` §4.
+- [ ] Stage / set status filters on /artists now that lineup ships
 
 ## Next
 
-- [ ] Stage / set status filters on /artists now that lineup ships
 - [ ] Drag-to-reorder slots within a stage column (currently sortOrder is
       stored but only respected on read)
-- [ ] Phase 3 import script `scripts/import-2024.ts`
 
 ## Later
 
@@ -30,6 +25,23 @@
 
 ## Done
 
+- 2026-05-05 — Phase 2.9 + edit-flow fixes (354 tests).
+  Aggregators: `src/lib/aggregators/` with `getArtistRoadsheet`,
+  `getOpenIssues` (severity-sorted with the 7-rule set from
+  OPERATIONS-FLOW.md §4), `getPickupsInWindow` (vendor + person
+  denormalised), `getNowAndNext` (per-stage live + next, slot windows
+  that wrap midnight handled), `getArrivalsToday` (inbound flights with
+  linked-pickup status surfaced), `getCurrentlyActiveBookings` (edition
+  scope via room-block join, walk-up bookings included).
+  All pure functions with mocked-DB tests (lazy-queue mock pattern in
+  `tests/unit/aggregators.test.ts`). 19 aggregator tests.
+  Edit-flow gaps fixed:
+  - Slots are now editable in-place via the lineup grid (click the
+    time label to open `SlotDialog` in edit mode); previously you
+    could only delete + recreate, losing attached sets.
+  - Riders gained a full edit page at `/riders/[id]` (was inline-only:
+    confirmed-toggle + delete).
+  354 tests green (was 335). Probed: ran `npm run check` - clean.
 - 2026-05-05 — Phase 2.65: Documents API + Vercel Blob proxy.
   `src/lib/documents/{schema,repo,blob}.ts` + `/api/documents` POST
   (multipart upload, max 25MB, PDF + image MIME types only) and

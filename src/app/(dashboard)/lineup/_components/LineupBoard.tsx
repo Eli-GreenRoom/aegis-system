@@ -10,7 +10,7 @@ import type {
   Day,
   SetStatus,
 } from "@/lib/lineup/schema";
-import type { StageWithSlots, SetWithArtist } from "@/lib/lineup/repo";
+import type { Slot, StageWithSlots, SetWithArtist } from "@/lib/lineup/repo";
 
 interface ArtistOption {
   id: string;
@@ -45,6 +45,7 @@ const STATUS_CLASSES: Record<SetStatus, string> = {
 export default function LineupBoard({ day, grid, artists }: Props) {
   const router = useRouter();
   const [addSlotForStage, setAddSlotForStage] = useState<string | null>(null);
+  const [editSlot, setEditSlot] = useState<Slot | null>(null);
   const [addSetForSlot, setAddSetForSlot] = useState<string | null>(null);
   const [editSet, setEditSet] = useState<SetWithArtist | null>(null);
   const [busy, setBusy] = useState(false);
@@ -116,9 +117,12 @@ export default function LineupBoard({ day, grid, artists }: Props) {
                   className="border border-[--color-border-subtle] rounded-md p-2"
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-mono text-[12px] text-[--color-fg]">
+                    <button
+                      onClick={() => setEditSlot(slot)}
+                      className="text-mono text-[12px] text-[--color-fg] hover:text-brand"
+                    >
                       {slot.startTime} - {slot.endTime}
-                    </span>
+                    </button>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setAddSetForSlot(slot.id)}
@@ -181,7 +185,8 @@ export default function LineupBoard({ day, grid, artists }: Props) {
       </div>
 
       {addSlotForStage && (
-        <AddSlotDialog
+        <SlotDialog
+          mode="add"
           stageId={addSlotForStage}
           day={day}
           stageName={
@@ -190,6 +195,18 @@ export default function LineupBoard({ day, grid, artists }: Props) {
           onClose={() => setAddSlotForStage(null)}
           onSaved={() => {
             setAddSlotForStage(null);
+            router.refresh();
+          }}
+        />
+      )}
+
+      {editSlot && (
+        <SlotDialog
+          mode="edit"
+          slot={editSlot}
+          onClose={() => setEditSlot(null)}
+          onSaved={() => {
+            setEditSlot(null);
             router.refresh();
           }}
         />
@@ -250,21 +267,29 @@ function Dialog({
   );
 }
 
-function AddSlotDialog({
-  stageId,
-  day,
-  stageName,
-  onClose,
-  onSaved,
-}: {
-  stageId: string;
-  day: Day;
-  stageName: string;
-  onClose: () => void;
-  onSaved: () => void;
-}) {
-  const [startTime, setStartTime] = useState("22:00");
-  const [endTime, setEndTime] = useState("23:30");
+type SlotDialogProps =
+  | {
+      mode: "add";
+      stageId: string;
+      day: Day;
+      stageName: string;
+      onClose: () => void;
+      onSaved: () => void;
+    }
+  | {
+      mode: "edit";
+      slot: Slot;
+      onClose: () => void;
+      onSaved: () => void;
+    };
+
+function SlotDialog(props: SlotDialogProps) {
+  const isEdit = props.mode === "edit";
+  const initialStart = isEdit ? props.slot.startTime : "22:00";
+  const initialEnd = isEdit ? props.slot.endTime : "23:30";
+
+  const [startTime, setStartTime] = useState(initialStart);
+  const [endTime, setEndTime] = useState(initialEnd);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -272,24 +297,43 @@ function AddSlotDialog({
     e.preventDefault();
     setError("");
     setSaving(true);
-    const res = await fetch("/api/slots", {
-      method: "POST",
+
+    const url = isEdit ? `/api/slots/${props.slot.id}` : "/api/slots";
+    const method = isEdit ? "PATCH" : "POST";
+    const body = isEdit
+      ? { startTime, endTime }
+      : {
+          stageId: props.stageId,
+          day: props.day,
+          startTime,
+          endTime,
+        };
+
+    const res = await fetch(url, {
+      method,
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ stageId, day, startTime, endTime }),
+      body: JSON.stringify(body),
     });
     setSaving(false);
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Couldn't save.");
+      const responseBody = await res.json().catch(() => ({}));
+      setError(responseBody.error ?? "Couldn't save.");
       return;
     }
-    onSaved();
+    props.onSaved();
   }
 
+  const title = isEdit
+    ? `Edit slot · ${props.slot.startTime}-${props.slot.endTime}`
+    : `New slot · ${props.stageName}`;
+  const subtitle = isEdit ? props.slot.day : props.day;
+
   return (
-    <Dialog title={`New slot - ${stageName}`} onClose={onClose}>
+    <Dialog title={title} onClose={props.onClose}>
       <form onSubmit={submit} className="space-y-4">
-        <p className="text-[12px] text-[--color-fg-muted] capitalize">{day}</p>
+        <p className="text-[12px] text-[--color-fg-muted] capitalize">
+          {subtitle}
+        </p>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Start</Label>
@@ -315,9 +359,14 @@ function AddSlotDialog({
         {error && <p className="text-xs text-coral">{error}</p>}
         <div className="flex items-center gap-2 pt-1">
           <Button type="submit" disabled={saving}>
-            {saving ? "Saving" : "Add"}
+            {saving ? "Saving" : isEdit ? "Save" : "Add"}
           </Button>
-          <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={props.onClose}
+            disabled={saving}
+          >
             Cancel
           </Button>
         </div>

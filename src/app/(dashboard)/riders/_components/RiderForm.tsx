@@ -10,14 +10,27 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/ui/FileUpload";
 import type { Artist } from "@/lib/artists/repo";
+import type { Rider } from "@/lib/riders/repo";
 
 interface Props {
   artists: Artist[];
+  rider?: Rider;
 }
 
-export default function RiderForm({ artists }: Props) {
+function toDtLocal(d: Date | string | null | undefined): string {
+  if (!d) return "";
+  const date = typeof d === "string" ? new Date(d) : d;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate()
+  )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export default function RiderForm({ artists, rider }: Props) {
   const router = useRouter();
+  const isEdit = !!rider;
   const [serverError, setServerError] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const {
     register,
@@ -27,18 +40,20 @@ export default function RiderForm({ artists }: Props) {
   } = useForm<RiderInput>({
     resolver: zodResolver(riderInputSchema),
     defaultValues: {
-      artistId: artists[0]?.id ?? "",
-      kind: "hospitality",
-      fileUrl: "",
-      receivedAt: "",
-      confirmed: false,
+      artistId: rider?.artistId ?? artists[0]?.id ?? "",
+      kind: rider?.kind ?? "hospitality",
+      fileUrl: rider?.fileUrl ?? "",
+      receivedAt: toDtLocal(rider?.receivedAt ?? null),
+      confirmed: rider?.confirmed ?? false,
     },
   });
 
   async function onSubmit(data: RiderInput) {
     setServerError("");
-    const res = await fetch("/api/riders", {
-      method: "POST",
+    const url = isEdit ? `/api/riders/${rider!.id}` : "/api/riders";
+    const method = isEdit ? "PATCH" : "POST";
+    const res = await fetch(url, {
+      method,
       headers: { "content-type": "application/json" },
       body: JSON.stringify(data),
     });
@@ -49,6 +64,20 @@ export default function RiderForm({ artists }: Props) {
       return;
     }
 
+    router.push("/riders");
+    router.refresh();
+  }
+
+  async function onDelete() {
+    if (!rider) return;
+    if (!confirm("Delete this rider? This is permanent.")) return;
+    setDeleting(true);
+    const res = await fetch(`/api/riders/${rider.id}`, { method: "DELETE" });
+    setDeleting(false);
+    if (!res.ok) {
+      setServerError("Couldn't delete.");
+      return;
+    }
     router.push("/riders");
     router.refresh();
   }
@@ -120,7 +149,7 @@ export default function RiderForm({ artists }: Props) {
 
       <div className="flex items-center gap-3 pt-2">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving" : "Create"}
+          {isSubmitting ? "Saving" : isEdit ? "Save" : "Create"}
         </Button>
         <Button
           type="button"
@@ -130,6 +159,17 @@ export default function RiderForm({ artists }: Props) {
         >
           Cancel
         </Button>
+        <div className="flex-1" />
+        {isEdit && (
+          <Button
+            type="button"
+            variant="danger"
+            onClick={onDelete}
+            disabled={deleting}
+          >
+            {deleting ? "Deleting" : "Delete"}
+          </Button>
+        )}
       </div>
     </form>
   );

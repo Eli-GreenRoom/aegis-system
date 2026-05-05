@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import type { Route } from "next";
 import { format } from "date-fns";
 import type { Rider } from "@/lib/riders/repo";
 
@@ -119,6 +121,12 @@ export default function RidersTable({ riders, artistsById }: Props) {
                   </button>
                 </td>
                 <td className="px-4 py-2 text-right whitespace-nowrap">
+                  <Link
+                    href={`/riders/${r.id}` as Route}
+                    className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-brand mr-3"
+                  >
+                    edit
+                  </Link>
                   <button
                     onClick={() => deleteRider(r.id)}
                     disabled={busyId === r.id}
