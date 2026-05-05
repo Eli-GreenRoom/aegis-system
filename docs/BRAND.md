@@ -43,20 +43,34 @@ out of your way.
 
 ## Palette (locked)
 
+The ops dashboard runs on a **neutral dark** canvas, not the brand-book
+indigo. The marketing surfaces own indigo; the back-office stays out of
+its way during a long shift. Brand accents (gold, coral, mint, cream)
+do all the colour-carrying. Brand indigo is still in the palette but
+reserved for blueprint motifs / exports / hero headers — never the
+page background.
+
 | Role | Hex | Token | Used for |
 |---|---|---|---|
-| Background | `#150A48` | `--color-bg` | Page background. Slightly deeper than brand-book indigo for screen comfort. |
-| Brand indigo | `#1B0E5C` | `--color-brand-indigo` | The book's hero indigo — exports, hero headers if needed |
-| Surface | `#1D1158` | `--color-surface` | Card, panel |
-| Surface raised | `#271968` | `--color-surface-raised` | Popover, dropdown, selected row |
-| Overlay | `#2F2078` | `--color-surface-overlay` | Modal, dialog scrim base |
+| Background | `#0E0E10` | `--color-bg` | Page background. Near-black with a hair of warmth — not pure `#000`, which causes glare/halation against light text on OLED. |
+| Surface | `#15151A` | `--color-surface` | Card, panel, sidebar |
+| Surface raised | `#1F1F25` | `--color-surface-raised` | Popover, dropdown, selected row, hover |
+| Overlay | `#25252C` | `--color-surface-overlay` | Modal scrim base |
+| Brand indigo | `#1B0E5C` | `--color-brand-indigo` | Marketing-style surfaces only (auth blueprint motif, PDF exports). NOT the app background. |
 | Cream | `#FAF3EC` | `--color-brand-cream` | Inverse surfaces — print, PDF, exports |
 | Gold | `#E5B85A` | `--color-brand` | Primary CTA, highlights, warning state, Main Stage chip |
 | Coral | `#E73E54` | `--color-brand-coral` | Destructive, urgent, overdue, danger |
 | Mint | `#16D060` | `--color-brand-mint` | Success, paid, confirmed, landed |
-| Text | `#F3EDF9` | `--color-fg` | Body |
-| Text muted | `#B0A8D4` | `--color-fg-muted` | Secondary labels |
-| Text subtle | `#7A72A3` | `--color-fg-subtle` | Captions, timestamps in lists |
+| Text | `#ECECEE` | `--color-fg` | Body. ~92 % luma off-white — sharper for long sessions than pure `#FFF`. |
+| Text muted | `#A8A8B0` | `--color-fg-muted` | Secondary labels |
+| Text subtle | `#6E6E78` | `--color-fg-subtle` | Captions, timestamps in lists |
+
+**Why neutral dark and not indigo:** the brand book's indigo canvas is
+beautiful for a poster but exhausting on a 13-hour ops shift. Pure black
+is worse — high-contrast white-on-black causes halation. The neutral
+near-black + off-white split is the standard for terminals and editors
+(VS Code, Linear, Things) for a reason. Brand identity comes from the
+gold accent and the typography; the canvas is just a stage.
 
 **Stage chips** (use only on the stage badge/filter):
 
@@ -176,3 +190,11 @@ Pages worth re-reading when in doubt:
   Tailwind `red-500` / `green-500` are forbidden.
 - 2026-05-04 — `Newsreader` from Google Fonts as the display family. Free,
   reasonable match to brand-book serif.
+- 2026-05-05 — **Switched the app canvas from brand indigo to neutral
+  dark.** Background `#0E0E10`, surfaces `#15151A` / `#1F1F25` / `#25252C`,
+  text `#ECECEE` / `#A8A8B0` / `#6E6E78`. Indigo retained as
+  `--color-brand-indigo` for marketing surfaces (auth blueprint motif,
+  PDF exports). Reason: indigo on screen for a 13h ops shift is
+  exhausting; pure black is worse (halation). Brand identity now carried
+  entirely by the gold accent, the Newsreader display, and the typography
+  system. AGENT.md sec 3 updated.

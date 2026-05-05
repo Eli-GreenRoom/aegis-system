@@ -23,6 +23,10 @@ const optionalHexColor = z
   ])
   .optional();
 
+const optionalUrl = z
+  .union([z.literal(""), z.string().trim().url("must be a valid URL")])
+  .optional();
+
 /**
  * Form-side schema. Strings can be empty; nothing transforms to null.
  * The route handler converts empty strings to null before writing to DB.
@@ -46,6 +50,8 @@ export const artistInputSchema = z.object({
   color: optionalHexColor,
   local: z.boolean().optional(),
   visaStatus: optionalString,
+  pressKitUrl: optionalUrl,
+  passportFileUrl: optionalUrl,
   comments: z.string().trim().max(4000).optional().or(z.literal("")),
 });
 
@@ -78,6 +84,8 @@ export interface ArtistDbValues {
   color: string | null;
   local: boolean;
   visaStatus: string | null;
+  pressKitUrl: string | null;
+  passportFileUrl: string | null;
   comments: string | null;
 }
 
@@ -92,6 +100,8 @@ const NULLABLE_FIELDS = [
   "soundcloud",
   "color",
   "visaStatus",
+  "pressKitUrl",
+  "passportFileUrl",
   "comments",
 ] as const;
 
@@ -130,6 +140,8 @@ export function toDbValues(input: ArtistInput): ArtistDbValues {
     soundcloud: null,
     color: null,
     visaStatus: null,
+    pressKitUrl: null,
+    passportFileUrl: null,
     comments: null,
   };
   for (const k of NULLABLE_FIELDS) {

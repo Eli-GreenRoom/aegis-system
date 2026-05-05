@@ -192,6 +192,37 @@ describe("POST /api/artists", () => {
     const res = await createPOST(req);
     expect(res.status).toBe(400);
   });
+
+  it("accepts pressKitUrl + passportFileUrl as URLs", async () => {
+    const res = await createPOST(
+      jsonReq("http://test/api/artists", "POST", {
+        ...validInput,
+        slug: "hiroko-presskit",
+        pressKitUrl: "https://drive.google.com/abc",
+        passportFileUrl: "https://example.com/passport.pdf",
+      })
+    );
+    expect(res.status).toBe(201);
+    expect(mocks.repo.createArtist).toHaveBeenCalledWith(
+      FIXTURE_EDITION_ID,
+      expect.objectContaining({
+        pressKitUrl: "https://drive.google.com/abc",
+        passportFileUrl: "https://example.com/passport.pdf",
+      })
+    );
+  });
+
+  it("rejects malformed pressKitUrl", async () => {
+    const res = await createPOST(
+      jsonReq("http://test/api/artists", "POST", {
+        ...validInput,
+        pressKitUrl: "not a url",
+      })
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.issues.fieldErrors.pressKitUrl).toBeDefined();
+  });
 });
 
 // ── /api/artists/[id] ────────────────────────────────────────────────────
@@ -327,6 +358,20 @@ describe("PATCH /api/artists/[id]", () => {
     );
     expect(mocks.repo.updateArtist).toHaveBeenCalledWith(FIXTURE_ARTIST_ID, {
       agency: null,
+    });
+  });
+
+  it("partial PATCH sets pressKitUrl and clears passportFileUrl", async () => {
+    await onePATCH(
+      jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "PATCH", {
+        pressKitUrl: "https://drive.google.com/x",
+        passportFileUrl: "",
+      }),
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+    );
+    expect(mocks.repo.updateArtist).toHaveBeenCalledWith(FIXTURE_ARTIST_ID, {
+      pressKitUrl: "https://drive.google.com/x",
+      passportFileUrl: null,
     });
   });
 });

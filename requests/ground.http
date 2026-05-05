@@ -1,0 +1,127 @@
+### Aegis ground API — vendors + pickups
+### Run with REST Client extension. Replace cookie after sign-in.
+
+@host = http://localhost:3000
+@cookie = better-auth.session_token=...replace_after_signin...
+@personId = REPLACE_WITH_ARTIST_OR_CREW_ID
+
+### ── Vendors (global, no edition scoping) ──────────────────────────
+
+### List vendors
+GET {{host}}/api/vendors
+Cookie: {{cookie}}
+
+### Create vendor — success
+POST {{host}}/api/vendors
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "name": "Byblos Taxi",
+  "service": "Taxi",
+  "contactName": "Joseph",
+  "contactEmail": "joseph@example.com",
+  "contactPhone": "+961 1 234567"
+}
+
+### Create vendor — failure: missing service
+POST {{host}}/api/vendors
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "name": "X" }
+
+### Get vendor
+@vendorId = REPLACE_WITH_VENDOR_ID
+GET {{host}}/api/vendors/{{vendorId}}
+Cookie: {{cookie}}
+
+### Update vendor — partial
+PATCH {{host}}/api/vendors/{{vendorId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "contactPhone": "+961 1 999999" }
+
+### Delete vendor
+DELETE {{host}}/api/vendors/{{vendorId}}
+Cookie: {{cookie}}
+
+### ── Pickups (per edition) ────────────────────────────────────────
+
+### List pickups
+GET {{host}}/api/pickups
+Cookie: {{cookie}}
+
+### Filter: airport runs only
+GET {{host}}/api/pickups?routeFrom=airport
+Cookie: {{cookie}}
+
+### Filter by status + vendor
+GET {{host}}/api/pickups?status=scheduled&vendorId={{vendorId}}
+Cookie: {{cookie}}
+
+### Create pickup — success
+POST {{host}}/api/pickups
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "personKind": "artist",
+  "personId": "{{personId}}",
+  "routeFrom": "airport",
+  "routeFromDetail": "Beirut, Terminal A",
+  "routeTo": "hotel",
+  "routeToDetail": "Byblos Sur Mer",
+  "pickupDt": "2026-08-13T15:00:00Z",
+  "vehicleType": "Sedan",
+  "vendorId": "{{vendorId}}",
+  "driverName": "Sami",
+  "driverPhone": "+961 1 234567",
+  "costAmountCents": 8000,
+  "costCurrency": "USD",
+  "status": "scheduled"
+}
+
+### Create pickup — failure: bad route enum
+POST {{host}}/api/pickups
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "personKind": "artist",
+  "personId": "{{personId}}",
+  "routeFrom": "moon",
+  "routeTo": "hotel",
+  "pickupDt": "2026-08-13T15:00:00Z"
+}
+
+### Get pickup
+@pickupId = REPLACE_WITH_PICKUP_ID
+GET {{host}}/api/pickups/{{pickupId}}
+Cookie: {{cookie}}
+
+### Patch — partial: mark dispatched
+PATCH {{host}}/api/pickups/{{pickupId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "status": "dispatched" }
+
+### Patch — partial: clear vendorId
+PATCH {{host}}/api/pickups/{{pickupId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "vendorId": "" }
+
+### Patch — empty body (400)
+PATCH {{host}}/api/pickups/{{pickupId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{}
+
+### Delete pickup
+DELETE {{host}}/api/pickups/{{pickupId}}
+Cookie: {{cookie}}

@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, isNotNull, ilike, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, isNotNull, ilike, or, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { artists } from "@/db/schema";
 import type { ArtistDbValues } from "./schema";
@@ -62,6 +62,29 @@ export async function getArtist(id: string): Promise<Artist | null> {
     .where(eq(artists.id, id))
     .limit(1);
   return row ?? null;
+}
+
+/**
+ * Fetch many artists by id. Used by the public /share/press page so the
+ * share link can target a specific subset. Filters to the given edition
+ * + non-archived only.
+ */
+export async function listArtistsByIds(
+  editionId: string,
+  ids: string[]
+): Promise<Artist[]> {
+  if (ids.length === 0) return [];
+  return db
+    .select()
+    .from(artists)
+    .where(
+      and(
+        eq(artists.editionId, editionId),
+        isNull(artists.archivedAt),
+        inArray(artists.id, ids)
+      )
+    )
+    .orderBy(asc(artists.name));
 }
 
 export async function getArtistBySlug(

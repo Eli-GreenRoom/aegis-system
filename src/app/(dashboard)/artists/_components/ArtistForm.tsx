@@ -47,6 +47,8 @@ export default function ArtistForm({ artist }: Props) {
       color: artist?.color ?? "",
       local: artist?.local ?? false,
       visaStatus: artist?.visaStatus ?? "",
+      pressKitUrl: artist?.pressKitUrl ?? "",
+      passportFileUrl: artist?.passportFileUrl ?? "",
       comments: artist?.comments ?? "",
     },
   });
@@ -146,6 +148,20 @@ export default function ArtistForm({ artist }: Props) {
         </Field>
         <Field label="Visa status" error={errors.visaStatus?.message}>
           <Input {...register("visaStatus")} autoComplete="off" />
+        </Field>
+        <Field label="Press kit URL" error={errors.pressKitUrl?.message}>
+          <Input
+            {...register("pressKitUrl")}
+            placeholder="https://drive.google.com/..."
+            autoComplete="off"
+          />
+        </Field>
+        <Field label="Passport file URL" error={errors.passportFileUrl?.message}>
+          <Input
+            {...register("passportFileUrl")}
+            placeholder="https://..."
+            autoComplete="off"
+          />
         </Field>
       </div>
 

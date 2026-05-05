@@ -1,25 +1,31 @@
 /* Aegis System — design tokens
- * Aligned to the Aegis brand book (Hammerspace, Feb 2026).
- * Locked. Don't add or change without updating AGENT.md §3 first.
+ * Aligned to the Aegis brand book (Hammerspace, Feb 2026), but the ops
+ * dashboard runs on a *neutral dark* canvas instead of the brand-book
+ * indigo. The marketing surfaces own indigo; the back-office stays out
+ * of its way at 3am during festival weekend. Brand accents (gold,
+ * coral, mint, cream) are kept and do all the colour-carrying.
  *
- * Philosophy for the ops dashboard: brand-aligned but restrained.
- * The brand book is for the festival's outward face; this app is the back
- * office. Use the palette, keep the density operator-grade, no marketing
- * flourish. Serif only for the wordmark and page H1 — never body or data.
+ * Eye-friendly choices:
+ *   - Background is `#0e0e10` (near-black with a hair of warmth) — not
+ *     pure `#000` because pure black + light text causes more glare and
+ *     halation, especially on OLED.
+ *   - Text is `#ECECEE` not `#FFFFFF` — pure white at full opacity on
+ *     pure black is what tires eyes; ~92 % luminance reads sharper for
+ *     longer.
+ *   - Borders are *very* low-alpha white (8 / 6 / 18) so they sit just
+ *     above the surface without competing with data.
+ *
+ * Locked. Don't add or change without updating AGENT.md §3 first.
  */
 
 @theme {
-  /* ── Brand palette ─────────────────────────────────────────────────── */
-  /* Deep indigo — the brand canvas. */
-  --color-brand-indigo: #1b0e5c;
-  --color-brand-indigo-deep: #150a48;       /* one step darker for app bg */
-
+  /* ── Brand accents (kept from the brand book) ────────────────────── */
   /* Cream — used on inverse surfaces (light cards, print, exports). */
   --color-brand-cream: #faf3ec;
 
-  /* Warm gold — primary accent (kept from prior spec, matches brand). */
+  /* Warm gold — primary accent. */
   --color-brand: #e5b85a;
-  --color-brand-fg: #150a48;                /* indigo on gold reads better than black */
+  --color-brand-fg: #0e0e10;                /* near-black on gold */
 
   /* Coral — tension / urgent / destructive. From "HOWEVER" page. */
   --color-brand-coral: #e73e54;
@@ -27,39 +33,43 @@
   /* Mint — momentum / success. From "OF THIS LAND" poster. */
   --color-brand-mint: #16d060;
 
-  /* ── Surfaces (dark mode is default) ───────────────────────────────── */
-  --color-bg:              #150a48;         /* deepest indigo, page bg */
-  --color-surface:         #1d1158;         /* card surface */
-  --color-surface-raised:  #271968;         /* raised card / popover */
-  --color-surface-overlay: #2f2078;         /* modal / overlay */
+  /* Brand indigo retained for marketing-style surfaces (auth screen
+   * blueprint motif, exports, hero headers if needed). NOT the page bg. */
+  --color-brand-indigo:      #1b0e5c;
+  --color-brand-indigo-deep: #150a48;
 
-  /* ── Text on dark ──────────────────────────────────────────────────── */
-  --color-fg:        #f3edf9;               /* high-contrast white-violet */
-  --color-fg-muted:  #b0a8d4;               /* secondary */
-  --color-fg-subtle: #7a72a3;               /* tertiary, captions */
+  /* ── Surfaces (neutral dark) ───────────────────────────────────── */
+  --color-bg:              #0e0e10;         /* page background */
+  --color-surface:         #15151a;         /* card surface */
+  --color-surface-raised:  #1f1f25;         /* raised card / popover / hover */
+  --color-surface-overlay: #25252c;         /* modal scrim base */
 
-  /* ── Borders ───────────────────────────────────────────────────────── */
-  --color-border:        rgba(243, 237, 249, 0.10);
-  --color-border-subtle: rgba(243, 237, 249, 0.06);
-  --color-border-strong: rgba(243, 237, 249, 0.18);
+  /* ── Text on dark ──────────────────────────────────────────────── */
+  --color-fg:        #ececee;               /* primary, ~92% luma off-white */
+  --color-fg-muted:  #a8a8b0;               /* secondary */
+  --color-fg-subtle: #6e6e78;               /* tertiary, captions */
 
-  /* ── Status ────────────────────────────────────────────────────────── */
-  /* Map to brand colors, not generic Tailwind hues. */
+  /* ── Borders ───────────────────────────────────────────────────── */
+  --color-border:        rgba(236, 236, 238, 0.08);
+  --color-border-subtle: rgba(236, 236, 238, 0.06);
+  --color-border-strong: rgba(236, 236, 238, 0.18);
+
+  /* ── Status (always brand colours, never generic Tailwind hues) ── */
   --color-success: var(--color-brand-mint);
   --color-warning: var(--color-brand);       /* gold doubles as warning */
   --color-danger:  var(--color-brand-coral);
-  --color-info:    #7c9eff;
+  --color-info:    #7c9eff;                  /* alt-stage blue, used sparingly */
 
-  /* ── Stages (used sparingly — only on stage chips/badges) ──────────── */
+  /* ── Stages (used sparingly — only on stage chips/badges) ──────── */
   --color-stage-main: var(--color-brand);     /* gold */
   --color-stage-alt:  #7c9eff;                /* blue */
-  --color-stage-pool: #a78bfa;                /* violet */
+  --color-stage-pool: #a78bfa;                /* violet — kept on chip only */
   --color-stage-coll: #f472b6;                /* pink */
 
-  /* ── Radius ────────────────────────────────────────────────────────── */
+  /* ── Radius ────────────────────────────────────────────────────── */
   --radius-md: 8px;                           /* only radius used */
 
-  /* ── Fonts ─────────────────────────────────────────────────────────── */
+  /* ── Fonts ─────────────────────────────────────────────────────── */
   /* Geist Sans for body/UI, Geist Mono for numbers/dates/flight numbers,
    * Newsreader (Google Fonts) for the wordmark + page H1 ONLY. */
   --font-sans:    var(--font-geist-sans);

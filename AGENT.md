@@ -66,17 +66,27 @@ Full rationale: `docs/BRAND.md`. Tokens: `src/styles/tokens.css`.
 
 ### Palette
 
-- **Background (page):** `#150A48` (deep indigo). The brand canvas, slightly
-  deeper than the brand book's hero indigo for screen comfort.
-- **Surface:** `#1D1158`  **Surface raised:** `#271968`  **Overlay:** `#2F2078`
+The ops dashboard runs on a **neutral dark** canvas (not brand indigo).
+Indigo is reserved for marketing surfaces — auth blueprint motif, PDF
+exports, hero headers if needed. Brand accents (gold / coral / mint /
+cream) carry all the colour.
+
+- **Background (page):** `#0E0E10` (near-black, hint of warmth — not
+  pure `#000`, which causes glare/halation against light text).
+- **Surface:** `#15151A`  **Surface raised:** `#1F1F25`  **Overlay:** `#25252C`
 - **Brand accent (gold):** `#E5B85A` — primary call-to-action, highlights,
   warning state. Aliases `text-brand`, `bg-brand`, `border-brand`.
 - **Coral:** `#E73E54` — destructive / urgent / overdue. Alias `text-coral`.
 - **Mint:** `#16D060` — success / paid / confirmed. Alias `text-mint`.
 - **Cream:** `#FAF3EC` — inverse surfaces (print, exports, light cards only).
   Aliases `bg-cream`, `text-cream`.
-- **Text:** `#F3EDF9` (high contrast), `#B0A8D4` muted, `#7A72A3` subtle.
-- **Borders:** `rgba(243,237,249,0.10)` standard, `0.06` subtle, `0.18` strong.
+- **Text:** `#ECECEE` (~92 % luma off-white), `#A8A8B0` muted, `#6E6E78` subtle.
+- **Borders:** `rgba(236,236,238,0.08)` standard, `0.06` subtle, `0.18` strong.
+
+Why not pure black + white: full-contrast hurts in long sessions —
+halation, eye fatigue. Why not the brand-book indigo: beautiful for a
+poster, exhausting for a 13-hour ops shift. Brand identity comes from
+the gold accent and Newsreader display; the canvas is just a stage.
 
 **Status mapping:** `success → mint`, `warning → gold`, `danger → coral`.
 Don't use generic Tailwind `red-500` / `green-500`.

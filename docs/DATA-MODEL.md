@@ -100,6 +100,8 @@ A specific artist's performance.
 | local | boolean | local Lebanese artist (different fee/payment rules) |
 | comments | text | |
 | visa_status | enum | `not_needed` / `pending` / `approved` / `rejected` |
+| press_kit_url | text | optional. external URL (Dropbox/Drive/site) OR a Blob proxy URL after upload. opaque URL to the app. |
+| passport_file_url | text | optional. private Blob proxy URL. Upload goes through the documents API with `entityType='artist' + tags=['passport']` for audit; this column denormalises the latest URL for quick display. |
 
 ### `crew`
 | col | type | notes |

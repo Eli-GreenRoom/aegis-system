@@ -15,6 +15,13 @@
       "when": 1777924979769,
       "tag": "0002_crew_drop_stages_rate",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777995423077,
+      "tag": "0003_artist_press_kit_passport",
+      "breakpoints": true
     }
   ]
 }

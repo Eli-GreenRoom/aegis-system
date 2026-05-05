@@ -1,0 +1,95 @@
+### Aegis flights API
+### Run with REST Client extension. Replace cookie after sign-in.
+
+@host = http://localhost:3000
+@cookie = better-auth.session_token=...replace_after_signin...
+@personId = REPLACE_WITH_ARTIST_OR_CREW_ID
+
+### List
+GET {{host}}/api/flights
+Cookie: {{cookie}}
+
+### List filtered: arrivals only
+GET {{host}}/api/flights?direction=inbound
+Cookie: {{cookie}}
+
+### List filtered: by person
+GET {{host}}/api/flights?personKind=artist&personId={{personId}}
+Cookie: {{cookie}}
+
+### Search by flight number / airline / airport / PNR
+GET {{host}}/api/flights?search=ME202
+Cookie: {{cookie}}
+
+### Create — success
+# @name createFlight
+POST {{host}}/api/flights
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "personKind": "artist",
+  "personId": "{{personId}}",
+  "direction": "inbound",
+  "fromAirport": "CDG",
+  "toAirport": "BEY",
+  "airline": "MEA",
+  "flightNumber": "ME202",
+  "scheduledDt": "2026-08-13T14:30:00Z",
+  "status": "scheduled",
+  "pnr": "ABC123",
+  "seat": "14A"
+}
+
+### Create — failure: bad direction
+POST {{host}}/api/flights
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "personKind": "artist",
+  "personId": "{{personId}}",
+  "direction": "sideways"
+}
+
+### Create — failure: bad URL
+POST {{host}}/api/flights
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "personKind": "artist",
+  "personId": "{{personId}}",
+  "direction": "inbound",
+  "ticketUrl": "not a url"
+}
+
+### Get one
+@flightId = REPLACE_WITH_FLIGHT_ID
+GET {{host}}/api/flights/{{flightId}}
+Cookie: {{cookie}}
+
+### Patch — partial: just mark landed
+PATCH {{host}}/api/flights/{{flightId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "status": "landed" }
+
+### Patch — clear actualDt
+PATCH {{host}}/api/flights/{{flightId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{ "actualDt": "" }
+
+### Patch — empty body (400)
+PATCH {{host}}/api/flights/{{flightId}}
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{}
+
+### Delete
+DELETE {{host}}/api/flights/{{flightId}}
+Cookie: {{cookie}}

@@ -7,13 +7,13 @@
 
 ## Now
 
-- [ ] Phase 2.4 — Flights CRUD (arrival + departure legs per person, AI parse
-      stub deferred to Phase 4)
+- [ ] Phase 2.5 — Hotels (hotels + room blocks + bookings — needs Eli's
+      scope decisions; see notes in Phase 2 pattern memory)
 
 ## Next
 
-- [ ] Phase 2 remaining CRUD modules — Hotels, Ground, Payments, Riders,
-      Contracts, Guestlist, Documents
+- [ ] Phase 2 remaining CRUD modules — Payments, Riders, Contracts,
+      Guestlist, Documents
 - [ ] Stage / set status filters on /artists now that lineup ships
 - [ ] Drag-to-reorder slots within a stage column (currently sortOrder is
       stored but only respected on read)
@@ -29,6 +29,70 @@
 ---
 
 ## Done
+
+- 2026-05-05 — Artist press-kit + passport URL fields wired end-to-end.
+  Migration `0003_artist_press_kit_passport.sql` adds `press_kit_url` +
+  `passport_file_url` (both nullable text) and was applied to local Neon.
+  Zod `optionalUrl` validator added; both fields registered in
+  `artistInputSchema` + `ArtistDbValues` + nullable mappers. Form gained
+  two URL inputs at the bottom of the grid. Detail page shows `Press
+  kit` + `Passport file` rows as `open` links (target=_blank,
+  rel=noreferrer). 3 new tests cover happy URL accept, malformed URL
+  reject, and partial-PATCH set-one + clear-other. `npm run check` green
+  (132 tests).
+
+- 2026-05-05 — **Public press-kit share page** at `/share/press`. No auth
+  (lives outside `(dashboard)` group). Two modes: `/share/press` shows
+  every active artist on the current edition, `/share/press?artists=ID,ID`
+  shows a hand-picked subset. Page exposes only safe fields (name,
+  nationality, agency, color dot, instagram, soundcloud, pressKitUrl) —
+  never IDs, fees, contacts, passport URLs or comments. Instagram /
+  Soundcloud handles like `@hiroko` get auto-prefixed to the platform
+  URL. New `listArtistsByIds(editionId, ids)` repo helper, edition-scoped
+  + non-archived only so a stale share link can't leak archived data.
+  Picker UI: `ShareDialog` on `/artists` (next to "New artist") — search
+  filter, per-artist checkboxes, Select-All/None, copy-to-clipboard for
+  the URL. The dialog always shows the full active roster (not the
+  filtered table view) so a search/agency filter doesn't accidentally
+  restrict what you share. Live-probed: page renders 200 with no
+  cookie, displays Hiroko + her press-kit Drive link + Instagram +
+  Soundcloud + edition name.
+
+- 2026-05-05 — Phase 2.6: Ground shipped (vendors + pickups). Vendors are
+  global (no edition scoping) — separate `/ground/vendors` admin sub-page
+  with inline modal create/edit/delete. Pickups are edition-scoped, link
+  via polymorphic `personKind/personId` (artist|crew) and optional FKs to
+  vendor + flight. Two route enums: `routeFrom` and `routeTo` (airport /
+  hotel / stage / other) with detail strings for "Beirut, Terminal A"
+  style notes. `/ground` list filters by status, routeFrom, routeTo,
+  vendor; search across driver/phone/vehicle/route detail. Form has
+  combined `kind:id` person picker (same trick as flights), datetime-local
+  with `step={60}` for pickup time, USD/EUR currency toggle. Detail page
+  links the linkedFlightId back to /flights/[id] when set. Tests: 23
+  cases in `tests/unit/ground.test.ts` (vendors + pickups across all 4
+  endpoints). `requests/ground.http` has 16 cases. **`npm run check`
+  green (lint + typecheck + 129 tests)**. Live-probed: created Byblos
+  Taxi vendor, scheduled Hiroko airport->hotel pickup with $80 cost,
+  partial PATCH to dispatched preserved driver/cost, vendor filter
+  returns 1, all 5 pages render 200, `/ground` HTML shows Hiroko +
+  Byblos Taxi + Sami + Sedan + dispatched.
+
+- 2026-05-04 — Phase 2.4: Flights CRUD shipped. Polymorphic `personKind`
+  (artist|crew) + `personId` lets one row reference either roster table.
+  New `src/lib/people.ts` helpers: `listPeople(editionId)` for the
+  picker, `getPerson(kind, id)` for detail pages, `resolvePeople(pairs)`
+  for bulk join in the table (two queries instead of N+1). Form uses a
+  combined `kind:id` dropdown that drives two hidden RHF inputs. List
+  page filters by direction (Arrivals/Departures), status (6 enum
+  values), search across flight no / airline / from / to / PNR. Time
+  inputs `step={60}` for 1-minute granularity, datetime-local converted
+  to UTC ISO before sending. Tests: 18 cases in `tests/unit/flights.test.ts`
+  cover happy + auth-fail + bad direction/url/datetime + 404 + partial
+  PATCH + empty-string clears nullable. **`npm run check` green
+  (lint + typecheck + 106 tests)**. Live-probed: created Hiroko's
+  CDG-BEY MEA ME202 inbound, partial PATCH to landed + actualDt while
+  preserving airline/pnr, search by ME202 returns 1, list page renders
+  Hiroko / ME202 / MEA / CDG / BEY / landed.
 
 - 2026-05-04 — Phase 2.3: Lineup builder shipped (Stages + Slots + Sets).
   Three tables, one screen. `getCurrentEdition()` now also seeds the four
@@ -157,3 +221,9 @@
   runs `npm run check` (lint + typecheck + vitest) on every push. "Done"
   requires green output, not "should be green". Playwright E2E deferred
   to Phase 2.5 once enough pages exist to test.
+- 2026-05-05 — artists: added optional `pressKitUrl` + `passportFileUrl`.
+  Press kit is an opaque URL (external link or our Blob); passport file is
+  a private Blob URL uploaded via the documents API with `entityType='artist'`
+  and `tags=['passport']` so the file has an audit trail. Both nullable.
+  Schema + DATA-MODEL.md updated; migration + form/Zod/detail/tests pending
+  in Phase 2.x.

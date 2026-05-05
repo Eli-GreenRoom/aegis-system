@@ -42,6 +42,8 @@ export default async function ArtistDetailPage({ params }: PageProps) {
           <Row label="Soundcloud" value={artist.soundcloud} />
           <Row label="Local" value={artist.local ? "yes" : "no"} />
           <Row label="Color" value={artist.color} mono />
+          <LinkRow label="Press kit" url={artist.pressKitUrl} />
+          <LinkRow label="Passport file" url={artist.passportFileUrl} />
           {artist.comments && (
             <div className="col-span-2">
               <dt className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted] mb-1">
@@ -72,6 +74,30 @@ function Row({
       </dt>
       <dd className={mono ? "text-mono text-[--color-fg]" : "text-[--color-fg]"}>
         {value ? value : <span className="text-[--color-fg-subtle]">-</span>}
+      </dd>
+    </div>
+  );
+}
+
+function LinkRow({ label, url }: { label: string; url: string | null }) {
+  return (
+    <div>
+      <dt className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted] mb-1">
+        {label}
+      </dt>
+      <dd>
+        {url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-brand underline-offset-4 hover:underline text-mono text-xs break-all"
+          >
+            open
+          </a>
+        ) : (
+          <span className="text-[--color-fg-subtle]">-</span>
+        )}
       </dd>
     </div>
   );

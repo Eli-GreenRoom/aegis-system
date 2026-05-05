@@ -186,6 +186,14 @@ export const artists = pgTable("artists", {
   local:            boolean("local").notNull().default(false),
   comments:         text("comments"),
   visaStatus:       text("visa_status"),
+  // Optional. External URL (Dropbox / Drive / artist site) OR a Vercel Blob
+  // proxy URL after upload. Treated as an opaque URL by the app.
+  pressKitUrl:      text("press_kit_url"),
+  // Optional. Private Vercel Blob proxy URL — uploads go through the
+  // documents API with `entityType='artist'` + `tags=['passport']` so the
+  // file has an audit trail; this column denormalises the latest URL for
+  // quick display on the artist record.
+  passportFileUrl:  text("passport_file_url"),
   createdAt:        timestamp("created_at").notNull().defaultNow(),
   archivedAt:       timestamp("archived_at"),
 });
