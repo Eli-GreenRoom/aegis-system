@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Capture Drizzle calls so we can stub `select(...).from(...).where(...)`
 // chains separately for the block-lookup query and the bookings query.
-const { selectMock, fromMock, whereMock, limitMock } = vi.hoisted(() => {
-  const limit = vi.fn();
-  const where = vi.fn(() => ({ limit }));
-  const from = vi.fn(() => ({ where }));
-  const select = vi.fn(() => ({ from }));
-  return { selectMock: select, fromMock: from, whereMock: where, limitMock: limit };
+// Typed as any so we can re-implement per-test with different return
+// shapes (block-lookup ends in .limit(); bookings list is awaited at
+// .where()) without fighting the hoisted vi.fn signature.
+const { selectMock } = vi.hoisted(() => {
+  const select = vi.fn() as ReturnType<typeof vi.fn>;
+  return { selectMock: select };
 });
 
 vi.mock("@/db/client", () => ({
@@ -29,10 +29,7 @@ vi.mock("@/db/schema", () => ({
 import { getBlockCapacity } from "@/lib/hotels/repo";
 
 beforeEach(() => {
-  selectMock.mockClear();
-  fromMock.mockClear();
-  whereMock.mockClear();
-  limitMock.mockClear();
+  selectMock.mockReset();
 });
 
 /**

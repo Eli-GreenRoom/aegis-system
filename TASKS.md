@@ -7,11 +7,14 @@
 
 ## Now
 
-- [ ] Phase 2.5 — Hotels (built on top of 2.5a's `label` field + `no_show`).
-      Block-and-assign model: book a count of rooms in a (hotel, edition,
-      room type) deal, assign individuals via `hotel_bookings`. Capacity
-      computed on read by counting overlapping bookings against
-      `roomsReserved`. Crew get separate blocks (use `label`).
+- [ ] Phase 2.65 — Documents API (Vercel Blob proxy). Build POST
+      `/api/documents` (private upload via `@vercel/blob`,
+      `entityType`/`entityId`/`tags` metadata into `documents` table) and
+      GET `/api/documents/[id]` (auth-checked proxy stream). Then
+      retrofit artist passport, crew passport, hotel-booking
+      confirmation, contract file, rider file, invoice file, payment
+      PoP — they all currently take a free-text URL. One uniform upload
+      pattern across the app.
 
 ## Next
 
@@ -37,6 +40,24 @@
 
 ## Done
 
+- 2026-05-05 — Phase 2.5: Hotels module shipped (3 resources, 57 tests).
+  `src/lib/hotels/{schema,repo}.ts` + 6 routes (`/api/hotels`,
+  `/api/room-blocks`, `/api/hotel-bookings` with their `[id]` siblings).
+  Booking PATCH wires through `recordTransition` from 2.5a stage 2 -
+  `booked → checked_in / checked_out / no_show / cancelled` all write
+  audit rows atomically via `db.batch`. Capacity is computed on read
+  via a sweep-line over booking date ranges (`getBlockCapacity`):
+  reserved / peakAssigned / free, with overbooked blocks reporting
+  negative free for UI flagging. Dashboard pages: hotels list with
+  per-hotel block + reserved-rooms aggregates; hotel detail with inline
+  room-blocks dialog + bookings table; flat /hotels/bookings list with
+  status / hotel / person / date-range filters. Booking form filters
+  blocks by selected hotel via `useWatch`. 218 tests green (was 161).
+  Probed: ran `npm run check` - clean. **Not yet wired:**
+  hotel-booking `confirmationUrl` is still a free-text URL field
+  (Phase 2.65 documents API will retrofit it alongside artist passport,
+  crew passport, contract, rider, invoice). Production migration not
+  applied (no schema changes in this phase - already done in 2.5a).
 - 2026-05-05 — Phase 2.5a stage 2: audit + transition helper.
   Added `src/lib/audit.ts` with `recordTransition(client, { actorId,
   entity, diff })` — returns an unawaited Drizzle insert builder so the

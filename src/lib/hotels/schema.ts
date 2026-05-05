@@ -183,37 +183,12 @@ const optionalUuid = z
   .union([z.literal(""), z.string().uuid()])
   .optional();
 
-export const hotelBookingInputSchema = z
-  .object({
-    hotelId: z.string().uuid(),
-    roomBlockId: optionalUuid,
-    personKind: personKindEnum,
-    personId: z.string().uuid(),
-    roomType: optionalString,
-    checkin: isoDate,
-    checkout: isoDate,
-    bookingNumber: optionalString,
-    creditsAmountCents: z
-      .number()
-      .int()
-      .min(0)
-      .max(1_000_000_00)
-      .nullable()
-      .optional(),
-    creditsCurrency: currencyEnum.optional().or(z.literal("")),
-    status: hotelBookingStatusEnum.optional(),
-    confirmationUrl: optionalUrl,
-    comments: optionalText,
-  })
-  .refine((v) => v.checkin <= v.checkout, {
-    message: "checkout must be on or after checkin",
-    path: ["checkout"],
-  });
-export type HotelBookingInput = z.infer<typeof hotelBookingInputSchema>;
-
-// Patch: take the unrefined base, .partial(), then re-apply the date check
-// only when both fields are present.
-const hotelBookingBase = z.object({
+/**
+ * Base object (unrefined) so callers like the booking form can `.omit(...)`
+ * fields and re-apply their own refinement. The exported `hotelBookingInputSchema`
+ * adds the date-order refinement on top.
+ */
+export const hotelBookingBaseSchema = z.object({
   hotelId: z.string().uuid(),
   roomBlockId: optionalUuid,
   personKind: personKindEnum,
@@ -235,7 +210,15 @@ const hotelBookingBase = z.object({
   comments: optionalText,
 });
 
-export const hotelBookingPatchSchema = hotelBookingBase
+export const hotelBookingInputSchema = hotelBookingBaseSchema.refine(
+  (v) => v.checkin <= v.checkout,
+  { message: "checkout must be on or after checkin", path: ["checkout"] }
+);
+export type HotelBookingInput = z.infer<typeof hotelBookingInputSchema>;
+
+// Patch: take the base, .partial(), then re-apply the date check only when
+// both fields are present.
+export const hotelBookingPatchSchema = hotelBookingBaseSchema
   .partial()
   .refine((v) => Object.keys(v).length > 0, {
     message: "Body must contain at least one field",
