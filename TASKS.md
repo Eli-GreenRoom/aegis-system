@@ -18,7 +18,6 @@
 
 ## Next
 
-- [ ] Phase 2.8 — Riders, Contracts, Guestlist, Documents (finish CRUD)
 - [ ] **Phase 2.9 — Aggregators** (`src/lib/aggregators/`): `getArtistRoadsheet`,
       `getOpenIssues`, `getPickupsInWindow`, `getNowAndNext`, `getArrivalsToday`,
       `getCurrentlyActiveBookings`. Each unit-tested with mocked DB. Powers
@@ -39,6 +38,22 @@
 
 ## Done
 
+- 2026-05-05 — Phase 2.8: Riders, Contracts, Guestlist modules shipped
+  (52 tests). Three CRUD modules from the same template:
+  `src/lib/{riders,contracts,guestlist}/{schema,repo}.ts` + 6 routes
+  + 3 dashboard pages each (list / new / detail). Contracts wires
+  status transitions through `recordTransition` (added contract path
+  to the audit channel - it was already in `AuditEntityType`); on
+  draft → sent it auto-stamps `sentAt` to server now() unless the
+  patch supplied one or `sentAt` was already set, same on
+  sent → signed for `signedAt`. Riders has no audit (just a
+  `confirmed` boolean toggled inline from the table). Guestlist has
+  inline `inviteSent` + `checkedIn` toggles plus a four-card summary
+  (total / pending invite / checked in / DJ guests breakdown via
+  `getGuestlistSummary`). 309 tests green (was 257). Probed:
+  ran `npm run check` - clean. **Not yet wired:** all three modules'
+  file URL fields are still free-text (Phase 2.65 documents API
+  retrofit). No production migration needed.
 - 2026-05-05 — Phase 2.7: Payments + Invoices module shipped (39 tests).
   `src/lib/payments/{schema,repo}.ts` + 4 routes (`/api/invoices`,
   `/api/payments` with `[id]` siblings). Both PATCH routes wire status

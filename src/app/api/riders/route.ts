@@ -1,0 +1,58 @@
+import { NextRequest } from "next/server";
+import { getAppSession, requirePermission } from "@/lib/session";
+import { getCurrentEdition } from "@/lib/edition";
+import {
+  riderInputSchema,
+  riderKindEnum,
+  riderToDbValues,
+} from "@/lib/riders/schema";
+import { createRider, listRiders } from "@/lib/riders/repo";
+
+export async function GET(req: NextRequest) {
+  const session = await getAppSession();
+  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "riders");
+  if (denied) return denied;
+
+  const edition = await getCurrentEdition();
+  const url = new URL(req.url);
+  const artistId = url.searchParams.get("artistId") ?? undefined;
+  const kindRaw = url.searchParams.get("kind") ?? undefined;
+  const kindParsed = kindRaw ? riderKindEnum.safeParse(kindRaw) : null;
+  const confirmedRaw = url.searchParams.get("confirmed");
+  const confirmed =
+    confirmedRaw === "true" ? true : confirmedRaw === "false" ? false : undefined;
+
+  const rows = await listRiders({
+    editionId: edition.id,
+    artistId,
+    kind: kindParsed?.success ? kindParsed.data : undefined,
+    confirmed,
+  });
+  return Response.json({ riders: rows });
+}
+
+export async function POST(req: NextRequest) {
+  const session = await getAppSession();
+  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "riders");
+  if (denied) return denied;
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = riderInputSchema.safeParse(body);
+  if (!parsed.success) {
+    return Response.json(
+      { error: "Validation failed", issues: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const created = await createRider(riderToDbValues(parsed.data));
+  return Response.json({ rider: created }, { status: 201 });
+}
