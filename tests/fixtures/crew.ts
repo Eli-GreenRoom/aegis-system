@@ -10,8 +10,12 @@ export const fixtureCrew: CrewMember = {
   role: "Tour manager",
   email: "mira@example.com",
   phone: null,
+  nationality: null,
   days: ["Friday", "Saturday"],
   comments: null,
+  visaStatus: null,
+  pressKitUrl: null,
+  passportFileUrl: null,
   createdAt: new Date("2026-01-01T00:00:00Z"),
   archivedAt: null,
 };

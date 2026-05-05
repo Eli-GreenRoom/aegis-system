@@ -147,7 +147,15 @@ export default function ArtistForm({ artist }: Props) {
           <Input {...register("color")} placeholder="#E5B85A" autoComplete="off" />
         </Field>
         <Field label="Visa status" error={errors.visaStatus?.message}>
-          <Input {...register("visaStatus")} autoComplete="off" />
+          <select
+            {...register("visaStatus")}
+            className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
+          >
+            <option value="">-</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
         </Field>
         <Field label="Press kit URL" error={errors.pressKitUrl?.message}>
           <Input

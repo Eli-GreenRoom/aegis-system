@@ -34,6 +34,9 @@ export const fixturePickup: Pickup = {
   costAmountCents: 8000,
   costCurrency: "USD",
   status: "scheduled",
+  dispatchedAt: null,
+  inTransitAt: null,
+  completedAt: null,
   comments: null,
   createdAt: new Date("2026-05-04T00:00:00Z"),
 };

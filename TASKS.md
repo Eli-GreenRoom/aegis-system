@@ -7,13 +7,20 @@
 
 ## Now
 
-- [ ] Phase 2.5 — Hotels (hotels + room blocks + bookings — needs Eli's
-      scope decisions; see notes in Phase 2 pattern memory)
+- [ ] Phase 2.5 — Hotels (built on top of 2.5a's `label` field + `no_show`).
+      Block-and-assign model: book a count of rooms in a (hotel, edition,
+      room type) deal, assign individuals via `hotel_bookings`. Capacity
+      computed on read by counting overlapping bookings against
+      `roomsReserved`. Crew get separate blocks (use `label`).
 
 ## Next
 
-- [ ] Phase 2 remaining CRUD modules — Payments, Riders, Contracts,
-      Guestlist, Documents
+- [ ] Phase 2.7 — Payments + Invoices (coral / gold / mint will pop)
+- [ ] Phase 2.8 — Riders, Contracts, Guestlist, Documents (finish CRUD)
+- [ ] **Phase 2.9 — Aggregators** (`src/lib/aggregators/`): `getArtistRoadsheet`,
+      `getOpenIssues`, `getPickupsInWindow`, `getNowAndNext`, `getArrivalsToday`,
+      `getCurrentlyActiveBookings`. Each unit-tested with mocked DB. Powers
+      Festival-day mode — spec in `docs/OPERATIONS-FLOW.md` §4.
 - [ ] Stage / set status filters on /artists now that lineup ships
 - [ ] Drag-to-reorder slots within a stage column (currently sortOrder is
       stored but only respected on read)
@@ -22,7 +29,7 @@
 ## Later
 
 - [ ] Phase 4 AI parsers
-- [ ] Phase 5 festival-day mode
+- [ ] Phase 5 festival-day mode (one-tap rows, card view, PWA prompt)
 - [ ] Phase 6 Cmd+K agent
 - [ ] Phase 7 polish + comms
 
@@ -30,200 +37,87 @@
 
 ## Done
 
-- 2026-05-05 — Artist press-kit + passport URL fields wired end-to-end.
-  Migration `0003_artist_press_kit_passport.sql` adds `press_kit_url` +
-  `passport_file_url` (both nullable text) and was applied to local Neon.
-  Zod `optionalUrl` validator added; both fields registered in
-  `artistInputSchema` + `ArtistDbValues` + nullable mappers. Form gained
-  two URL inputs at the bottom of the grid. Detail page shows `Press
-  kit` + `Passport file` rows as `open` links (target=_blank,
-  rel=noreferrer). 3 new tests cover happy URL accept, malformed URL
-  reject, and partial-PATCH set-one + clear-other. `npm run check` green
-  (132 tests).
-
-- 2026-05-05 — **Public press-kit share page** at `/share/press`. No auth
-  (lives outside `(dashboard)` group). Two modes: `/share/press` shows
-  every active artist on the current edition, `/share/press?artists=ID,ID`
-  shows a hand-picked subset. Page exposes only safe fields (name,
-  nationality, agency, color dot, instagram, soundcloud, pressKitUrl) —
-  never IDs, fees, contacts, passport URLs or comments. Instagram /
-  Soundcloud handles like `@hiroko` get auto-prefixed to the platform
-  URL. New `listArtistsByIds(editionId, ids)` repo helper, edition-scoped
-  + non-archived only so a stale share link can't leak archived data.
-  Picker UI: `ShareDialog` on `/artists` (next to "New artist") — search
-  filter, per-artist checkboxes, Select-All/None, copy-to-clipboard for
-  the URL. The dialog always shows the full active roster (not the
-  filtered table view) so a search/agency filter doesn't accidentally
-  restrict what you share. Live-probed: page renders 200 with no
-  cookie, displays Hiroko + her press-kit Drive link + Instagram +
-  Soundcloud + edition name.
-
-- 2026-05-05 — Phase 2.6: Ground shipped (vendors + pickups). Vendors are
-  global (no edition scoping) — separate `/ground/vendors` admin sub-page
-  with inline modal create/edit/delete. Pickups are edition-scoped, link
-  via polymorphic `personKind/personId` (artist|crew) and optional FKs to
-  vendor + flight. Two route enums: `routeFrom` and `routeTo` (airport /
-  hotel / stage / other) with detail strings for "Beirut, Terminal A"
-  style notes. `/ground` list filters by status, routeFrom, routeTo,
-  vendor; search across driver/phone/vehicle/route detail. Form has
-  combined `kind:id` person picker (same trick as flights), datetime-local
-  with `step={60}` for pickup time, USD/EUR currency toggle. Detail page
-  links the linkedFlightId back to /flights/[id] when set. Tests: 23
-  cases in `tests/unit/ground.test.ts` (vendors + pickups across all 4
-  endpoints). `requests/ground.http` has 16 cases. **`npm run check`
-  green (lint + typecheck + 129 tests)**. Live-probed: created Byblos
-  Taxi vendor, scheduled Hiroko airport->hotel pickup with $80 cost,
-  partial PATCH to dispatched preserved driver/cost, vendor filter
-  returns 1, all 5 pages render 200, `/ground` HTML shows Hiroko +
-  Byblos Taxi + Sami + Sedan + dispatched.
-
-- 2026-05-04 — Phase 2.4: Flights CRUD shipped. Polymorphic `personKind`
-  (artist|crew) + `personId` lets one row reference either roster table.
-  New `src/lib/people.ts` helpers: `listPeople(editionId)` for the
-  picker, `getPerson(kind, id)` for detail pages, `resolvePeople(pairs)`
-  for bulk join in the table (two queries instead of N+1). Form uses a
-  combined `kind:id` dropdown that drives two hidden RHF inputs. List
-  page filters by direction (Arrivals/Departures), status (6 enum
-  values), search across flight no / airline / from / to / PNR. Time
-  inputs `step={60}` for 1-minute granularity, datetime-local converted
-  to UTC ISO before sending. Tests: 18 cases in `tests/unit/flights.test.ts`
-  cover happy + auth-fail + bad direction/url/datetime + 404 + partial
-  PATCH + empty-string clears nullable. **`npm run check` green
-  (lint + typecheck + 106 tests)**. Live-probed: created Hiroko's
-  CDG-BEY MEA ME202 inbound, partial PATCH to landed + actualDt while
-  preserving airline/pnr, search by ME202 returns 1, list page renders
-  Hiroko / ME202 / MEA / CDG / BEY / landed.
-
-- 2026-05-04 — Phase 2.3: Lineup builder shipped (Stages + Slots + Sets).
-  Three tables, one screen. `getCurrentEdition()` now also seeds the four
-  default stages on first call (Main / Alternative / Select Pool /
-  Collectives) via `INSERT ... ON CONFLICT (slug) DO NOTHING`. Six
-  endpoints: `/api/stages`, `/api/stages/[id]`, `/api/slots`,
-  `/api/slots/[id]`, `/api/sets`, `/api/sets/[id]` — all auth-gated by
-  `lineup` permission, full + partial PATCH, soft validation rules
-  (slot start != end, HH:MM format, slug constraints, RFC 4122 UUIDs).
-  `getLineupGrid(editionId, day)` joins stages -> slots -> sets -> artists
-  in 3 round-trips for the board view. UI: `/lineup` shows day tabs
-  (Friday/Saturday/Sunday URL-driven) + four stage columns; each slot
-  card has "+ set" / delete buttons; sets show artist name, agency,
-  status pill (mint/gold/coral), click to edit. `AddSlotDialog`,
-  `AddSetDialog`, `EditSetDialog` are inline modal client components in
-  `LineupBoard.tsx` (one big island instead of nested ones to keep
-  state simple). Time inputs use `step={60}` for 1-minute granularity
-  (no 30-min snap). `/lineup/stages` admin sub-page renames/recolours/
-  deletes stages. Tests: 33 cases in `tests/unit/lineup.test.ts` cover
-  all 6 endpoints, mocked repo + session + edition. `requests/lineup.http`
-  has 21 cases. **`npm run check` green (lint + typecheck + 88 tests)**.
-  Live-probed against Neon as `booking@aegisfestival.com`: created
-  Saturday 23:00-01:00 Main slot, linked Hiroko set with $2500 USD fee,
-  confirmed status via partial PATCH, `/lineup?day=saturday` HTML
-  rendered Hiroko / Confirmed / Main Stage / Saturday. New helper
-  `scripts/dev-query.ts` runs ad-hoc SQL via `npx tsx`.
-
-- 2026-05-04 — Phase 2.2: Crew CRUD shipped, then narrowed. **Crew now
-  means travelling production only**: tour managers, photographers,
-  videographers, social media, FOH engineers — NOT festival-supplied stage
-  hands or volunteers. They're treated like artists for travel/hotel
-  purposes. Initial implementation included `stages[]` and `dailyRateCents`;
-  both dropped in migration `0002_crew_drop_stages_rate.sql` after the
-  scope clarification. Final shape: name, role, email, phone, days[],
-  comments — plus `editionId` + `archivedAt`. List at `/crew` with search
-  (name/role/email/phone) + role filter + active/archived/all toggle.
-  Detail, create, edit pages. Form uses RHF + Zod with a comma-separated
-  text input for days (split client-side). Same pattern as artists:
-  edition-scoped, soft archive, partial PATCH (`crewPatchSchema` +
-  `toDbPatchValues()` so omitted fields stay untouched). Tests: 23 cases
-  cover happy + auth-fail + validation-fail + 404 + partial-PATCH + empty-
-  array clears days to null. `requests/crew.http` updated. New helper
-  `scripts/check-migrations.ts` queries `drizzle.__drizzle_migrations`.
-  **`npm run check` green (lint + typecheck + 55 tests)**. Live-probed
-  against Neon as `booking@aegisfestival.com`: full CRUD, role filter,
-  archive/restore, partial PATCH (rename preserved role/email/days). Note:
-  the journal `idx` had to be bumped past the manually-added
-  `0001_auth.sql` (better-auth one-off, not drizzle-managed) — future
-  migrations continue from idx=3.
-- 2026-05-04 — Phase 2.1: Artists CRUD shipped. List page at `/artists` with
-  search (name/agency/slug/email/legal-name) + agency filter + active/archived/
-  all toggle, all driven by URL params via `ArtistsFilters` client island.
-  Detail page `/artists/[id]`, create at `/artists/new`, edit at
-  `/artists/[id]/edit`. Archive is soft (sets `archived_at`), restore via
-  `?action=unarchive`. New `getCurrentEdition()` helper in `src/lib/edition.ts`
-  upserts the 2026 edition row on first call. `artistInputSchema` keeps form
-  and DB types decoupled — `toDbValues()` normalises empty strings to null at
-  the route boundary so RHF + zodResolver type cleanly. **PATCH is a true
-  partial update**: separate `artistPatchSchema` (every field optional,
-  rejects empty body) + `toDbPatchValues()` only sends keys the caller
-  actually included, so omitted fields stay untouched in the DB. Empty
-  string still clears an optional field to null (unambiguous). Stage/status
-  filters deferred to once Lineup ships. Tests: 26 cases in
-  `tests/unit/artists.test.ts` cover happy + auth-fail + validation-fail +
-  404 + 409-duplicate-slug + 4 partial-PATCH cases, repo + session + edition
-  mocked. `requests/artists.http` has 14 cases. **`npm run check` green
-  (lint + typecheck + 32 tests)**. Live-probed against Neon as
-  `booking@aegisfestival.com`: full CRUD, search, archive, restore, partial
-  PATCH preserving omitted fields, empty-body 400 — all verified.
-- 2026-05-04 — Testing infra: GitHub Actions CI at
-  `.github/workflows/ci.yml` running lint + typecheck + vitest on every push
-  and PR (with placeholder env so module-load doesn't crash). Added
-  `npm run check` script as the local equivalent. Wrote `vitest.config.ts`
-  with `@/` alias and node env. Sample test in `tests/unit/utils.test.ts`
-  covers `cn` and `formatCents`. Tightened `AGENT.md` §11 and `CLAUDE.md`
-  with non-negotiable testing rules — every API route + server action +
-  AI parser ships with a test, mock external services, "done" requires
-  green `npm run check` output.
-- 2026-05-04 — Phase 1.3: dashboard layout shell. `(dashboard)` route group
-  with server-side auth guard via `getAppSession()` redirecting to `/sign-in`.
-  Left rail (220px, brand surface) with 12 nav items — Lineup, Artists, Crew,
-  Flights, Hotels, Ground, Riders, Contracts, Payments, Guestlist, Documents,
-  Settings — gold accent on active row, signed-in email + sign-out at the
-  bottom. Topbar with Newsreader page H1, optional subtitle/actions slot, and
-  T-minus festival countdown to 2026-08-14. 12 placeholder pages render
-  through a shared `EmptyModule` shell. Home `/` redirects signed-in users to
-  `/lineup`; sign-in/up land at `/lineup`. Probed: `/lineup /artists /flights
-  /payments /settings` all return 307 → `/sign-in` for anon. Lint + typecheck
-  clean. Note: signed-in render not probed end-to-end (no test creds in
-  session).
-- 2026-05-04 — Phase 0 setup: scaffold pushed, Vercel deploy live at
-  `https://logistics.aegisfestival.com`, `/api/health` returns ok in prod,
-  Neon (Postgres 17, eu-central-1) connected, custom domain + HTTPS active.
-- 2026-05-04 — Phase 1.2: initial Drizzle migration applied to Neon —
-  20 tables + 14 enums (drizzle/0000_messy_zarek.sql).
-- 2026-05-04 — Phase 1.1: better-auth wired (email + password). Server in
-  `src/lib/auth.ts`, client in `src/lib/auth-client.ts`, catchall handler at
-  `/api/auth/[...all]`. Brand-aligned `/sign-in` + `/sign-up` (gold submit,
-  Newsreader H1, mono labels, blueprint corner). `getAppSession()` real, owner
-  resolved by email match (`booking@aegisfestival.com`). Auth schema generated
-  to `drizzle/0001_auth.sql` via `@better-auth/cli` — apply with
-  `npx tsx scripts/apply-auth-sql.ts`. Signup gated by `NEXT_PUBLIC_ALLOW_SIGNUP`
-  (true in `.env.development.local`, unset in prod). `requests/auth.http`
-  covers signup/signin/signout success + failure cases. Lint + typecheck
-  clean.
+- 2026-05-05 — Phase 2.5a stage 2: audit + transition helper.
+  Added `src/lib/audit.ts` with `recordTransition(client, { actorId,
+  entity, diff })` — returns an unawaited Drizzle insert builder so the
+  caller composes `db.batch([updateBuilder, recordTransition(...)])`.
+  Under the neon-http driver, `db.batch` is the atomic primitive Neon
+  exposes (single-roundtrip transaction); Drizzle's `db.transaction(...)`
+  isn't available on neon-http. Repos gained `buildUpdateSet` /
+  `buildUpdateFlight` / `buildUpdatePickup` to feed into the batch. The
+  three existing status-changing PATCH routes (sets, flights, pickups)
+  now branch: status change → batch + audit; non-status PATCH → existing
+  awaited update path. 161 tests green (was 150 after stage 1, 132
+  baseline). New `tests/unit/audit.test.ts` covers builder shape,
+  payload, optional meta, all 8 entity types. Existing route tests
+  extended with status-change/no-status/rollback assertions. Probed:
+  ran `npm run check` — clean. **Not yet wired:** contracts / payments /
+  hotel_bookings PATCH routes don't exist yet (Phase 2.7 / 2.8); they'll
+  pick up `recordTransition` when their modules ship. Festival-day
+  click-time capture (`actualDt = now()` on landed, `dispatchedAt` on
+  dispatch) is Phase 5 — the audit row already records the transition,
+  but the UX-side timestamp columns are written separately.
+- 2026-05-05 — Phase 2.5a stage 1: schema retrofit landed.
+  Migration `0004_phase_2_5a_operations.sql` adds `visa_status` enum
+  (data-preserving migration on `artists.visa_status`: legacy text →
+  `pending`, NULL/empty → NULL); crew parity columns (`nationality`,
+  `visa_status`, `press_kit_url`, `passport_file_url`); `set_status`
+  gains `live` / `done` / `withdrawn`; `pickup_status` gains `in_transit`
+  plus `dispatched_at` / `in_transit_at` / `completed_at`;
+  `hotel_booking_status` gains `no_show` plus `checked_in_at` /
+  `checked_out_at`; `hotel_room_blocks` gains `label`; `flights` gains
+  `delay_minutes`. Zod schemas, forms (artists visa is now a select; crew
+  form gets the four new fields; flights form gets a Delay (min) input;
+  lineup board gets the three new set-status options), and detail pages
+  updated to match. 150 tests green (was 132). Probed: ran `npm run check`
+  — clean. **Not yet wired:** audit log on transitions (stage 2);
+  hotel-booking forms / detail pages (Phase 2.5 Hotels module hasn't
+  shipped yet so no UI to update); production migration not applied.
+- 2026-05-05 — Operations-flow plan integrated: `docs/OPERATIONS-FLOW.md`
+  written, AGENT.md §14 added, FESTIVAL-DAY.md rewritten for one-tap UX,
+  TASKS.md re-prioritised with Phase 2.5a inserted before Hotels.
+- 2026-05-05 — Artist press-kit + passport URL fields wired end-to-end
+  (migration `0003_artist_press_kit_passport.sql`). 132 tests green.
+- 2026-05-05 — Public press-kit share page at `/share/press` (no auth,
+  picker UI on /artists, exposes only safe fields).
+- 2026-05-05 — Phase 2.6: Ground shipped (vendors + pickups, 129 tests).
+- 2026-05-04 — Phase 2.4: Flights CRUD (polymorphic person, 106 tests).
+- 2026-05-04 — Phase 2.3: Lineup builder (Stages + Slots + Sets, 88 tests).
+- 2026-05-04 — Phase 2.2: Crew CRUD, narrowed to travelling production only
+  (55 tests).
+- 2026-05-04 — Phase 2.1: Artists CRUD (32 tests).
+- 2026-05-04 — Testing infra: GitHub Actions CI + `npm run check`.
+- 2026-05-04 — Phase 1.3: dashboard layout shell (12 placeholder pages).
+- 2026-05-04 — Phase 1.2: initial Drizzle migration (20 tables + 14 enums).
+- 2026-05-04 — Phase 1.1: better-auth wired (email + password).
+- 2026-05-04 — Phase 0 setup: scaffold pushed, Vercel + Neon live, custom
+  domain `logistics.aegisfestival.com` active.
 
 ---
 
 ## Decisions log
 
-- 2026-05-04 — stack locked: Next.js 16 + Neon + Drizzle + better-auth + Vercel
-  Blob + Resend + Anthropic. Mirrors greenroom for cross-pollination.
-- 2026-05-04 — auth scope: owner + coordinator + viewer roles. Single tenant.
+- 2026-05-04 — Stack locked: Next.js 16 + Neon + Drizzle + better-auth +
+  Vercel Blob + Resend + Anthropic. Mirrors greenroom for cross-pollination.
+- 2026-05-04 — Auth scope: owner + coordinator + viewer roles. Single tenant.
 - 2026-05-04 — AI flow: upload-and-parse, not Gmail OAuth. Operator confirms
   every parse before write.
-- 2026-05-04 — domain: `logistics.aegisfestival.com`.
-- 2026-05-04 — region: Neon `eu-central-1` (Frankfurt) for proximity to Lebanon.
-- 2026-05-04 — brand accent: `#E5B85A` (warm gold). No cyan, no neon green.
-- 2026-05-04 — brand alignment to Aegis brand book (Hammerspace, Feb 2026):
-  deep indigo bg `#150A48`, gold `#E5B85A` accent, coral `#E73E54` for danger,
-  mint `#16D060` for success, cream `#FAF3EC` for inverse surfaces. Serif
-  (Newsreader) used for wordmark + page H1 only — never on data or body.
-  Full rationale in `docs/BRAND.md`.
-- 2026-05-04 — testing rule (Layer 1 + 2): every API route, server action,
-  and AI parser ships with a Vitest unit test. Mock external services. CI
-  runs `npm run check` (lint + typecheck + vitest) on every push. "Done"
-  requires green output, not "should be green". Playwright E2E deferred
-  to Phase 2.5 once enough pages exist to test.
-- 2026-05-05 — artists: added optional `pressKitUrl` + `passportFileUrl`.
-  Press kit is an opaque URL (external link or our Blob); passport file is
-  a private Blob URL uploaded via the documents API with `entityType='artist'`
-  and `tags=['passport']` so the file has an audit trail. Both nullable.
-  Schema + DATA-MODEL.md updated; migration + form/Zod/detail/tests pending
-  in Phase 2.x.
+- 2026-05-04 — Domain: `logistics.aegisfestival.com`.
+- 2026-05-04 — Region: Neon `eu-central-1` (Frankfurt) for proximity to Lebanon.
+- 2026-05-04 — Brand accent: `#E5B85A` (warm gold).
+- 2026-05-04 — Brand alignment to Aegis brand book (Hammerspace, Feb 2026):
+  neutral dark canvas (#0E0E10), gold/coral/mint accents, Newsreader serif
+  for wordmark + page H1 only. Full rationale in `docs/BRAND.md`.
+- 2026-05-04 — Testing rule (Layer 1 + 2): every API route, server action,
+  AI parser ships with a Vitest test. CI runs `npm run check` on every push.
+  "Done" requires green output.
+- 2026-05-05 — Artists: optional `pressKitUrl` + `passportFileUrl`. Press
+  kit is opaque URL; passport file is private Blob via documents API with
+  `tags=['passport']`.
+- 2026-05-05 — Operations-flow plan: `docs/OPERATIONS-FLOW.md` becomes the
+  canonical reference for state machines + festival-day UX. State machines
+  locked (set adds `live`/`done`/`withdrawn`, pickup adds `in_transit` +
+  transition timestamps, hotel booking adds `no_show` + checkin/out
+  timestamps, hotel block gets `label`, crew gets passport/visa/
+  nationality parity, visa moves to enum, flights gain `delay_minutes`).
+  Aggregators added as Phase 2.9.

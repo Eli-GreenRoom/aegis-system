@@ -17,6 +17,7 @@ export const fixtureFlight: Flight = {
   scheduledDt: new Date("2026-08-13T14:30:00Z"),
   actualDt: null,
   status: "scheduled",
+  delayMinutes: null,
   pnr: "ABC123",
   ticketUrl: null,
   confirmationEmailUrl: null,

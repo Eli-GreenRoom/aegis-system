@@ -47,6 +47,11 @@ export default async function FlightDetailPage({ params }: PageProps) {
             mono
           />
           <Row label="Status" value={flight.status} />
+          <Row
+            label="Delay (min)"
+            value={flight.delayMinutes != null ? String(flight.delayMinutes) : null}
+            mono
+          />
           <Row label="PNR" value={flight.pnr} mono />
           <Row label="Seat" value={flight.seat} mono />
           {flight.ticketUrl && (

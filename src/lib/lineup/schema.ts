@@ -140,7 +140,14 @@ export function slotToDbPatchValues(input: SlotPatch): Partial<SlotDbValues> {
 
 // ── Set ──────────────────────────────────────────────────────────────────
 
-export const setStatusEnum = z.enum(["confirmed", "option", "not_available"]);
+export const setStatusEnum = z.enum([
+  "confirmed",
+  "option",
+  "not_available",
+  "live",
+  "done",
+  "withdrawn",
+]);
 export type SetStatus = z.infer<typeof setStatusEnum>;
 
 export const currencyEnum = z.enum(["USD", "EUR"]);

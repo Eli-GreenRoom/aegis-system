@@ -61,6 +61,7 @@ export default function FlightForm({ flight, people }: Props) {
       ticketUrl: flight?.ticketUrl ?? "",
       confirmationEmailUrl: flight?.confirmationEmailUrl ?? "",
       seat: flight?.seat ?? "",
+      delayMinutes: flight?.delayMinutes ?? null,
       comments: flight?.comments ?? "",
     },
   });
@@ -74,6 +75,12 @@ export default function FlightForm({ flight, people }: Props) {
       ...data,
       scheduledDt: data.scheduledDt ? fromDtLocal(data.scheduledDt) : "",
       actualDt: data.actualDt ? fromDtLocal(data.actualDt) : "",
+      // RHF gives NaN when the numeric input is empty; coerce to null so the
+      // server clears the column rather than rejecting the value.
+      delayMinutes:
+        data.delayMinutes == null || Number.isNaN(data.delayMinutes)
+          ? null
+          : data.delayMinutes,
     };
 
     const res = await fetch(url, {
@@ -188,6 +195,16 @@ export default function FlightForm({ flight, people }: Props) {
             <option value="delayed">Delayed</option>
             <option value="cancelled">Cancelled</option>
           </select>
+        </Field>
+
+        <Field label="Delay (min)" error={errors.delayMinutes?.message}>
+          <Input
+            type="number"
+            min={0}
+            step={5}
+            placeholder="45"
+            {...register("delayMinutes", { setValueAs: (v) => (v === "" || v == null ? null : Number(v)) })}
+          />
         </Field>
 
         <Field label="PNR" error={errors.pnr?.message}>

@@ -45,6 +45,10 @@ export const flightInputSchema = z.object({
   scheduledDt: isoDateTime,
   actualDt: isoDateTime,
   status: flightStatusEnum.optional(),
+  // Set when status flips to `delayed`. UI subtracts the delta from any
+  // auto-computed pickup ETA (see OPERATIONS-FLOW.md §2). Capped at 48h —
+  // anything longer is a separate flight, not a delay.
+  delayMinutes: z.number().int().min(0).max(60 * 48).nullable().optional(),
   pnr: optionalString,
   ticketUrl: optionalUrl,
   confirmationEmailUrl: optionalUrl,
@@ -70,6 +74,7 @@ export interface FlightDbValues {
   scheduledDt: Date | null;
   actualDt: Date | null;
   status: FlightStatus;
+  delayMinutes: number | null;
   pnr: string | null;
   ticketUrl: string | null;
   confirmationEmailUrl: string | null;
@@ -100,6 +105,7 @@ export function flightToDbValues(input: FlightInput): FlightDbValues {
     personId: input.personId,
     direction: input.direction,
     status: input.status ?? "scheduled",
+    delayMinutes: input.delayMinutes ?? null,
     fromAirport: null,
     toAirport: null,
     airline: null,
@@ -127,6 +133,9 @@ export function flightToDbPatchValues(
   if ("personId" in input && input.personId !== undefined) out.personId = input.personId;
   if ("direction" in input && input.direction !== undefined) out.direction = input.direction;
   if ("status" in input && input.status !== undefined) out.status = input.status;
+  if ("delayMinutes" in input) {
+    out.delayMinutes = input.delayMinutes ?? null;
+  }
   if ("scheduledDt" in input) out.scheduledDt = dt(input.scheduledDt);
   if ("actualDt" in input) out.actualDt = dt(input.actualDt);
   for (const k of NULLABLE_STRINGS) {

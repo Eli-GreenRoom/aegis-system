@@ -57,6 +57,21 @@ export default async function PickupDetailPage({ params }: PageProps) {
             mono
           />
           <Row label="Status" value={pickup.status} />
+          <Row
+            label="Dispatched"
+            value={pickup.dispatchedAt ? format(new Date(pickup.dispatchedAt), "EEE d MMM HH:mm") : null}
+            mono
+          />
+          <Row
+            label="In transit"
+            value={pickup.inTransitAt ? format(new Date(pickup.inTransitAt), "EEE d MMM HH:mm") : null}
+            mono
+          />
+          <Row
+            label="Completed"
+            value={pickup.completedAt ? format(new Date(pickup.completedAt), "EEE d MMM HH:mm") : null}
+            mono
+          />
           {pickup.linkedFlightId && (
             <Row
               label="Linked flight"

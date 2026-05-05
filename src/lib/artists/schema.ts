@@ -27,6 +27,18 @@ const optionalUrl = z
   .union([z.literal(""), z.string().trim().url("must be a valid URL")])
   .optional();
 
+export const visaStatusEnum = z.enum([
+  "not_needed",
+  "pending",
+  "approved",
+  "rejected",
+]);
+export type VisaStatus = z.infer<typeof visaStatusEnum>;
+
+const optionalVisaStatus = z
+  .union([z.literal(""), visaStatusEnum])
+  .optional();
+
 /**
  * Form-side schema. Strings can be empty; nothing transforms to null.
  * The route handler converts empty strings to null before writing to DB.
@@ -49,7 +61,7 @@ export const artistInputSchema = z.object({
   soundcloud: optionalString,
   color: optionalHexColor,
   local: z.boolean().optional(),
-  visaStatus: optionalString,
+  visaStatus: optionalVisaStatus,
   pressKitUrl: optionalUrl,
   passportFileUrl: optionalUrl,
   comments: z.string().trim().max(4000).optional().or(z.literal("")),
@@ -83,7 +95,7 @@ export interface ArtistDbValues {
   soundcloud: string | null;
   color: string | null;
   local: boolean;
-  visaStatus: string | null;
+  visaStatus: VisaStatus | null;
   pressKitUrl: string | null;
   passportFileUrl: string | null;
   comments: string | null;
@@ -99,7 +111,6 @@ const NULLABLE_FIELDS = [
   "instagram",
   "soundcloud",
   "color",
-  "visaStatus",
   "pressKitUrl",
   "passportFileUrl",
   "comments",
@@ -115,6 +126,10 @@ export function toDbPatchValues(input: ArtistPatch): Partial<ArtistDbValues> {
   if ("name" in input && input.name !== undefined) out.name = input.name;
   if ("slug" in input && input.slug !== undefined) out.slug = input.slug;
   if ("local" in input && input.local !== undefined) out.local = input.local;
+  if ("visaStatus" in input) {
+    const v = input.visaStatus;
+    out.visaStatus = v === undefined || v === "" ? null : v;
+  }
   for (const k of NULLABLE_FIELDS) {
     if (k in input) {
       const v = input[k];
@@ -139,7 +154,10 @@ export function toDbValues(input: ArtistInput): ArtistDbValues {
     instagram: null,
     soundcloud: null,
     color: null,
-    visaStatus: null,
+    visaStatus:
+      input.visaStatus === undefined || input.visaStatus === ""
+        ? null
+        : input.visaStatus,
     pressKitUrl: null,
     passportFileUrl: null,
     comments: null,

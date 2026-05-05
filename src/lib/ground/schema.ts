@@ -82,6 +82,7 @@ export type Route = z.infer<typeof routeEnum>;
 export const pickupStatusEnum = z.enum([
   "scheduled",
   "dispatched",
+  "in_transit",
   "completed",
   "cancelled",
 ]);

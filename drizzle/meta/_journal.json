@@ -22,6 +22,13 @@
       "when": 1777995423077,
       "tag": "0003_artist_press_kit_passport",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777997313836,
+      "tag": "0004_phase_2_5a_operations",
+      "breakpoints": true
     }
   ]
 }

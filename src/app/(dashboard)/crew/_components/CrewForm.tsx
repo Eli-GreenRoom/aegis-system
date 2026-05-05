@@ -56,8 +56,12 @@ export default function CrewForm({ member }: Props) {
       role: member?.role ?? "",
       email: member?.email ?? "",
       phone: member?.phone ?? "",
+      nationality: member?.nationality ?? "",
       comments: member?.comments ?? "",
       daysText: joinCsv(member?.days),
+      visaStatus: member?.visaStatus ?? "",
+      pressKitUrl: member?.pressKitUrl ?? "",
+      passportFileUrl: member?.passportFileUrl ?? "",
     },
   });
 
@@ -71,8 +75,12 @@ export default function CrewForm({ member }: Props) {
       role: data.role,
       email: data.email,
       phone: data.phone,
+      nationality: data.nationality,
       comments: data.comments,
       days: splitCsv(data.daysText),
+      visaStatus: data.visaStatus,
+      pressKitUrl: data.pressKitUrl,
+      passportFileUrl: data.passportFileUrl,
     };
 
     const res = await fetch(url, {
@@ -139,10 +147,38 @@ export default function CrewForm({ member }: Props) {
         <Field label="Phone" error={errors.phone?.message}>
           <Input {...register("phone")} autoComplete="off" />
         </Field>
+        <Field label="Nationality" error={errors.nationality?.message}>
+          <Input {...register("nationality")} autoComplete="off" />
+        </Field>
         <Field label="Days (comma separated)" error={errors.daysText?.message}>
           <Input
             {...register("daysText")}
             placeholder="Friday, Saturday, Sunday"
+            autoComplete="off"
+          />
+        </Field>
+        <Field label="Visa status" error={errors.visaStatus?.message}>
+          <select
+            {...register("visaStatus")}
+            className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
+          >
+            <option value="">-</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </Field>
+        <Field label="Press kit URL" error={errors.pressKitUrl?.message}>
+          <Input
+            {...register("pressKitUrl")}
+            placeholder="https://drive.google.com/..."
+            autoComplete="off"
+          />
+        </Field>
+        <Field label="Passport file URL" error={errors.passportFileUrl?.message}>
+          <Input
+            {...register("passportFileUrl")}
+            placeholder="https://..."
             autoComplete="off"
           />
         </Field>

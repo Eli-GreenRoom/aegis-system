@@ -28,12 +28,18 @@ const STATUS_LABEL: Record<SetStatus, string> = {
   confirmed: "Confirmed",
   option: "Option",
   not_available: "N/A",
+  live: "Live",
+  done: "Done",
+  withdrawn: "Withdrawn",
 };
 
 const STATUS_CLASSES: Record<SetStatus, string> = {
   confirmed: "border-[--color-brand-mint]/40 text-mint",
   option: "border-brand/40 text-brand",
   not_available: "border-[--color-brand-coral]/40 text-coral",
+  live: "border-[--color-brand-mint]/60 text-mint",
+  done: "border-[--color-fg-subtle]/40 text-[--color-fg-muted]",
+  withdrawn: "border-[--color-brand-coral]/40 text-coral",
 };
 
 export default function LineupBoard({ day, grid, artists }: Props) {
@@ -403,6 +409,9 @@ function AddSetDialog({
               <option value="option">Option</option>
               <option value="confirmed">Confirmed</option>
               <option value="not_available">N/A</option>
+              <option value="live">Live</option>
+              <option value="done">Done</option>
+              <option value="withdrawn">Withdrawn</option>
             </select>
           </div>
           <div className="space-y-1.5">
@@ -496,6 +505,9 @@ function EditSetDialog({
               <option value="option">Option</option>
               <option value="confirmed">Confirmed</option>
               <option value="not_available">N/A</option>
+              <option value="live">Live</option>
+              <option value="done">Done</option>
+              <option value="withdrawn">Withdrawn</option>
             </select>
           </div>
           <div className="space-y-1.5">

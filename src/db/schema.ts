@@ -44,6 +44,16 @@ export const setStatusEnum = pgEnum("set_status", [
   "confirmed",
   "option",
   "not_available",
+  "live",
+  "done",
+  "withdrawn",
+]);
+
+export const visaStatusEnum = pgEnum("visa_status", [
+  "not_needed",
+  "pending",
+  "approved",
+  "rejected",
 ]);
 
 export const personKindEnum = pgEnum("person_kind", ["artist", "crew"]);
@@ -72,6 +82,7 @@ export const pickupRouteEnum = pgEnum("pickup_route", [
 export const pickupStatusEnum = pgEnum("pickup_status", [
   "scheduled",
   "dispatched",
+  "in_transit",
   "completed",
   "cancelled",
 ]);
@@ -81,6 +92,7 @@ export const hotelBookingStatusEnum = pgEnum("hotel_booking_status", [
   "booked",
   "checked_in",
   "checked_out",
+  "no_show",
   "cancelled",
 ]);
 
@@ -185,7 +197,7 @@ export const artists = pgTable("artists", {
   color:            text("color"),
   local:            boolean("local").notNull().default(false),
   comments:         text("comments"),
-  visaStatus:       text("visa_status"),
+  visaStatus:       visaStatusEnum("visa_status"),
   // Optional. External URL (Dropbox / Drive / artist site) OR a Vercel Blob
   // proxy URL after upload. Treated as an opaque URL by the app.
   pressKitUrl:      text("press_kit_url"),
@@ -205,16 +217,22 @@ export const artists = pgTable("artists", {
  * `editionId` scoping and `archivedAt` soft-delete pattern.
  */
 export const crew = pgTable("crew", {
-  id:           uuid("id").primaryKey().defaultRandom(),
-  editionId:    uuid("edition_id").notNull().references(() => festivalEditions.id, { onDelete: "cascade" }),
-  name:         text("name").notNull(),
-  role:         text("role").notNull(),
-  email:        text("email"),
-  phone:        text("phone"),
-  days:         jsonb("days"),
-  comments:     text("comments"),
-  createdAt:    timestamp("created_at").notNull().defaultNow(),
-  archivedAt:   timestamp("archived_at"),
+  id:               uuid("id").primaryKey().defaultRandom(),
+  editionId:        uuid("edition_id").notNull().references(() => festivalEditions.id, { onDelete: "cascade" }),
+  name:             text("name").notNull(),
+  role:             text("role").notNull(),
+  email:            text("email"),
+  phone:            text("phone"),
+  nationality:      text("nationality"),
+  days:             jsonb("days"),
+  comments:         text("comments"),
+  visaStatus:       visaStatusEnum("visa_status"),
+  pressKitUrl:      text("press_kit_url"),
+  // Mirrors artists.passportFileUrl — private Vercel Blob proxy URL via the
+  // documents API (entityType='crew', tags=['passport']).
+  passportFileUrl:  text("passport_file_url"),
+  createdAt:        timestamp("created_at").notNull().defaultNow(),
+  archivedAt:       timestamp("archived_at"),
 });
 
 export const sets = pgTable("sets", {
@@ -245,6 +263,7 @@ export const flights = pgTable("flights", {
   scheduledDt:              timestamp("scheduled_dt", { withTimezone: true }),
   actualDt:                 timestamp("actual_dt", { withTimezone: true }),
   status:                   flightStatusEnum("status").notNull().default("scheduled"),
+  delayMinutes:             integer("delay_minutes"),
   pnr:                      text("pnr"),
   ticketUrl:                text("ticket_url"),
   confirmationEmailUrl:     text("confirmation_email_url"),
@@ -282,6 +301,12 @@ export const groundTransportPickups = pgTable("ground_transport_pickups", {
   costAmountCents:     integer("cost_amount_cents"),
   costCurrency:        varchar("cost_currency", { length: 3 }),
   status:              pickupStatusEnum("status").notNull().default("scheduled"),
+  // Click time on each forward transition (festival-day one-tap UX). Null
+  // until the pickup advances past `scheduled`. Server captures now() — never
+  // trust user-typed values from a phone in a field.
+  dispatchedAt:        timestamp("dispatched_at", { withTimezone: true }),
+  inTransitAt:         timestamp("in_transit_at", { withTimezone: true }),
+  completedAt:         timestamp("completed_at", { withTimezone: true }),
   comments:            text("comments"),
   createdAt:           timestamp("created_at").notNull().defaultNow(),
 });
@@ -303,6 +328,9 @@ export const hotelRoomBlocks = pgTable("hotel_room_blocks", {
   id:                          uuid("id").primaryKey().defaultRandom(),
   editionId:                   uuid("edition_id").notNull().references(() => festivalEditions.id),
   hotelId:                     uuid("hotel_id").notNull().references(() => hotels.id),
+  // Operator-friendly name like "Artists - Deluxe" or "Crew - Standard" so
+  // separate blocks for crew are distinguishable in the UI.
+  label:                       text("label"),
   roomType:                    text("room_type").notNull(),
   nights:                      integer("nights"),
   roomsReserved:               integer("rooms_reserved"),
@@ -324,6 +352,10 @@ export const hotelBookings = pgTable("hotel_bookings", {
   creditsAmountCents:    integer("credits_amount_cents"),
   creditsCurrency:       varchar("credits_currency", { length: 3 }),
   status:                hotelBookingStatusEnum("status").notNull().default("booked"),
+  // Click time on the festival-day transitions. Null until the guest checks
+  // in / out; same trust-the-server-clock pattern as pickup timestamps.
+  checkedInAt:           timestamp("checked_in_at", { withTimezone: true }),
+  checkedOutAt:          timestamp("checked_out_at", { withTimezone: true }),
   confirmationUrl:       text("confirmation_url"),
   comments:              text("comments"),
   createdAt:             timestamp("created_at").notNull().defaultNow(),
