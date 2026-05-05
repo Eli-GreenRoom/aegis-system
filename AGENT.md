@@ -349,7 +349,6 @@ CI runs the same `npm run check` on every push and PR
 - Don't claim done until you've actually run `npm run check` and pasted
   the output. "Tests should pass" is not the same as "tests do pass".
 - Reproduce bugs as failing tests first, then fix.
-
 End-to-end tests (Playwright) come in Phase 2.5 once enough pages exist —
 not now. Until then, `requests/*.http` files are the smoke tests.
 
@@ -365,6 +364,9 @@ not now. Until then, `requests/*.http` files are the smoke tests.
 - Don't use cyan, neon green, or any color outside the brand palette.
 - Don't refer to artists as "users".
 - Don't generate large files in one shot via Write — chunk it.
+- Don't transition state without writing an `audit_events` row (see §14).
+- Don't trust user-typed timestamps on festival-day transitions — capture
+  click time on the server (see `docs/OPERATIONS-FLOW.md` §5).
 
 ---
 
@@ -373,3 +375,34 @@ not now. Until then, `requests/*.http` files are the smoke tests.
 1. Read the relevant doc in `/docs` first.
 2. Check `greenroom` (sister project) for the same pattern — copy with adaptation.
 3. Ask Eli before introducing a new pattern, dependency, or table.
+
+---
+
+## 14. Operations flow & festival-day behaviour
+
+The lifecycle of an artist from booking to departure, the state machine for
+each entity, and the one-tap UX for festival-day live ops live in
+**`docs/OPERATIONS-FLOW.md`**. Read it before touching:
+
+- Status enums (set, pickup, hotel_booking, flight, contract, payment, visa)
+- Festival-day views (`docs/FESTIVAL-DAY.md` builds on it)
+- The `audit_events` write path
+- Cross-table aggregators (`getArtistRoadsheet`, `getOpenIssues`,
+  `getPickupsInWindow`, `getNowAndNext`, `getArrivalsToday`,
+  `getCurrentlyActiveBookings` — all in `src/lib/aggregators/`)
+
+Hard rules anchored there:
+
+- Every status transition writes an `audit_events` row in the same DB
+  transaction as the update — wrap with `recordTransition()` from
+  `src/lib/audit.ts`.
+- Festival-day forward transitions are one-tap, no modal. Backwards / rare
+  transitions live behind a long-press menu.
+- Click time is the source of truth for `actualDt`, `dispatchedAt`,
+  `inTransitAt`, `completedAt`, `checkedInAt`, `checkedOutAt`. Don't
+  surface a date/time picker on the festival-day path.
+- Crew get the same passport / visa / nationality fields as artists; they
+  travel and book the same way.
+- Set status now includes `live`, `done`, `withdrawn`. Pickup status
+  includes `in_transit`. Hotel booking status includes `no_show`. Hotel
+  room blocks have a `label` so artist vs crew blocks are distinguishable.
