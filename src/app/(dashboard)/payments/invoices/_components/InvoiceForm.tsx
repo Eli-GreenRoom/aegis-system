@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Route } from "next";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import { invoiceInputSchema } from "@/lib/payments/schema";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import FileUpload from "@/components/ui/FileUpload";
 import type { Invoice } from "@/lib/payments/repo";
 
 interface Props {
@@ -51,6 +52,7 @@ export default function InvoiceForm({ invoice }: Props) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -179,11 +181,19 @@ export default function InvoiceForm({ invoice }: Props) {
         </Field>
 
         <div className="col-span-2">
-          <Field label="File URL" error={errors.fileUrl?.message}>
-            <Input
-              {...register("fileUrl")}
-              placeholder="https://..."
-              autoComplete="off"
+          <Field label="Invoice file" error={errors.fileUrl?.message}>
+            <Controller
+              control={control}
+              name="fileUrl"
+              render={({ field }) => (
+                <FileUpload
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  entityType="invoice"
+                  entityId={invoice?.id}
+                  tags={["invoice"]}
+                />
+              )}
             />
           </Field>
         </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Route } from "next";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import { crewInputSchema } from "@/lib/crew/schema";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import FileUpload from "@/components/ui/FileUpload";
 import type { CrewMember } from "@/lib/crew/repo";
 
 interface Props {
@@ -48,6 +49,7 @@ export default function CrewForm({ member }: Props) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -175,11 +177,19 @@ export default function CrewForm({ member }: Props) {
             autoComplete="off"
           />
         </Field>
-        <Field label="Passport file URL" error={errors.passportFileUrl?.message}>
-          <Input
-            {...register("passportFileUrl")}
-            placeholder="https://..."
-            autoComplete="off"
+        <Field label="Passport file" error={errors.passportFileUrl?.message}>
+          <Controller
+            control={control}
+            name="passportFileUrl"
+            render={({ field }) => (
+              <FileUpload
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                entityType="crew"
+                entityId={member?.id}
+                tags={["passport"]}
+              />
+            )}
           />
         </Field>
       </div>

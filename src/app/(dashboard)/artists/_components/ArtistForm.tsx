@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Route } from "next";
 import {
@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import FileUpload from "@/components/ui/FileUpload";
 import type { Artist } from "@/lib/artists/repo";
 
 interface Props {
@@ -30,6 +31,7 @@ export default function ArtistForm({ artist }: Props) {
     handleSubmit,
     setValue,
     getValues,
+    control,
     formState: { errors, isSubmitting, dirtyFields },
   } = useForm<ArtistInput>({
     resolver: zodResolver(artistInputSchema),
@@ -164,11 +166,19 @@ export default function ArtistForm({ artist }: Props) {
             autoComplete="off"
           />
         </Field>
-        <Field label="Passport file URL" error={errors.passportFileUrl?.message}>
-          <Input
-            {...register("passportFileUrl")}
-            placeholder="https://..."
-            autoComplete="off"
+        <Field label="Passport file" error={errors.passportFileUrl?.message}>
+          <Controller
+            control={control}
+            name="passportFileUrl"
+            render={({ field }) => (
+              <FileUpload
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                entityType="artist"
+                entityId={artist?.id}
+                tags={["passport"]}
+              />
+            )}
           />
         </Field>
       </div>

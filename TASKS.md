@@ -7,21 +7,13 @@
 
 ## Now
 
-- [ ] Phase 2.65 — Documents API (Vercel Blob proxy). Build POST
-      `/api/documents` (private upload via `@vercel/blob`,
-      `entityType`/`entityId`/`tags` metadata into `documents` table) and
-      GET `/api/documents/[id]` (auth-checked proxy stream). Then
-      retrofit artist passport, crew passport, hotel-booking
-      confirmation, contract file, rider file, invoice file, payment
-      PoP — they all currently take a free-text URL. One uniform upload
-      pattern across the app.
-
-## Next
-
 - [ ] **Phase 2.9 — Aggregators** (`src/lib/aggregators/`): `getArtistRoadsheet`,
       `getOpenIssues`, `getPickupsInWindow`, `getNowAndNext`, `getArrivalsToday`,
       `getCurrentlyActiveBookings`. Each unit-tested with mocked DB. Powers
       Festival-day mode — spec in `docs/OPERATIONS-FLOW.md` §4.
+
+## Next
+
 - [ ] Stage / set status filters on /artists now that lineup ships
 - [ ] Drag-to-reorder slots within a stage column (currently sortOrder is
       stored but only respected on read)
@@ -38,6 +30,29 @@
 
 ## Done
 
+- 2026-05-05 — Phase 2.65: Documents API + Vercel Blob proxy.
+  `src/lib/documents/{schema,repo,blob}.ts` + `/api/documents` POST
+  (multipart upload, max 25MB, PDF + image MIME types only) and
+  `/api/documents/[id]` GET (auth-checked stream proxy with
+  no-store cache headers, 404 across tenants — never leaks existence)
+  and DELETE (deletes blob first, then row; orphaned blob over dangling
+  ref). Reusable `<FileUpload>` component (upload button OR paste
+  external URL, shows "uploaded file" or the raw URL once set,
+  `Remove` button to clear). Retrofit applied to 8 forms across
+  11 fields: ArtistForm passport, CrewForm passport, FlightForm
+  ticket + confirmation email, InvoiceForm file, PaymentForm PoP,
+  ContractForm draft + signed, RiderForm file, BookingForm
+  confirmation. All use RHF Controller + tags so the documents row
+  records the intent (passport / ticket / pop / contract / etc.).
+  No schema changes — entity columns still store a URL string,
+  now a proxy URL like `/api/documents/<uuid>`. **Existing free-text
+  URLs you've typed already keep working** — the FileUpload widget
+  shows the raw URL when it's not a proxy URL, and you can clear or
+  re-upload. 26 new tests; suite up to 335. Probed: ran `npm run
+  check` — clean. **Note:** Blob is private (`access: 'private'`),
+  so the actual file requires the BLOB_READ_WRITE_TOKEN that's set
+  on the Vercel deployment. Local dev: ensure the token is in
+  `.env.local`.
 - 2026-05-05 — Phase 2.8: Riders, Contracts, Guestlist modules shipped
   (52 tests). Three CRUD modules from the same template:
   `src/lib/{riders,contracts,guestlist}/{schema,repo}.ts` + 6 routes

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Route } from "next";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import { paymentInputSchema } from "@/lib/payments/schema";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import FileUpload from "@/components/ui/FileUpload";
 import type { Invoice, Payment } from "@/lib/payments/repo";
 import type { Artist } from "@/lib/artists/repo";
 import type { Vendor } from "@/lib/ground/repo";
@@ -51,6 +52,7 @@ export default function PaymentForm({
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -220,11 +222,19 @@ export default function PaymentForm({
         </Field>
 
         <div className="col-span-2">
-          <Field label="Proof of payment URL" error={errors.popUrl?.message}>
-            <Input
-              {...register("popUrl")}
-              placeholder="https://..."
-              autoComplete="off"
+          <Field label="Proof of payment" error={errors.popUrl?.message}>
+            <Controller
+              control={control}
+              name="popUrl"
+              render={({ field }) => (
+                <FileUpload
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  entityType="payment"
+                  entityId={payment?.id}
+                  tags={["pop"]}
+                />
+              )}
             />
           </Field>
         </div>

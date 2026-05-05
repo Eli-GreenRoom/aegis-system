@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Route } from "next";
 import {
@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import FileUpload from "@/components/ui/FileUpload";
 import type { Artist } from "@/lib/artists/repo";
 import type { Contract } from "@/lib/contracts/repo";
 
@@ -43,6 +44,7 @@ export default function ContractForm({ contract, artists }: Props) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ContractInput>({
     resolver: zodResolver(contractInputSchema),
@@ -137,20 +139,36 @@ export default function ContractForm({ contract, artists }: Props) {
         </Field>
 
         <div className="col-span-2">
-          <Field label="Draft file URL" error={errors.fileUrl?.message}>
-            <Input
-              {...register("fileUrl")}
-              placeholder="https://..."
-              autoComplete="off"
+          <Field label="Draft file" error={errors.fileUrl?.message}>
+            <Controller
+              control={control}
+              name="fileUrl"
+              render={({ field }) => (
+                <FileUpload
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  entityType="contract"
+                  entityId={contract?.id}
+                  tags={["contract", "draft"]}
+                />
+              )}
             />
           </Field>
         </div>
         <div className="col-span-2">
-          <Field label="Signed file URL" error={errors.signedFileUrl?.message}>
-            <Input
-              {...register("signedFileUrl")}
-              placeholder="https://..."
-              autoComplete="off"
+          <Field label="Signed file" error={errors.signedFileUrl?.message}>
+            <Controller
+              control={control}
+              name="signedFileUrl"
+              render={({ field }) => (
+                <FileUpload
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  entityType="contract"
+                  entityId={contract?.id}
+                  tags={["contract", "signed"]}
+                />
+              )}
             />
           </Field>
         </div>

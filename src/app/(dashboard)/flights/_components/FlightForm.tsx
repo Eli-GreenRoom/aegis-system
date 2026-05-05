@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Route } from "next";
 import { flightInputSchema, type FlightInput } from "@/lib/flights/schema";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import FileUpload from "@/components/ui/FileUpload";
 import type { Flight } from "@/lib/flights/repo";
 import type { Person } from "@/lib/people";
 
@@ -43,6 +44,7 @@ export default function FlightForm({ flight, people }: Props) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FlightInput>({
     resolver: zodResolver(flightInputSchema),
@@ -214,14 +216,38 @@ export default function FlightForm({ flight, people }: Props) {
         <Field label="Seat" error={errors.seat?.message}>
           <Input {...register("seat")} placeholder="14A" />
         </Field>
-        <Field label="Ticket URL" error={errors.ticketUrl?.message}>
-          <Input {...register("ticketUrl")} placeholder="https://..." />
+        <Field label="Ticket file" error={errors.ticketUrl?.message}>
+          <Controller
+            control={control}
+            name="ticketUrl"
+            render={({ field }) => (
+              <FileUpload
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                entityType="flight"
+                entityId={flight?.id}
+                tags={["ticket"]}
+              />
+            )}
+          />
         </Field>
         <Field
-          label="Confirmation email URL"
+          label="Confirmation email"
           error={errors.confirmationEmailUrl?.message}
         >
-          <Input {...register("confirmationEmailUrl")} placeholder="https://..." />
+          <Controller
+            control={control}
+            name="confirmationEmailUrl"
+            render={({ field }) => (
+              <FileUpload
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                entityType="flight"
+                entityId={flight?.id}
+                tags={["confirmation"]}
+              />
+            )}
+          />
         </Field>
       </div>
 

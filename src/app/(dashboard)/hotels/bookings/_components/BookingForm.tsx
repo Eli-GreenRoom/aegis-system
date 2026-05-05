@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Route } from "next";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import { hotelBookingBaseSchema } from "@/lib/hotels/schema";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import FileUpload from "@/components/ui/FileUpload";
 import type { Booking, Hotel, RoomBlock } from "@/lib/hotels/repo";
 import type { Person } from "@/lib/people";
 
@@ -256,13 +257,21 @@ export default function BookingForm({ booking, hotels, blocks, people }: Props) 
 
         <div className="col-span-2">
           <Field
-            label="Confirmation URL"
+            label="Confirmation"
             error={errors.confirmationUrl?.message}
           >
-            <Input
-              {...register("confirmationUrl")}
-              placeholder="https://..."
-              autoComplete="off"
+            <Controller
+              control={control}
+              name="confirmationUrl"
+              render={({ field }) => (
+                <FileUpload
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  entityType="hotel_booking"
+                  entityId={booking?.id}
+                  tags={["confirmation"]}
+                />
+              )}
             />
           </Field>
         </div>

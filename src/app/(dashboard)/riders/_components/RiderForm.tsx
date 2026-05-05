@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { riderInputSchema, type RiderInput } from "@/lib/riders/schema";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import FileUpload from "@/components/ui/FileUpload";
 import type { Artist } from "@/lib/artists/repo";
 
 interface Props {
@@ -21,6 +22,7 @@ export default function RiderForm({ artists }: Props) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<RiderInput>({
     resolver: zodResolver(riderInputSchema),
@@ -78,11 +80,18 @@ export default function RiderForm({ artists }: Props) {
         </Field>
 
         <div className="col-span-2">
-          <Field label="File URL" error={errors.fileUrl?.message}>
-            <Input
-              {...register("fileUrl")}
-              placeholder="https://..."
-              autoComplete="off"
+          <Field label="Rider file" error={errors.fileUrl?.message}>
+            <Controller
+              control={control}
+              name="fileUrl"
+              render={({ field }) => (
+                <FileUpload
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  entityType="rider"
+                  tags={["rider"]}
+                />
+              )}
             />
           </Field>
         </div>
