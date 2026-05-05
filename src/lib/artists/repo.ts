@@ -1,7 +1,8 @@
 import { and, asc, eq, inArray, isNull, isNotNull, ilike, or, sql } from "drizzle-orm";
 import { db } from "@/db/client";
-import { artists } from "@/db/schema";
+import { artists, sets, slots } from "@/db/schema";
 import type { ArtistDbValues } from "./schema";
+import type { SetStatus } from "@/lib/lineup/schema";
 
 export type Artist = typeof artists.$inferSelect;
 
@@ -10,6 +11,12 @@ export interface ListArtistsParams {
   search?: string;
   agency?: string;
   archived?: "active" | "archived" | "all";
+  /** Filter to artists with at least one set on this stage. */
+  stageId?: string;
+  /** Filter to artists with at least one set in this status. Combines with
+   *  stageId via AND on the same set row (artist has a set on stageX with
+   *  statusY). */
+  setStatus?: SetStatus;
 }
 
 export async function listArtists({
@@ -17,6 +24,8 @@ export async function listArtists({
   search,
   agency,
   archived = "active",
+  stageId,
+  setStatus,
 }: ListArtistsParams): Promise<Artist[]> {
   const filters = [eq(artists.editionId, editionId)];
 
@@ -37,6 +46,24 @@ export async function listArtists({
       ilike(artists.slug, q)
     );
     if (searchOr) filters.push(searchOr);
+  }
+
+  // Stage / set-status filter: resolve to artist IDs first via a join
+  // through sets -> slots, then narrow the artists query with `inArray`.
+  // Two queries beats joining + DISTINCT-ing the main select for our
+  // scale (a few hundred artists).
+  if (stageId || setStatus) {
+    const setFilters = [eq(slots.editionId, editionId)];
+    if (stageId) setFilters.push(eq(slots.stageId, stageId));
+    if (setStatus) setFilters.push(eq(sets.status, setStatus));
+    const matchingArtistRows = await db
+      .selectDistinct({ artistId: sets.artistId })
+      .from(sets)
+      .innerJoin(slots, eq(sets.slotId, slots.id))
+      .where(and(...setFilters));
+    const matchingIds = matchingArtistRows.map((r) => r.artistId);
+    if (matchingIds.length === 0) return [];
+    filters.push(inArray(artists.id, matchingIds));
   }
 
   return db

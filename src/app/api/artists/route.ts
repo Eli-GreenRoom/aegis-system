@@ -8,6 +8,7 @@ import {
   listArtists,
   type ListArtistsParams,
 } from "@/lib/artists/repo";
+import { setStatusEnum } from "@/lib/lineup/schema";
 
 export async function GET(req: NextRequest) {
   const session = await getAppSession();
@@ -24,11 +25,19 @@ export async function GET(req: NextRequest) {
   const archived: ListArtistsParams["archived"] =
     archivedParam === "archived" || archivedParam === "all" ? archivedParam : "active";
 
+  const stageId = url.searchParams.get("stageId") ?? undefined;
+  const setStatusRaw = url.searchParams.get("setStatus") ?? undefined;
+  const setStatusParsed = setStatusRaw
+    ? setStatusEnum.safeParse(setStatusRaw)
+    : null;
+
   const rows = await listArtists({
     editionId: edition.id,
     search,
     agency,
     archived,
+    stageId,
+    setStatus: setStatusParsed?.success ? setStatusParsed.data : undefined,
   });
   return Response.json({ artists: rows });
 }

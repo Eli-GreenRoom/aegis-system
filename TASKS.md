@@ -7,12 +7,7 @@
 
 ## Now
 
-- [ ] Stage / set status filters on /artists now that lineup ships
-
-## Next
-
-- [ ] Drag-to-reorder slots within a stage column (currently sortOrder is
-      stored but only respected on read)
+_(Pick from Later, or call something out by hand.)_
 
 ## Later
 
@@ -25,6 +20,20 @@
 
 ## Done
 
+- 2026-05-05 — Drag-to-reorder slots within a stage column. Native
+  HTML5 drag-and-drop (no new dep) inside `LineupBoard`: each slot
+  is `draggable`, on drag-over the column reorders optimistically via
+  a per-stage local override, on drop POSTs `{stageId, day, slotIds}`
+  to a new `/api/slots/reorder` endpoint that validates each id
+  belongs to the stage+day+edition before renumbering. 363 tests
+  (was 356).
+- 2026-05-05 — Stage / set-status filters on /artists. Two new
+  dropdowns on the artists list: Stage (any of the 4 stages) and Set
+  status (any of option / confirmed / not_available / live / done /
+  withdrawn). `listArtists` resolves matching artist IDs via a
+  `sets -> slots` selectDistinct join, then narrows the main query
+  with `inArray` - cheaper than DISTINCTing the main select. API
+  threads both as `?stageId=...&setStatus=...`. 356 tests (was 354).
 - 2026-05-05 — Phase 2.9 + edit-flow fixes (354 tests).
   Aggregators: `src/lib/aggregators/` with `getArtistRoadsheet`,
   `getOpenIssues` (severity-sorted with the 7-rule set from

@@ -112,6 +112,51 @@ export async function deleteSlot(id: string): Promise<Slot | null> {
   return row ?? null;
 }
 
+/**
+ * Reassign `sortOrder` for the given slot ids to their array index.
+ * Validates that every id belongs to the same `(stageId, day)` and to
+ * the given edition before writing - otherwise a malicious payload
+ * could renumber slots from another stage.
+ *
+ * Returns the count of rows written, or null when validation fails.
+ */
+export async function reorderSlots(
+  editionId: string,
+  stageId: string,
+  day: Day,
+  slotIds: string[]
+): Promise<{ updated: number } | null> {
+  if (slotIds.length === 0) return { updated: 0 };
+
+  const rows = await db
+    .select()
+    .from(slots)
+    .where(
+      and(
+        eq(slots.editionId, editionId),
+        eq(slots.stageId, stageId),
+        eq(slots.day, day),
+        inArray(slots.id, slotIds)
+      )
+    );
+  if (rows.length !== slotIds.length) return null;
+
+  // One UPDATE per slot. Cheap at our scale (handful of slots per stage
+  // per day). Could be batched into a single CASE expression but the
+  // gain is negligible.
+  let updated = 0;
+  for (let i = 0; i < slotIds.length; i++) {
+    const id = slotIds[i];
+    const [row] = await db
+      .update(slots)
+      .set({ sortOrder: i })
+      .where(eq(slots.id, id))
+      .returning();
+    if (row) updated += 1;
+  }
+  return { updated };
+}
+
 // ── Sets ────────────────────────────────────────────────────────────────
 
 export async function listSetsForSlot(slotId: string): Promise<SetRow[]> {

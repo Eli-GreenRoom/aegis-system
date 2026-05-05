@@ -4,11 +4,17 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import type { Route } from "next";
 
-interface Props {
-  agencies: string[];
+interface StageOption {
+  id: string;
+  name: string;
 }
 
-export default function ArtistsFilters({ agencies }: Props) {
+interface Props {
+  agencies: string[];
+  stages: StageOption[];
+}
+
+export default function ArtistsFilters({ agencies, stages }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -17,6 +23,8 @@ export default function ArtistsFilters({ agencies }: Props) {
   const [search, setSearch] = useState(params.get("search") ?? "");
   const agency = params.get("agency") ?? "";
   const archived = params.get("archived") ?? "active";
+  const stageId = params.get("stageId") ?? "";
+  const setStatus = params.get("setStatus") ?? "";
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -68,6 +76,41 @@ export default function ArtistsFilters({ agencies }: Props) {
           {agencies.map((a) => (
             <option key={a} value={a}>{a}</option>
           ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="text-mono block text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted] mb-1">
+          Stage
+        </label>
+        <select
+          value={stageId}
+          onChange={(e) => apply({ stageId: e.target.value })}
+          className="rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] focus:border-brand focus:outline-none focus:ring-1 focus:ring-[--color-brand]"
+        >
+          <option value="">All</option>
+          {stages.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="text-mono block text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted] mb-1">
+          Set status
+        </label>
+        <select
+          value={setStatus}
+          onChange={(e) => apply({ setStatus: e.target.value })}
+          className="rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] focus:border-brand focus:outline-none focus:ring-1 focus:ring-[--color-brand]"
+        >
+          <option value="">Any</option>
+          <option value="option">Option</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="not_available">N/A</option>
+          <option value="live">Live</option>
+          <option value="done">Done</option>
+          <option value="withdrawn">Withdrawn</option>
         </select>
       </div>
 

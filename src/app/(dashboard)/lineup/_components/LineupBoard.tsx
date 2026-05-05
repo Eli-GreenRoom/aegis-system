@@ -10,7 +10,12 @@ import type {
   Day,
   SetStatus,
 } from "@/lib/lineup/schema";
-import type { Slot, StageWithSlots, SetWithArtist } from "@/lib/lineup/repo";
+import type {
+  Slot,
+  SlotWithSets,
+  StageWithSlots,
+  SetWithArtist,
+} from "@/lib/lineup/repo";
 
 interface ArtistOption {
   id: string;
@@ -51,6 +56,14 @@ export default function LineupBoard({ day, grid, artists }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  // Drag-to-reorder state. `dragSlotId` is the row being dragged.
+  // `localOrder` holds an optimistic per-stage override of slot ids
+  // while the user drags; cleared on drop or drag-end.
+  const [dragSlotId, setDragSlotId] = useState<string | null>(null);
+  const [localOrder, setLocalOrder] = useState<
+    Record<string, string[] | undefined>
+  >({});
+
   async function deleteSlot(id: string) {
     if (!confirm("Delete this slot? Any sets on it will be deleted too.")) return;
     setBusy(true);
@@ -61,6 +74,80 @@ export default function LineupBoard({ day, grid, artists }: Props) {
       return;
     }
     router.refresh();
+  }
+
+  function onSlotDragStart(slotId: string) {
+    setDragSlotId(slotId);
+    setError("");
+  }
+
+  function onSlotDragOver(
+    e: React.DragEvent<HTMLDivElement>,
+    targetSlotId: string,
+    stageId: string,
+    stageSlots: SlotWithSets[]
+  ) {
+    if (!dragSlotId || dragSlotId === targetSlotId) return;
+    const sourceStageId = stageSlots.find((s) => s.id === dragSlotId)?.stageId;
+    // Only allow reorder within the same stage column.
+    if (sourceStageId !== stageId) return;
+    e.preventDefault();
+    const current = localOrder[stageId] ?? stageSlots.map((s) => s.id);
+    const fromIdx = current.indexOf(dragSlotId);
+    const toIdx = current.indexOf(targetSlotId);
+    if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+    const next = [...current];
+    next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, dragSlotId);
+    setLocalOrder((o) => ({ ...o, [stageId]: next }));
+  }
+
+  async function onSlotDrop(stageId: string, stageSlots: SlotWithSets[]) {
+    const order = localOrder[stageId];
+    setDragSlotId(null);
+    if (!order) return;
+    const baseline = stageSlots.map((s) => s.id);
+    if (order.length !== baseline.length || order.every((id, i) => id === baseline[i])) {
+      // No-op reorder.
+      setLocalOrder((o) => ({ ...o, [stageId]: undefined }));
+      return;
+    }
+    setBusy(true);
+    const res = await fetch("/api/slots/reorder", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ stageId, day, slotIds: order }),
+    });
+    setBusy(false);
+    setLocalOrder((o) => ({ ...o, [stageId]: undefined }));
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Couldn't save order.");
+      return;
+    }
+    router.refresh();
+  }
+
+  function onSlotDragEnd() {
+    // Clear if drop fired outside a valid target.
+    setDragSlotId(null);
+    setLocalOrder({});
+  }
+
+  /**
+   * Apply the optimistic local order to a stage's slots if the user is
+   * mid-drag. Returns slots in their current display order.
+   */
+  function displaySlots(
+    stageId: string,
+    stageSlots: SlotWithSets[]
+  ): SlotWithSets[] {
+    const order = localOrder[stageId];
+    if (!order) return stageSlots;
+    const byId = new Map(stageSlots.map((s) => [s.id, s]));
+    return order
+      .map((id) => byId.get(id))
+      .filter((s): s is SlotWithSets => !!s);
   }
 
   async function deleteSet(id: string) {
@@ -105,16 +192,30 @@ export default function LineupBoard({ day, grid, artists }: Props) {
               </button>
             </header>
 
-            <div className="flex-1 p-2 space-y-2 min-h-20">
+            <div
+              className="flex-1 p-2 space-y-2 min-h-20"
+              onDrop={() => onSlotDrop(stage.id, slots)}
+              onDragOver={(e) => {
+                if (dragSlotId) e.preventDefault();
+              }}
+            >
               {slots.length === 0 && (
                 <p className="text-[--color-fg-subtle] text-[12px] italic px-1 py-2">
                   No slots.
                 </p>
               )}
-              {slots.map((slot) => (
+              {displaySlots(stage.id, slots).map((slot) => (
                 <div
                   key={slot.id}
-                  className="border border-[--color-border-subtle] rounded-md p-2"
+                  draggable
+                  onDragStart={() => onSlotDragStart(slot.id)}
+                  onDragOver={(e) => onSlotDragOver(e, slot.id, stage.id, slots)}
+                  onDragEnd={onSlotDragEnd}
+                  className={`border rounded-md p-2 cursor-move transition-opacity ${
+                    dragSlotId === slot.id
+                      ? "border-brand/60 opacity-50"
+                      : "border-[--color-border-subtle]"
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <button

@@ -62,6 +62,7 @@ vi.mock("@/lib/lineup/repo", () => ({
   })),
   updateSlot: vi.fn(async (_id, input) => ({ ...fixtureSlot, ...input })),
   deleteSlot: vi.fn(async () => fixtureSlot),
+  reorderSlots: vi.fn(async () => ({ updated: 2 })),
   // sets
   listSetsForSlot: vi.fn(async () => [fixtureSet]),
   listSetsForArtist: vi.fn(async () => [fixtureSet]),
@@ -101,6 +102,7 @@ import {
   PATCH as slotPATCH,
   DELETE as slotDELETE,
 } from "@/app/api/slots/[id]/route";
+import { POST as slotsReorderPOST } from "@/app/api/slots/reorder/route";
 
 import {
   GET as setsListGET,
@@ -529,5 +531,85 @@ describe("/api/sets/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await setGET(jsonReq("http://test/api/sets/x", "GET"), ctx);
     expect(res.status).toBe(401);
+  });
+});
+
+// ── /api/slots/reorder ────────────────────────────────────────────────
+
+describe("POST /api/slots/reorder", () => {
+  const validBody = {
+    stageId: FIXTURE_STAGE_ID,
+    day: "friday",
+    slotIds: [FIXTURE_SLOT_ID, "55555555-5555-4555-8555-aaaaaaaaaaaa"],
+  };
+
+  it("calls reorderSlots with current edition + body", async () => {
+    const res = await slotsReorderPOST(
+      jsonReq("http://test/api/slots/reorder", "POST", validBody)
+    );
+    expect(res.status).toBe(200);
+    expect(mocks.repo.reorderSlots).toHaveBeenCalledWith(
+      FIXTURE_EDITION_ID,
+      FIXTURE_STAGE_ID,
+      "friday",
+      validBody.slotIds
+    );
+  });
+
+  it("400 when slotIds empty", async () => {
+    const res = await slotsReorderPOST(
+      jsonReq("http://test/api/slots/reorder", "POST", {
+        ...validBody,
+        slotIds: [],
+      })
+    );
+    expect(res.status).toBe(400);
+    expect(mocks.repo.reorderSlots).not.toHaveBeenCalled();
+  });
+
+  it("400 when day invalid", async () => {
+    const res = await slotsReorderPOST(
+      jsonReq("http://test/api/slots/reorder", "POST", {
+        ...validBody,
+        day: "monday",
+      })
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("400 when stageId not a uuid", async () => {
+    const res = await slotsReorderPOST(
+      jsonReq("http://test/api/slots/reorder", "POST", {
+        ...validBody,
+        stageId: "not-a-uuid",
+      })
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("400 when repo signals stage/day mismatch", async () => {
+    mocks.repo.reorderSlots.mockResolvedValueOnce(null);
+    const res = await slotsReorderPOST(
+      jsonReq("http://test/api/slots/reorder", "POST", validBody)
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("401 unauth", async () => {
+    mocks.session.getAppSession.mockResolvedValueOnce(null);
+    const res = await slotsReorderPOST(
+      jsonReq("http://test/api/slots/reorder", "POST", validBody)
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("400 malformed JSON", async () => {
+    const req = new NextRequest("http://test/api/slots/reorder", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{nope",
+    });
+    const res = await slotsReorderPOST(req);
+    expect(res.status).toBe(400);
   });
 });

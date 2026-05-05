@@ -100,6 +100,8 @@ describe("GET /api/artists", () => {
       search: undefined,
       agency: undefined,
       archived: "active",
+      stageId: undefined,
+      setStatus: undefined,
     });
   });
 
@@ -115,7 +117,33 @@ describe("GET /api/artists", () => {
       search: "hir",
       agency: "WME",
       archived: "archived",
+      stageId: undefined,
+      setStatus: undefined,
     });
+  });
+
+  it("threads stageId + setStatus filters", async () => {
+    await listGET(
+      jsonReq(
+        "http://test/api/artists?stageId=44444444-4444-4444-8444-444444444444&setStatus=confirmed",
+        "GET"
+      )
+    );
+    expect(mocks.repo.listArtists).toHaveBeenCalledWith(
+      expect.objectContaining({
+        stageId: "44444444-4444-4444-8444-444444444444",
+        setStatus: "confirmed",
+      })
+    );
+  });
+
+  it("ignores invalid setStatus silently", async () => {
+    await listGET(
+      jsonReq("http://test/api/artists?setStatus=teleported", "GET")
+    );
+    expect(mocks.repo.listArtists).toHaveBeenCalledWith(
+      expect.objectContaining({ setStatus: undefined })
+    );
   });
 
   it("rejects unauthenticated", async () => {
