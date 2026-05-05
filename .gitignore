@@ -60,3 +60,6 @@ drizzle/meta/_journal.json.bak
 
 # claude code local settings (do not commit)
 .claude/
+
+.vercel
+.env*.local
