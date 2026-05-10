@@ -1,4 +1,4 @@
-# Aegis System — Tasks
+# GreenRoom Stages — Tasks
 
 > Living task board. Move items Now → Done with the date when finished.
 > Read in tandem with `HANDOFF.md` for the strategic phase view.
@@ -49,16 +49,17 @@ _(Pick from Later, or call something out by hand.)_
       inTransitAt / completedAt on the matching transition.
     - POST /api/hotel-bookings/[id]/advance: stamps checkedInAt /
       checkedOutAt.
-    All three reject 409 at terminal forward states; the planning UI
-    is the way to revise. PickupDbValues + HotelBookingDbValues
-    extended with the new timestamp fields (table columns already
-    existed since Phase 2.5a; only the typed shape was missing).
+      All three reject 409 at terminal forward states; the planning UI
+      is the way to revise. PickupDbValues + HotelBookingDbValues
+      extended with the new timestamp fields (table columns already
+      existed since Phase 2.5a; only the typed shape was missing).
   - 24 new tests; suite up to 413.
 
   **Deferred to "Phase 5 polish":** stage filter chips wiring on
   Now/Pickups (component exists but unused), polling / pull-to-
   refresh, PWA install prompt, roadsheet PDF export, coral-pulse
   animations on overdue rows.
+
 - 2026-05-05 — Phase 4: AI parsers (invoices + flights only, per Eli's
   scope direction). Two parsers in `src/lib/ai/`:
   - `parseInvoiceText` — extracts vendor / number / amount / currency /
@@ -67,14 +68,14 @@ _(Pick from Later, or call something out by hand.)_
   - `parseFlightText` — extracts passenger / airline / flight number /
     IATA codes / scheduled datetime / PNR / seat / direction
     (inbound/outbound relative to BEY) from confirmation emails.
-  Both wrap `claude-sonnet-4-6`, validate output with Zod, throw on
-  malformed JSON or invalid fields. AI never writes - parsers return
-  structured JSON; reusable `<AIParseDialog>` shows the result, the
-  operator clicks Apply to fill the form, then submits normally to
-  persist. "Parse with AI" button on the new-invoice and new-flight
-  pages (hidden in edit mode). Routes auth-gated by `payments` and
-  `flights` permissions respectively. 26 new tests; suite up to 389
-  (was 363).
+    Both wrap `claude-sonnet-4-6`, validate output with Zod, throw on
+    malformed JSON or invalid fields. AI never writes - parsers return
+    structured JSON; reusable `<AIParseDialog>` shows the result, the
+    operator clicks Apply to fill the form, then submits normally to
+    persist. "Parse with AI" button on the new-invoice and new-flight
+    pages (hidden in edit mode). Routes auth-gated by `payments` and
+    `flights` permissions respectively. 26 new tests; suite up to 389
+    (was 363).
 - 2026-05-05 — Drag-to-reorder slots within a stage column. Native
   HTML5 drag-and-drop (no new dep) inside `LineupBoard`: each slot
   is `draggable`, on drag-over the column reorders optimistically via
@@ -105,7 +106,7 @@ _(Pick from Later, or call something out by hand.)_
     could only delete + recreate, losing attached sets.
   - Riders gained a full edit page at `/riders/[id]` (was inline-only:
     confirmed-toggle + delete).
-  354 tests green (was 335). Probed: ran `npm run check` - clean.
+    354 tests green (was 335). Probed: ran `npm run check` - clean.
 - 2026-05-05 — Phase 2.65: Documents API + Vercel Blob proxy.
   `src/lib/documents/{schema,repo,blob}.ts` + `/api/documents` POST
   (multipart upload, max 25MB, PDF + image MIME types only) and
@@ -125,26 +126,26 @@ _(Pick from Later, or call something out by hand.)_
   URLs you've typed already keep working** — the FileUpload widget
   shows the raw URL when it's not a proxy URL, and you can clear or
   re-upload. 26 new tests; suite up to 335. Probed: ran `npm run
-  check` — clean. **Note:** Blob is private (`access: 'private'`),
+check` — clean. **Note:** Blob is private (`access: 'private'`),
   so the actual file requires the BLOB_READ_WRITE_TOKEN that's set
   on the Vercel deployment. Local dev: ensure the token is in
   `.env.local`.
 - 2026-05-05 — Phase 2.8: Riders, Contracts, Guestlist modules shipped
   (52 tests). Three CRUD modules from the same template:
   `src/lib/{riders,contracts,guestlist}/{schema,repo}.ts` + 6 routes
-  + 3 dashboard pages each (list / new / detail). Contracts wires
-  status transitions through `recordTransition` (added contract path
-  to the audit channel - it was already in `AuditEntityType`); on
-  draft → sent it auto-stamps `sentAt` to server now() unless the
-  patch supplied one or `sentAt` was already set, same on
-  sent → signed for `signedAt`. Riders has no audit (just a
-  `confirmed` boolean toggled inline from the table). Guestlist has
-  inline `inviteSent` + `checkedIn` toggles plus a four-card summary
-  (total / pending invite / checked in / DJ guests breakdown via
-  `getGuestlistSummary`). 309 tests green (was 257). Probed:
-  ran `npm run check` - clean. **Not yet wired:** all three modules'
-  file URL fields are still free-text (Phase 2.65 documents API
-  retrofit). No production migration needed.
+  - 3 dashboard pages each (list / new / detail). Contracts wires
+    status transitions through `recordTransition` (added contract path
+    to the audit channel - it was already in `AuditEntityType`); on
+    draft → sent it auto-stamps `sentAt` to server now() unless the
+    patch supplied one or `sentAt` was already set, same on
+    sent → signed for `signedAt`. Riders has no audit (just a
+    `confirmed` boolean toggled inline from the table). Guestlist has
+    inline `inviteSent` + `checkedIn` toggles plus a four-card summary
+    (total / pending invite / checked in / DJ guests breakdown via
+    `getGuestlistSummary`). 309 tests green (was 257). Probed:
+    ran `npm run check` - clean. **Not yet wired:** all three modules'
+    file URL fields are still free-text (Phase 2.65 documents API
+    retrofit). No production migration needed.
 - 2026-05-05 — Phase 2.7: Payments + Invoices module shipped (39 tests).
   `src/lib/payments/{schema,repo}.ts` + 4 routes (`/api/invoices`,
   `/api/payments` with `[id]` siblings). Both PATCH routes wire status
@@ -160,7 +161,7 @@ _(Pick from Later, or call something out by hand.)_
   `/payments/invoices` with its own list + filters; payment + invoice
   forms with display-unit money inputs that convert to cents on
   submit. 257 tests green (was 218 after 2.5). Probed: ran `npm run
-  check` - clean. **Not yet wired:** invoice file URL + payment
+check` - clean. **Not yet wired:** invoice file URL + payment
   popUrl are still free-text URLs (Phase 2.65 documents API will
   retrofit). No production migration needed - both tables already
   existed in the initial schema.
@@ -184,7 +185,7 @@ _(Pick from Later, or call something out by hand.)_
   applied (no schema changes in this phase - already done in 2.5a).
 - 2026-05-05 — Phase 2.5a stage 2: audit + transition helper.
   Added `src/lib/audit.ts` with `recordTransition(client, { actorId,
-  entity, diff })` — returns an unawaited Drizzle insert builder so the
+entity, diff })` — returns an unawaited Drizzle insert builder so the
   caller composes `db.batch([updateBuilder, recordTransition(...)])`.
   Under the neon-http driver, `db.batch` is the atomic primitive Neon
   exposes (single-roundtrip transaction); Drizzle's `db.transaction(...)`

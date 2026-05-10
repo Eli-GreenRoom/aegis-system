@@ -1,4 +1,4 @@
-# Festival-Day Mode — Spec
+# GreenRoom Stages — Festival-Day Mode Spec
 
 > What the app turns into during festival weekend. Three days a year, but
 > they're the days that matter most. Phone-driven, glanceable, one-tap.
@@ -15,11 +15,13 @@ Manual override available in Settings (Auto / Force on / Force off).
 ## Posture shift
 
 Outside festival days:
+
 - Desktop-first
 - Dense forms, lots of CRUD
 - Lineup, contracts, payments are the busy modules
 
 During festival days:
+
 - **Phone-first** — Eli walks around the site
 - **Read-heavy** — almost no typing
 - **Glanceable** — every screen is a status board
@@ -110,12 +112,12 @@ mint-blue = in_transit, mint = completed.
 
 **One primary button per row**, advancing the state:
 
-| Current status | Button |
-|---|---|
-| `scheduled`    | `Dispatch` (sets `dispatched_at = now()`) |
+| Current status | Button                                     |
+| -------------- | ------------------------------------------ |
+| `scheduled`    | `Dispatch` (sets `dispatched_at = now()`)  |
 | `dispatched`   | `Picked up` (sets `in_transit_at = now()`) |
-| `in_transit`   | `Delivered` (sets `completed_at = now()`) |
-| `completed`    | (no button — long-press to revise) |
+| `in_transit`   | `Delivered` (sets `completed_at = now()`)  |
+| `completed`    | (no button — long-press to revise)         |
 
 Tap driver phone → `tel:` link. No form, ever.
 

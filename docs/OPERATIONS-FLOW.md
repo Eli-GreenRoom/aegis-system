@@ -1,4 +1,4 @@
-# Operations Flow — Aegis System
+# GreenRoom Stages — Operations Flow
 
 > The lifecycle of a single artist (or crew member) from "agency emails me" to
 > "set ended Sunday 4am, heading home." How data should enter the system, how
@@ -16,6 +16,7 @@
 ## 1. The lifecycle (planning → festival → departure)
 
 ### Year-out → 90 days out — booking
+
 - Agency offer comes in → create artist (status: `option`)
 - Negotiation → set placed in slot, set status `option`, fee captured
 - Contract drafted → sent → countersigned → uploaded
@@ -23,12 +24,14 @@
 - Set status flips to `confirmed`
 
 ### 90 → 30 days out — paperwork
+
 - Hospitality + technical riders received and confirmed
 - Visa application started (if needed); `visaStatus` advances pending → approved
 - Press-kit URL captured (Dropbox / Drive / artist site)
 - Passport file uploaded for visa + airport use
 
 ### 30 → 7 days out — travel
+
 - Flights booked (inbound + outbound legs, separate rows)
 - Hotel block assigned: artist enters a `hotel_booking` against a block
 - Pickups scheduled (airport→hotel, hotel→stage, stage→hotel, hotel→airport),
@@ -36,6 +39,7 @@
 - Final invoice raised → paid
 
 ### T-1 day — pre-festival
+
 - All flights are `scheduled`
 - All paperwork uploaded and confirmed
 - Drivers assigned (vendor + driver + phone on every pickup)
@@ -43,7 +47,9 @@
   resolved before the artist lands
 
 ### Day-of arrival
+
 Each artist's arrival cascade:
+
 ```
 flight        scheduled → boarded → in_air → landed
                                               │
@@ -54,6 +60,7 @@ hotel_booking                                          booked → checked_in
 ```
 
 ### Festival days proper
+
 - Hotel→Stage pickup follows same machine
 - Set: `confirmed` → `live` (auto on slot start) → `done` (auto on slot end)
 - Last-minute drop: set goes to `withdrawn` (not the artist — keep history)
@@ -61,6 +68,7 @@ hotel_booking                                          booked → checked_in
 - Repeat per artist per day
 
 ### Departure
+
 - Hotel: `checked_in` → `checked_out` (or `no_show` if a guest never arrived)
 - Hotel→Airport pickup
 - Outbound flight scheduled → boarded → in_air. Stop tracking after boarded
@@ -75,6 +83,7 @@ allowed but require a long-press / overflow action and write a verbose audit
 record. Forward transitions are one-tap.
 
 ### `flights.status`
+
 ```
 scheduled → boarded → in_air → landed
         ↘            ↗           ↑
@@ -82,17 +91,20 @@ scheduled → boarded → in_air → landed
         ↘
          cancelled
 ```
+
 - On `landed`: capture `actualDt = now()` (don't trust user typing)
 - On `delayed`: keep current `scheduledDt`; add a `delayMinutes: integer`
   column; UI subtracts the delta from any auto-computed pickup ETA
 - `cancelled` is terminal; if a replacement flight is needed, create a new row
 
 ### `pickups.status`
+
 ```
 scheduled → dispatched → in_transit → completed
         ↘                              ↗
          cancelled  ←────── (rare)
 ```
+
 - New status added: `in_transit` (driver has the passenger but hasn't dropped
   off yet)
 - Capture timestamps on each transition: `dispatchedAt`, `inTransitAt`,
@@ -102,18 +114,21 @@ scheduled → dispatched → in_transit → completed
   / "Shift +1h" buttons.
 
 ### `hotel_bookings.status`
+
 ```
 tentative → booked → checked_in → checked_out
                         │
                         ↓
                     no_show              (new — guest never showed)
 ```
+
 - `tentative` = block reserved by Eli but not yet confirmed by the hotel
 - `booked` = hotel confirmed; default state pre-arrival
 - `checked_in` / `checked_out`: capture `checkedInAt` / `checkedOutAt`
 - `no_show`: terminal; counts against block usage but flagged separately
 
 ### `sets.status`
+
 ```
 option → confirmed → live → done
    │         ↓        ↓
@@ -121,6 +136,7 @@ option → confirmed → live → done
    ↓
 not_available  (was never going to happen)
 ```
+
 - New: `live` and `done` for festival-day display
 - New: `withdrawn` — distinguishes "they confirmed, then dropped" from
   "we considered them, never confirmed" (`not_available`). Important for
@@ -129,14 +145,18 @@ not_available  (was never going to happen)
   always allowed.
 
 ### `payments.status`
+
 Already complete: `pending` → `due` → `paid` (or → `overdue` → `paid`).
 `void` for cancelled. No changes.
 
 ### `contracts.status`
+
 Already complete: `draft` → `sent` → `signed` (or → `void`). No changes.
 
 ### `artists.visaStatus` and `crew.visaStatus`
+
 Currently text. Move to enum:
+
 ```
 not_needed | pending | approved | rejected
 ```
@@ -149,41 +169,51 @@ These changes land in one consolidated migration before Hotels (Phase 2.5a),
 so the rest of Phase 2 builds on top of clean enums.
 
 ### Crew table — parity with artists
+
 Add the travel-paperwork columns crew need:
+
 - `nationality: text`
 - `passportFileUrl: text` (private Blob proxy URL — uploaded via documents API)
 - `pressKitUrl: text` (rare for crew, but cheap to keep symmetric)
 - `visaStatus: visaStatusEnum` (new enum)
 
 ### New `visaStatusEnum`
+
 ```
 not_needed | pending | approved | rejected
 ```
+
 Replace `artists.visa_status` text with this enum. Add same on `crew`.
 
 ### Set status enum
+
 Add: `live`, `done`, `withdrawn`.
 
 ### Pickup status enum
+
 Add: `in_transit`.
 Add columns: `dispatched_at: timestamptz`, `in_transit_at: timestamptz`,
 `completed_at: timestamptz`. Existing `status` column is still the
 current state; the timestamps are the audit of when each transition happened.
 
 ### Hotel booking status enum
+
 Add: `no_show`.
 Add columns: `checked_in_at: timestamptz`, `checked_out_at: timestamptz`.
 
 ### Hotel room blocks
+
 Add: `label: text` — operator-friendly name like "Artists — Deluxe" or
 "Crew — Standard". Lets Eli book separate blocks for crew (per his
 2026-05-05 decision).
 
 ### Flights
+
 Add: `delay_minutes: integer` — set when status flips to `delayed`. Optional
 and nullable.
 
 ### Audit events
+
 Table already exists in schema. Wire writes on every status transition across
 flights, pickups, hotel_bookings, sets, payments, contracts. Write fields:
 `actorId`, `action` ("transition"), `entityType`, `entityId`, `diff`
@@ -197,8 +227,10 @@ These live in `src/lib/aggregators/` (new folder). Each is a pure function
 taking the DB client + scope; each has a unit test with mocked DB.
 
 ### `getArtistRoadsheet(artistId, day?)`
+
 Returns chronological events for an artist (or just for one day if `day` is
 passed). Powers the per-artist roadsheet PDF and the festival-day card.
+
 ```ts
 {
   artist,
@@ -213,7 +245,9 @@ passed). Powers the per-artist roadsheet PDF and the festival-day card.
 ```
 
 ### `getOpenIssues(editionId, scope: 'today' | 'week' | 'all')`
+
 Runs the rule-set:
+
 - Set `confirmed` + no contract uploaded → severity high
 - Set `confirmed` + no rider received → severity medium
 - Arrival flight today + no pickup scheduled → severity high
@@ -226,18 +260,23 @@ Runs the rule-set:
 Returns sorted by severity desc, then by chronological proximity.
 
 ### `getPickupsInWindow(editionId, startDt, endDt)`
+
 Powers the festival-day "Pickups in next 2h" panel. Includes vendor + driver
-+ phone fields denormalised so the row is self-contained.
+
+- phone fields denormalised so the row is self-contained.
 
 ### `getNowAndNext(stageId, atTime)`
+
 Per stage: the currently-`live` set + the next set with status `confirmed`
 or `live`. Defaults `atTime = now()`.
 
 ### `getArrivalsToday(editionId, date)`
+
 Inbound flights with `scheduledDt::date = date`. Includes the linked artist
 or crew, plus any linked pickup status. Powers the Arrivals screen.
 
 ### `getCurrentlyActiveBookings(editionId, date)`
+
 Hotel bookings where `checkin <= date < checkout`. Powers the "who's where
 right now" view.
 
@@ -276,6 +315,7 @@ forms vs buttons. Planning is forms. Festival day is buttons.
 ```
 
 Mechanics:
+
 - **One primary button per row** showing the next forward state
 - **Optimistic UI**: button label updates before the server confirms; rolls
   back with a coral toast if the request fails
@@ -327,9 +367,11 @@ else is collapsed.
 ```
 [ All ] [ Main ] [ Alt ] [ Select ] [ Coll ]
 ```
+
 Stays visible while scrolling. Selection persists in `localStorage`.
 
 ### Refresh model
+
 - Polling every 30s on Now / Pickups / Arrivals
 - Pull-to-refresh always works
 - Server actions for write — full route revalidate on success
@@ -340,6 +382,7 @@ Stays visible while scrolling. Selection persists in `localStorage`.
 ## 6. Audit & history
 
 Every status transition writes a row to `audit_events`:
+
 ```
 {
   actorId:    "user_2hf...",
@@ -395,11 +438,13 @@ the button being hidden.
 The pre-festival half of the system today is mostly forms. Two cheap upgrades:
 
 ### Bulk row entry
+
 For repeated entries (a batch of flights for 8 artists, all same airline),
 support a "+ add another" pattern that keeps the form open with the
 previous values prefilled. Doesn't sound like much; saves an hour per batch.
 
 ### AI-assisted entry (Phase 4 wedge — restated for emphasis)
+
 Drop a flight confirmation PDF / email / screenshot → Claude extracts the
 fields → operator confirms → row created. Same for hotel confirmations,
 invoices, riders.
@@ -408,7 +453,9 @@ Critically: the AI never writes to the DB directly. The operator confirms
 every parse. The audit log records who confirmed what.
 
 ### Smart defaults
+
 When creating a pickup linked to an inbound flight:
+
 - `pickupDt` = `flight.scheduledDt` + 30 min (configurable)
 - `routeFrom` = `airport`, `routeFromDetail` = `flight.toAirport`
 - `routeTo` = `hotel`, `routeToDetail` = artist's currently-active hotel
@@ -416,6 +463,7 @@ When creating a pickup linked to an inbound flight:
 - `personKind` / `personId` = inferred from the flight
 
 When creating a hotel booking:
+
 - `checkin` = inbound flight `scheduledDt::date`
 - `checkout` = outbound flight `scheduledDt::date`
 

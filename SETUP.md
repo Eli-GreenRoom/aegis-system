@@ -1,4 +1,4 @@
-# Aegis System — Setup
+# GreenRoom Stages — Setup
 
 > One-time setup. Run in order. Owner: Eli.
 > Estimated time end-to-end: ~45 minutes if accounts already exist.
@@ -18,9 +18,9 @@
 
 ## 1. GitHub
 
-1. Create org or user account if not present. Recommended account name:
-   `eli-aegis` or push to a personal account.
-2. Create repo: **`aegis-system`** — private.
+1. Use the `Eli-GreenRoom` GitHub account.
+2. Create repo: **`aegis-system`** — private. (Will be renamed `greenroom-stages` after
+   rebrand Phase D — see `GREENROOM_STAGES_REBRAND.md` §Phase A.5.)
 3. From the repo root locally:
    ```bash
    cd C:\Users\user\Desktop\aegis-system
@@ -28,13 +28,13 @@
    git add .
    git commit -m "chore: initial scaffold"
    git branch -M main
-   git remote add origin git@github.com:eli-aegis/aegis-system.git
+   git remote add origin git@github.com:Eli-GreenRoom/aegis-system.git
    git push -u origin main
    ```
-4. Set git identity for this repo (so commits don't leak personal email):
+4. Set git identity for this repo:
    ```bash
-   git config user.name "Eli Aegis"
-   git config user.email "logistics@aegisfestival.com"
+   git config user.name "Eli-GreenRoom"
+   git config user.email "elieabdo360@gmail.com"
    ```
 
 ---
@@ -80,7 +80,7 @@
 ## 5. Anthropic
 
 1. Go to <https://console.anthropic.com> → API Keys.
-2. Create key named `aegis-system-prod`. Copy as `ANTHROPIC_API_KEY`.
+2. Create key named `greenroom-stages-prod`. Copy as `ANTHROPIC_API_KEY`.
 3. Note: AI calls will use `claude-sonnet-4-6` for parsing and chat. Budget
    alerts at $50/mo to start; tune up after Phase 4.
 
@@ -91,7 +91,7 @@
 1. Sign up at <https://resend.com> with `logistics@aegisfestival.com`.
 2. **Domains** → Add `aegisfestival.com`. Add the SPF/DKIM/DMARC records to your
    DNS. Wait for "Verified" (usually < 10 min).
-3. **API Keys** → create `aegis-system-prod`. Copy as `RESEND_API_KEY`.
+3. **API Keys** → create `greenroom-stages-prod`. Copy as `RESEND_API_KEY`.
 4. Set `EMAIL_FROM=Aegis Logistics <logistics@aegisfestival.com>`.
 
 ---
@@ -119,7 +119,7 @@ NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
 RESEND_API_KEY=re_...
 EMAIL_FROM=Aegis Logistics <logistics@aegisfestival.com>
-NEXT_PUBLIC_APP_NAME=Aegis System
+NEXT_PUBLIC_APP_NAME=GreenRoom Stages
 ```
 
 ---
@@ -170,12 +170,12 @@ UPDATE "user" SET role = 'owner' WHERE email = 'logistics@aegisfestival.com';
 
 ## 12. Day-2 ops
 
-| Task | Where | Frequency |
-|---|---|---|
-| Logs | Vercel → Project → Logs | as needed |
-| DB inspect | `npm run db:studio` | as needed |
-| Backups | nightly cron exports DB to Blob (Phase 7) | auto |
-| Add team member | Dashboard → Settings → Team | on demand |
+| Task            | Where                                                   | Frequency      |
+| --------------- | ------------------------------------------------------- | -------------- |
+| Logs            | Vercel → Project → Logs                                 | as needed      |
+| DB inspect      | `npm run db:studio`                                     | as needed      |
+| Backups         | nightly cron exports DB to Blob (Phase 7)               | auto           |
+| Add team member | Dashboard → Settings → Team                             | on demand      |
 | Rotate API keys | Anthropic + Resend consoles, then Vercel envs, redeploy | every 6 months |
 
 ---
