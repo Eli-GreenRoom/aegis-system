@@ -7,8 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Stage } from "@/lib/lineup/repo";
 
-export default function StagesAdmin({ stages }: { stages: Stage[] }) {
+export default function StagesAdmin({
+  stages: initialStages,
+}: {
+  stages: Stage[];
+}) {
   const router = useRouter();
+  const [stages, setStages] = useState(initialStages);
   const [editing, setEditing] = useState<Stage | null>(null);
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -28,6 +33,7 @@ export default function StagesAdmin({ stages }: { stages: Stage[] }) {
         setError(body.error ?? `Delete failed (${res.status}).`);
         return;
       }
+      setStages((prev) => prev.filter((s) => s.id !== id));
       router.refresh();
     } catch {
       setError("Network error — couldn't reach server.");
@@ -94,7 +100,10 @@ export default function StagesAdmin({ stages }: { stages: Stage[] }) {
         <StageDialog
           stage={editing}
           onClose={() => setEditing(null)}
-          onSaved={() => {
+          onSaved={(saved) => {
+            setStages((prev) =>
+              prev.map((s) => (s.id === saved.id ? saved : s)),
+            );
             setEditing(null);
             router.refresh();
           }}
@@ -103,7 +112,8 @@ export default function StagesAdmin({ stages }: { stages: Stage[] }) {
       {adding && (
         <StageDialog
           onClose={() => setAdding(false)}
-          onSaved={() => {
+          onSaved={(saved) => {
+            setStages((prev) => [...prev, saved]);
             setAdding(false);
             router.refresh();
           }}
@@ -120,7 +130,7 @@ function StageDialog({
 }: {
   stage?: Stage;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (stage: Stage) => void;
 }) {
   const isEdit = !!stage;
   const [name, setName] = useState(stage?.name ?? "");
@@ -147,7 +157,8 @@ function StageDialog({
       setError(body.error ?? "Couldn't save.");
       return;
     }
-    onSaved();
+    const data = await res.json();
+    onSaved(data.stage);
   }
 
   return (
