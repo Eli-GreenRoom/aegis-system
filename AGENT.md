@@ -1,4 +1,4 @@
-# Aegis System — Agent Reference
+# GreenRoom Stages — Agent Reference
 
 > This file is the canonical brief for any AI coding agent (Cursor, Claude, Codex)
 > working on this repo. Read it BEFORE writing any code. If something here conflicts
@@ -8,7 +8,8 @@
 
 ## 1. Project Overview
 
-**Aegis System** is the operations backend for **Aegis Festival** — a multi-stage
+**GreenRoom Stages** is a festival & live-event operations product, part of the
+**GreenRoom HQ** brand family. First deployment: **Aegis Festival** — a multi-stage
 electronic music festival in Lebanon (Aranoon Village, Batroun). It replaces a sprawl
 of Google Sheets ("Aegis Logistics 2024", "Aegis Festival Line Up", "AF GUESTLIST",
 "Byblos Sur Mer", "Big Bang Emails", "Aegis Artist Hotel Options") with a single
@@ -29,16 +30,16 @@ It handles the full artist + crew lifecycle for a festival run:
 - **Festival-day live ops mode** — a different, denser view used during the event itself
 
 **Owner / primary user:** Eli (logistics@aegisfestival.com)
-**Live URL (target):** `https://logistics.aegisfestival.com` (Vercel)
-**GitHub:** `eli-aegis/aegis-system` (or similar — confirm in `SETUP.md`)
+**Live URL (Aegis Festival tenant):** `https://logistics.aegisfestival.com` (Vercel)
+**GitHub:** `Eli-GreenRoom/aegis-system` (rename to `greenroom-stages` after Phase D — see `GREENROOM_STAGES_REBRAND.md` §Phase A.5)
 **Neon project:** `aegis-system`, region `eu-central-1` (closest to Lebanon)
 
 ---
 
 ## 2. Stack — locked
 
-This stack mirrors the sister project `greenroom` (on Eli's desktop) deliberately,
-so patterns can be lifted across.
+This stack mirrors the sister product `greenroom` (on Eli's desktop, the artist-management
+product in the GreenRoom HQ family) deliberately, so patterns can be lifted across.
 
 - **Next.js 16** App Router, React 19, TypeScript **strict**
 - **Tailwind v4** + **shadcn/ui** (no hand-rolled UI primitives)
@@ -57,41 +58,39 @@ so patterns can be lifted across.
 
 ## 3. Brand & Design System
 
-This is a festival ops tool, aligned to the Aegis brand book (Hammerspace,
-Feb 2026). Brand-aligned but restrained — the brand book is for the
-festival's outward face; this app is the back office. Operator-grade density.
-No marketing flourish.
+This is a festival ops tool built under the **GreenRoom HQ** brand. The app
+chrome is GreenRoom Stages for all users — operators log in and see the
+GreenRoom emerald UI regardless of which festival they are running.
+The Aegis Festival brand book (gold/coral/indigo, Hammerspace Feb 2026) is
+preserved as **tenant identity** for customer-facing exports only (PDFs,
+itinerary links, contracts, marketing collateral). See `docs/BRAND.md`.
+
+Operator-grade density. No marketing flourish.
 
 Full rationale: `docs/BRAND.md`. Tokens: `src/styles/tokens.css`.
 
 ### Palette
 
-The ops dashboard runs on a **neutral dark** canvas (not brand indigo).
-Indigo is reserved for marketing surfaces — auth blueprint motif, PDF
-exports, hero headers if needed. Brand accents (gold / coral / mint /
-cream) carry all the colour.
+The ops dashboard runs on a **neutral dark** canvas aligned to the GreenRoom HQ
+palette (see `src/styles/tokens.css`). The Aegis Festival brand colors
+(gold `#E5B85A`, coral, indigo) are **tenant identity only** — used exclusively
+in customer-facing export templates, never in the app chrome.
 
-- **Background (page):** `#0E0E10` (near-black, hint of warmth — not
-  pure `#000`, which causes glare/halation against light text).
-- **Surface:** `#15151A`  **Surface raised:** `#1F1F25`  **Overlay:** `#25252C`
-- **Brand accent (gold):** `#E5B85A` — primary call-to-action, highlights,
-  warning state. Aliases `text-brand`, `bg-brand`, `border-brand`.
-- **Coral:** `#E73E54` — destructive / urgent / overdue. Alias `text-coral`.
-- **Mint:** `#16D060` — success / paid / confirmed. Alias `text-mint`.
-- **Cream:** `#FAF3EC` — inverse surfaces (print, exports, light cards only).
-  Aliases `bg-cream`, `text-cream`.
-- **Text:** `#ECECEE` (~92 % luma off-white), `#A8A8B0` muted, `#6E6E78` subtle.
-- **Borders:** `rgba(236,236,238,0.08)` standard, `0.06` subtle, `0.18` strong.
+- **Background (page):** `#0A0A0B`
+- **Surface:** `#111113` **Surface raised:** `#1A1A1D`
+- **Brand accent (emerald):** `#34D399` — primary call-to-action, highlights,
+  success state. Aliases `text-brand`, `bg-brand`, `border-brand`.
+- **Warn:** `#FBBF24` — warning state.
+- **Danger:** `#F87171` — destructive / urgent / overdue.
+- **Text:** `#FAFAFA` body, `#A1A1AA` muted, `#52525B` subtle.
 
-Why not pure black + white: full-contrast hurts in long sessions —
-halation, eye fatigue. Why not the brand-book indigo: beautiful for a
-poster, exhausting for a 13-hour ops shift. Brand identity comes from
-the gold accent and Newsreader display; the canvas is just a stage.
-
-**Status mapping:** `success → mint`, `warning → gold`, `danger → coral`.
+**Status mapping:** `success → brand (emerald)`, `warning → warn`, `danger → danger`.
 Don't use generic Tailwind `red-500` / `green-500`.
 
 ### Stage colors (use sparingly — only on stage chips/badges/filters)
+
+Stage chip colors are Aegis Festival tenant data — keep them as-is in the
+stage records. They are correct for this deployment.
 
 - Main Stage: `#E5B85A` (gold) — `var(--color-stage-main)`
 - Alternative Stage: `#7C9EFF` (blue) — `var(--color-stage-alt)`
@@ -136,22 +135,22 @@ edition, batch.
 
 ## 4. Domain Vocabulary (READ THIS BEFORE NAMING ANYTHING)
 
-| Term           | Means                                                                    |
-| -------------- | ------------------------------------------------------------------------ |
-| **Artist**     | Anyone performing — solo DJ, B2B, live act                               |
+| Term           | Means                                                                                                                   |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Artist**     | Anyone performing — solo DJ, B2B, live act                                                                              |
 | **Crew**       | Travelling production: tour managers, media (photo/video/social), FOH. NOT festival-supplied stage hands or volunteers. |
-| **Person**     | Either Artist or Crew (used for flights/hotels/ground)                   |
-| **Stage**      | One of: Main Stage, Alternative Stage, Select Pool, Collectives          |
-| **Slot**       | A time block on a stage on a day (e.g. Friday 22:00–00:00 Main Stage)    |
-| **Set**        | A specific artist's performance in a slot                                |
-| **Leg**        | One flight segment (arrival = inbound leg, departure = outbound leg)     |
-| **Booking**    | A hotel room booked for a specific person + date range                   |
-| **Room Block** | A reserved set of rooms at a hotel (e.g. 20 rooms at Byblos Sur Mer)     |
-| **Pickup**     | A ground transport job moving a person from A to B                       |
-| **Rider**      | A document — hospitality (hosp) or technical (tech) — uploaded as a file |
-| **PoP**        | Proof of payment (a receipt, screenshot, bank confirmation)              |
-| **Roadsheet**  | The single-sheet day-of-festival itinerary for one artist                |
-| **Day**        | Friday / Saturday / Sunday of the festival weekend                       |
+| **Person**     | Either Artist or Crew (used for flights/hotels/ground)                                                                  |
+| **Stage**      | One of: Main Stage, Alternative Stage, Select Pool, Collectives                                                         |
+| **Slot**       | A time block on a stage on a day (e.g. Friday 22:00–00:00 Main Stage)                                                   |
+| **Set**        | A specific artist's performance in a slot                                                                               |
+| **Leg**        | One flight segment (arrival = inbound leg, departure = outbound leg)                                                    |
+| **Booking**    | A hotel room booked for a specific person + date range                                                                  |
+| **Room Block** | A reserved set of rooms at a hotel (e.g. 20 rooms at Byblos Sur Mer)                                                    |
+| **Pickup**     | A ground transport job moving a person from A to B                                                                      |
+| **Rider**      | A document — hospitality (hosp) or technical (tech) — uploaded as a file                                                |
+| **PoP**        | Proof of payment (a receipt, screenshot, bank confirmation)                                                             |
+| **Roadsheet**  | The single-sheet day-of-festival itinerary for one artist                                                               |
+| **Day**        | Friday / Saturday / Sunday of the festival weekend                                                                      |
 
 **Do NOT** call artists "users". The user is the operator (Eli + team), not the
 performers.
@@ -298,21 +297,21 @@ any write, verify with `tail -10`. Never use `printf >>` to append.
 These were uploaded by Eli on session start. The schema must accommodate every
 column from these files. Sheet → table mapping:
 
-| Sheet | Tables that absorb it |
-|---|---|
-| `Aegis Logistics 2024 / General` | `sets` (timetable + stage + status flags) |
-| `Aegis Logistics 2024 / Flights` | `flights` (split arrival vs departure into 2 rows per person) |
-| `Aegis Logistics 2024 / Ground Transportation` | `pickups` |
-| `Aegis Logistics 2024 / payments` | `payments` |
-| `Aegis Logistics 2024 / pending payments` | `payments` (status='pending') |
-| `Aegis Logistics 2024 / BYBLOS TAXI / LuxCars / Aqua / BSM` | `vendors` + per-pickup vendor FK |
-| `Aegis Logistics 2024 / Stage Managers / Volunteers` | OUT OF SCOPE — festival-supplied stage hands and volunteers are not modeled. `crew` is travelling production only. |
-| `Aegis Festival Line Up 2024 / Line-Up` | `sets` (with status: confirmed / option / not_available) |
-| `Aegis Festival Line Up 2024 / Batch 1..N` | `sets` (announce batch metadata on `sets`) |
-| `AF2024 GUESTLIST` (multiple sheets) | `guestlist_entries` (category enum) |
-| `Aegis Artist Hotel Options` | `hotels` + `room_blocks` |
-| `Byblos Sur Mer` | `hotel_bookings` |
-| `Big Bang Emails` | `email_threads` (Phase 2) |
+| Sheet                                                       | Tables that absorb it                                                                                              |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `Aegis Logistics 2024 / General`                            | `sets` (timetable + stage + status flags)                                                                          |
+| `Aegis Logistics 2024 / Flights`                            | `flights` (split arrival vs departure into 2 rows per person)                                                      |
+| `Aegis Logistics 2024 / Ground Transportation`              | `pickups`                                                                                                          |
+| `Aegis Logistics 2024 / payments`                           | `payments`                                                                                                         |
+| `Aegis Logistics 2024 / pending payments`                   | `payments` (status='pending')                                                                                      |
+| `Aegis Logistics 2024 / BYBLOS TAXI / LuxCars / Aqua / BSM` | `vendors` + per-pickup vendor FK                                                                                   |
+| `Aegis Logistics 2024 / Stage Managers / Volunteers`        | OUT OF SCOPE — festival-supplied stage hands and volunteers are not modeled. `crew` is travelling production only. |
+| `Aegis Festival Line Up 2024 / Line-Up`                     | `sets` (with status: confirmed / option / not_available)                                                           |
+| `Aegis Festival Line Up 2024 / Batch 1..N`                  | `sets` (announce batch metadata on `sets`)                                                                         |
+| `AF2024 GUESTLIST` (multiple sheets)                        | `guestlist_entries` (category enum)                                                                                |
+| `Aegis Artist Hotel Options`                                | `hotels` + `room_blocks`                                                                                           |
+| `Byblos Sur Mer`                                            | `hotel_bookings`                                                                                                   |
+| `Big Bang Emails`                                           | `email_threads` (Phase 2)                                                                                          |
 
 A migration script in `scripts/import-2024.ts` should backfill the 2024 data so
 the system starts populated. Spec lives in `docs/DATA-IMPORT.md`.
@@ -349,8 +348,8 @@ CI runs the same `npm run check` on every push and PR
 - Don't claim done until you've actually run `npm run check` and pasted
   the output. "Tests should pass" is not the same as "tests do pass".
 - Reproduce bugs as failing tests first, then fix.
-End-to-end tests (Playwright) come in Phase 2.5 once enough pages exist —
-not now. Until then, `requests/*.http` files are the smoke tests.
+  End-to-end tests (Playwright) come in Phase 2.5 once enough pages exist —
+  not now. Until then, `requests/*.http` files are the smoke tests.
 
 ---
 

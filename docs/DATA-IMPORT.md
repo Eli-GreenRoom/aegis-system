@@ -1,4 +1,4 @@
-# Data Import — 2024 → Aegis System
+# Data Import — 2024 → GreenRoom Stages
 
 > One-time backfill of the 2024 festival data from the spreadsheets into the
 > live DB. Run via `npm run import:2024` after Phase 2 schema is migrated.
@@ -25,22 +25,22 @@ placed in `/data/2024/` (gitignored).
 
 Sheet header row is row 3 (rows 1-2 are merged labels). Columns observed:
 
-| Sheet column | Target |
-|---|---|
-| `Itinerary` | (skip — derived) |
-| `Timetable` | `slots.start_time` + `slots.end_time` (parse "8PM--10PM") |
-| `Artist` | `artists.name` (link or create) |
-| `Deal` | `sets.fee_amount_cents` + `sets.fee_currency` (parse "500$" / "€1000") |
-| `guestlist` | (skip — separate sheet) |
-| `Contract` | `contracts.status` (`done` → `signed`, `no contract` → `void`, blank → `draft`) |
-| `Comments` | `sets.comments` |
-| `Flights` | (informational — actual flight rows live in Flights sheet) |
-| `Payment` | `payments.paid_via` (`In Cash` → `cash`) + status |
-| `Visa` | `artists.visa_status` (`No need` → `not_needed`) |
-| `Hotel` | `hotel_bookings.status` cue |
-| `Hotel Name` | `hotel_bookings.hotel_id` (lookup by name) |
-| `Rider` | (informational — actual rider files in Riders module) |
-| `Rec?` | `riders.confirmed` |
+| Sheet column | Target                                                                          |
+| ------------ | ------------------------------------------------------------------------------- |
+| `Itinerary`  | (skip — derived)                                                                |
+| `Timetable`  | `slots.start_time` + `slots.end_time` (parse "8PM--10PM")                       |
+| `Artist`     | `artists.name` (link or create)                                                 |
+| `Deal`       | `sets.fee_amount_cents` + `sets.fee_currency` (parse "500$" / "€1000")          |
+| `guestlist`  | (skip — separate sheet)                                                         |
+| `Contract`   | `contracts.status` (`done` → `signed`, `no contract` → `void`, blank → `draft`) |
+| `Comments`   | `sets.comments`                                                                 |
+| `Flights`    | (informational — actual flight rows live in Flights sheet)                      |
+| `Payment`    | `payments.paid_via` (`In Cash` → `cash`) + status                               |
+| `Visa`       | `artists.visa_status` (`No need` → `not_needed`)                                |
+| `Hotel`      | `hotel_bookings.status` cue                                                     |
+| `Hotel Name` | `hotel_bookings.hotel_id` (lookup by name)                                      |
+| `Rider`      | (informational — actual rider files in Riders module)                           |
+| `Rec?`       | `riders.confirmed`                                                              |
 
 Day grouping: top of sheet says `Mainstage / Friday` then later `Saturday`,
 `Sunday`. Walk the sheet keeping current `(stage, day)` context.
@@ -49,25 +49,25 @@ Day grouping: top of sheet says `Mainstage / Friday` then later `Saturday`,
 
 Two side-by-side sub-tables: arrival (cols A-E) and departure (cols G-K).
 
-| Sheet col | Target (direction = `inbound` for left, `outbound` for right) |
-|---|---|
-| `Person` | `flights.person_id` (lookup artist or crew by name) |
-| `From` / ` To` | `flights.from_airport` / `flights.to_airport` |
-| `Arrival/Departure Date` + `Time` | `flights.scheduled_dt` |
-| `Flight #` | `flights.flight_number` + parse airline prefix |
+| Sheet col                         | Target (direction = `inbound` for left, `outbound` for right) |
+| --------------------------------- | ------------------------------------------------------------- |
+| `Person`                          | `flights.person_id` (lookup artist or crew by name)           |
+| `From` / ` To`                    | `flights.from_airport` / `flights.to_airport`                 |
+| `Arrival/Departure Date` + `Time` | `flights.scheduled_dt`                                        |
+| `Flight #`                        | `flights.flight_number` + parse airline prefix                |
 
 ### `Aegis Logistics 2024.xlsx → Ground Transportation` → `ground_transport_pickups`
 
 Same layout: arrival pickups on the left, departure pickups on the right.
 
-| Sheet col | Target |
-|---|---|
-| `Full Passport Name` | `pickups.person_id` (lookup) |
-| `Routing` | parse "Airport→BSM" → `route_from` + `route_to` + details |
+| Sheet col                 | Target                                                            |
+| ------------------------- | ----------------------------------------------------------------- |
+| `Full Passport Name`      | `pickups.person_id` (lookup)                                      |
+| `Routing`                 | parse "Airport→BSM" → `route_from` + `route_to` + details         |
 | `Arr./Dep. Date` + `Time` | `pickups.pickup_dt` (use `Pickup Time` for departures if present) |
-| `Flight #` | resolve to `pickups.linked_flight_id` |
-| `Car Type` | `pickups.vehicle_type` |
-| `Cost` | `pickups.cost_amount_cents` + currency parse |
+| `Flight #`                | resolve to `pickups.linked_flight_id`                             |
+| `Car Type`                | `pickups.vehicle_type`                                            |
+| `Cost`                    | `pickups.cost_amount_cents` + currency parse                      |
 
 ### `Aegis Logistics 2024.xlsx → payments` → `payments`
 
@@ -84,12 +84,12 @@ Direct map:
 
 ### `Aegis Logistics 2024.xlsx → pending payments` → `payments` (status='pending')
 
-| Sheet col | Target |
-|---|---|
-| `Description` | `payments.description` |
-| `Amount $` | parse → `amount_cents` with `currency='USD'` |
+| Sheet col     | Target                                       |
+| ------------- | -------------------------------------------- |
+| `Description` | `payments.description`                       |
+| `Amount $`    | parse → `amount_cents` with `currency='USD'` |
 | `Amount Euro` | parse → `amount_cents` with `currency='EUR'` |
-| `Comments` | `payments.comments` |
+| `Comments`    | `payments.comments`                          |
 
 ### `Aegis Logistics 2024.xlsx → Stage Managers` / `Volunteers` → `crew`
 
@@ -103,6 +103,7 @@ Plus their per-pickup detail rows feed `ground_transport_pickups.vendor_id`.
 
 Stage indicated by section header rows. Day in column A. Time in column B.
 Artist in `Line Up A/B/C` columns (multiple options per slot). Status:
+
 - `Line Up A` non-empty + name not in `Not Available` column → `option`
 - Confirmed names (cross-reference with sheet `General`) → `confirmed`
 
@@ -112,13 +113,13 @@ Artist in `Line Up A/B/C` columns (multiple options per slot). Status:
 
 ### `AF2024 GUESTLIST.xlsx → DJs Guests` → `guestlist_entries` (`category=dj_guest`)
 
-| Sheet col | Target |
-|---|---|
+| Sheet col                                   | Target           |
+| ------------------------------------------- | ---------------- |
 | Header (artist name, e.g. `Raphael Merheb`) | `host_artist_id` |
-| `Guestlist Name` | `name` |
-| `Guestlist Number` | `phone` |
-| `Guestlist Email` | `email` |
-| `Invite sent?` | `invite_sent` |
+| `Guestlist Name`                            | `name`           |
+| `Guestlist Number`                          | `phone`          |
+| `Guestlist Email`                           | `email`          |
+| `Invite sent?`                              | `invite_sent`    |
 
 `Competition winners`, `Additional General Admission`, `International Guests`,
 `AEGIS FREE LIST` map to `competition_winner` / `general_admission` /
@@ -126,27 +127,27 @@ Artist in `Line Up A/B/C` columns (multiple options per slot). Status:
 
 ### `Aegis Artist Hotel Options.xlsx` → `hotels` + `hotel_room_blocks`
 
-| Sheet col | Target |
-|---|---|
-| `Hotel Name` | `hotels.name` |
-| `Room Type` | `hotel_room_blocks.room_type` |
-| `# of Rooms` | `hotel_room_blocks.rooms_reserved` (parse "As much as needed" → null) |
-| `Breakfast` | `hotel_room_blocks.breakfast_note` |
-| `Price/Night` | `hotel_room_blocks.price_per_night_amount_cents` + currency |
-| `Location` | `hotels.location` |
-| `Comment` | `hotels.notes` |
+| Sheet col     | Target                                                                |
+| ------------- | --------------------------------------------------------------------- |
+| `Hotel Name`  | `hotels.name`                                                         |
+| `Room Type`   | `hotel_room_blocks.room_type`                                         |
+| `# of Rooms`  | `hotel_room_blocks.rooms_reserved` (parse "As much as needed" → null) |
+| `Breakfast`   | `hotel_room_blocks.breakfast_note`                                    |
+| `Price/Night` | `hotel_room_blocks.price_per_night_amount_cents` + currency           |
+| `Location`    | `hotels.location`                                                     |
+| `Comment`     | `hotels.notes`                                                        |
 
 ### `Byblos Sur Mer.xlsx` → `hotel_bookings`
 
-| Sheet col | Target |
-|---|---|
-| `Artist` | `person_id` (lookup, `person_kind='artist'`) |
-| `Check In Date` + `Check In Time` | `checkin` |
-| `Check Out Date` + `Check Out Time` | `checkout` |
-| `Room Type` | `room_type` |
-| `Booking Number` | `booking_number` |
-| `Credits` | `credits_amount_cents` |
-| `#Nights` | derived; verify |
+| Sheet col                           | Target                                       |
+| ----------------------------------- | -------------------------------------------- |
+| `Artist`                            | `person_id` (lookup, `person_kind='artist'`) |
+| `Check In Date` + `Check In Time`   | `checkin`                                    |
+| `Check Out Date` + `Check Out Time` | `checkout`                                   |
+| `Room Type`                         | `room_type`                                  |
+| `Booking Number`                    | `booking_number`                             |
+| `Credits`                           | `credits_amount_cents`                       |
+| `#Nights`                           | derived; verify                              |
 
 `hotel_id` = lookup "Byblos Sur Mer".
 
@@ -171,6 +172,7 @@ Each step is idempotent: matched on `(edition_id, slug)` for artists, on
 `(person_id, scheduled_dt, flight_number)` for flights, etc.
 
 The script must:
+
 - Print a summary at the end (rows inserted, skipped, errors)
 - Write any rows it couldn't parse to `data/2024-import-errors.json`
 - Be re-runnable safely

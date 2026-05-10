@@ -1,4 +1,4 @@
-# Aegis System — Build Handoff
+# GreenRoom Stages — Build Handoff
 
 > Build plan for Cursor / coding agent. Phases are sized to ship something
 > usable end of each phase. Don't skip ahead.
@@ -7,9 +7,10 @@
 
 ## North star
 
-Replace the entire spreadsheet stack used to run Aegis Festival 2024 with a
-typed, multi-user web app — and add AI extraction on top so flight/hotel/rider
-emails turn into structured rows in seconds.
+GreenRoom Stages is the festival & live-event operations product in the GreenRoom
+HQ family. First deployment: Aegis Festival. Replace the entire spreadsheet stack
+used to run Aegis Festival 2024 with a typed, multi-user web app — and add AI
+extraction on top so flight/hotel/rider emails turn into structured rows in seconds.
 
 The product exists in two modes:
 
@@ -22,7 +23,7 @@ The product exists in two modes:
 
 > Owner: Eli. Run once. See `SETUP.md` for the actual commands.
 
-- [ ] GitHub repo `eli-aegis/aegis-system`, push initial scaffold
+- [ ] GitHub repo `Eli-GreenRoom/aegis-system` (rename to `greenroom-stages` after Phase D), push initial scaffold
 - [ ] Vercel project linked to repo, auto-deploy on `main`
 - [ ] Custom domain `logistics.aegisfestival.com` (DNS → Vercel)
 - [ ] Neon project `aegis-system`, region `eu-central-1`

@@ -1,5 +1,8 @@
 # Claude Code — Project Brief
 
+This is **GreenRoom Stages** — the festival & live-event operations product in
+the GreenRoom HQ family. First deployment: Aegis Festival.
+
 The canonical brief for this project lives in **`AGENT.md`**. Read it first.
 
 Then in this order before doing any work:
@@ -55,9 +58,11 @@ CI run blocks merge.
 
 See `AGENT.md` §11 for the full definition of done.
 
-## Sister project for reference
+## Sister product for reference
 
-`C:\Users\user\Desktop\greenroom` uses the same stack (Next 16 + Drizzle +
-Neon + better-auth + Vercel Blob + Resend + Anthropic SDK). When stuck on a
-pattern, check there first — but adapt the domain to Aegis (artist/set/stage,
-not gig/promoter).
+`C:\Users\user\Desktop\greenroom` is the artist-management product in the same
+GreenRoom HQ brand family. Same stack (Next 16 + Drizzle + Neon + better-auth +
+Vercel Blob + Resend + Anthropic SDK). When stuck on a pattern, check there
+first — but adapt the domain to GreenRoom Stages (artist/set/stage, not
+gig/promoter). No shared code, no shared DB, no shared auth — independent
+products under one brand.

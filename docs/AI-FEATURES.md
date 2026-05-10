@@ -1,4 +1,4 @@
-# AI Features — Spec
+# GreenRoom Stages — AI Features Spec
 
 > Anthropic-powered extraction + agent. Owns the wedge: drop a confirmation,
 > get a row.
@@ -18,6 +18,7 @@ POST /api/ai/parse-<thing>
 ```
 
 The route:
+
 1. Auth check (`getAppSession()`).
 2. Load file from Vercel Blob (if `fileId`) — text/PDF/image accepted.
 3. Build a system prompt with the target Zod schema as JSON Schema.
@@ -38,10 +39,12 @@ review every time. Phase 6's agent loosens this for low-stakes writes only
 ## 2. Parsers (Phase 4)
 
 ### `parse_flight_confirmation`
+
 Inputs accepted: PDF (Wizz / Turkish / Lufthansa / EK / FlyDubai confirmations),
 HTML email export, plain text paste.
 
 Output schema:
+
 ```ts
 {
   passenger_name: string,
@@ -59,12 +62,14 @@ Output schema:
 ```
 
 Edge cases the parser must handle:
+
 - Multi-leg confirmations → return one item per leg (array)
 - Multi-passenger confirmations → return one item per passenger × leg
 - Names in non-Latin scripts (rare) → keep original + transliterated
 - Local times without timezone — assume the airport's local TZ
 
 ### `parse_hotel_confirmation`
+
 ```ts
 {
   guest_name: string,
@@ -80,6 +85,7 @@ Edge cases the parser must handle:
 ```
 
 ### `parse_invoice`
+
 ```ts
 {
   vendor: string,
@@ -96,6 +102,7 @@ Edge cases the parser must handle:
 ```
 
 ### `parse_rider`
+
 ```ts
 {
   artist_name?: string,
@@ -115,12 +122,14 @@ Edge cases the parser must handle:
 Standard component: `<AiParseDialog>`.
 
 Layout:
+
 - Top: "Extracted from: filename.pdf" + a small confidence badge
 - Middle: form fields, pre-filled, with a small ✦ icon next to AI-filled values
 - Right column on desktop (or below on mobile): collapsible "raw excerpt" panel
 - Bottom: `Cancel` / `Save & continue editing` / `Save and create another`
 
 Accessibility:
+
 - Every AI-filled field is still a normal input — no special widgets
 - Tab order goes through every editable field
 - ESC closes; ENTER on the primary CTA saves
@@ -132,6 +141,7 @@ Accessibility:
 For when Eli has 30 flight confirmations to log:
 
 `POST /api/ai/parse-batch` accepts `multipart/form-data` of N files.
+
 - Server parses each serially (concurrency = 1 to keep prompt costs predictable)
 - Returns a job id; frontend polls `/api/ai/jobs/[id]` for status
 - Result is a list of extracted records the user reviews + commits per row
