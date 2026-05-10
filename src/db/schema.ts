@@ -1,5 +1,5 @@
 /**
- * Aegis System - Drizzle schema (initial)
+ * GreenRoom Stages - Drizzle schema (initial)
  *
  * Phase 1 deliverable: enough tables to run the dashboard shell + seed an
  * owner. Phase 2+ adds the rest from docs/DATA-MODEL.md.

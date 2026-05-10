@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { getCurrentEdition } from "@/lib/edition";
 import { listArtists } from "@/lib/artists/repo";
 import { listContracts } from "@/lib/contracts/repo";
-import { contractStatusEnum, type ContractStatus } from "@/lib/contracts/schema";
+import {
+  contractStatusEnum,
+  type ContractStatus,
+} from "@/lib/contracts/schema";
 
 interface PageProps {
   searchParams: Promise<{
@@ -19,7 +22,9 @@ export default async function ContractsPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const edition = await getCurrentEdition();
 
-  const statusParsed = sp.status ? contractStatusEnum.safeParse(sp.status) : null;
+  const statusParsed = sp.status
+    ? contractStatusEnum.safeParse(sp.status)
+    : null;
 
   const [contracts, artists] = await Promise.all([
     listContracts({
@@ -100,7 +105,9 @@ export default async function ContractsPage({ searchParams }: PageProps) {
                       <ContractStatusPill status={c.status} />
                     </td>
                     <td className="px-4 py-2 text-mono text-xs text-[--color-fg-muted]">
-                      {c.sentAt ? format(new Date(c.sentAt), "d MMM HH:mm") : ""}
+                      {c.sentAt
+                        ? format(new Date(c.sentAt), "d MMM HH:mm")
+                        : ""}
                     </td>
                     <td className="px-4 py-2 text-mono text-xs text-[--color-fg-muted]">
                       {c.signedAt
@@ -178,8 +185,8 @@ function Filter({
 const STATUS_CLASSES: Record<ContractStatus, string> = {
   draft: "border-[--color-border-strong] text-[--color-fg-muted]",
   sent: "border-brand/40 text-brand",
-  signed: "border-[--color-brand-mint]/60 text-mint",
-  void: "border-[--color-brand-coral]/40 text-coral",
+  signed: "border-[--color-brand]/60 text-mint",
+  void: "border-[--color-danger]/40 text-coral",
 };
 
 function ContractStatusPill({ status }: { status: ContractStatus }) {

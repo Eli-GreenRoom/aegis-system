@@ -30,20 +30,22 @@
   border-color: var(--color-brand);
 }
 
-@utility text-cream {
-  color: var(--color-brand-cream);
-}
-
-@utility bg-cream {
-  background-color: var(--color-brand-cream);
-}
+/* Status color utilities */
 
 @utility text-coral {
-  color: var(--color-brand-coral);
+  color: var(--color-danger);
 }
 
 @utility text-mint {
-  color: var(--color-brand-mint);
+  color: var(--color-brand);
+}
+
+@utility text-warn {
+  color: var(--color-warn);
+}
+
+@utility text-danger {
+  color: var(--color-danger);
 }
 
 /* Typography utilities */

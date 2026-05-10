@@ -113,7 +113,7 @@ export default function RidersTable({ riders, artistsById }: Props) {
                     disabled={busyId === r.id}
                     className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${
                       r.confirmed
-                        ? "border-[--color-brand-mint]/60 text-mint"
+                        ? "border-[--color-brand]/60 text-mint"
                         : "border-[--color-border-strong] text-[--color-fg-muted] hover:text-brand hover:border-brand/40"
                     }`}
                   >

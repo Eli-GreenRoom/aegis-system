@@ -22,8 +22,8 @@ const STATUS_CLASS: Record<PickupStatus, string> = {
   scheduled: "border-l-[--color-border-strong]",
   dispatched: "border-l-brand",
   in_transit: "border-l-[--color-stage-alt]",
-  completed: "border-l-[--color-brand-mint]",
-  cancelled: "border-l-[--color-brand-coral]",
+  completed: "border-l-[--color-brand]",
+  cancelled: "border-l-[--color-danger]",
 };
 
 export default function PickupsBoard({ next2h, later }: Props) {
@@ -48,7 +48,12 @@ export default function PickupsBoard({ next2h, later }: Props) {
     <>
       {error && <p className="text-sm text-coral mb-3">{error}</p>}
 
-      <Section title="Next 2h" rows={next2h} busyId={busyId} onAdvance={advance} />
+      <Section
+        title="Next 2h"
+        rows={next2h}
+        busyId={busyId}
+        onAdvance={advance}
+      />
       <Section
         title="Later today"
         rows={later}

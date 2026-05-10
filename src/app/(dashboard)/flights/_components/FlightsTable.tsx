@@ -7,9 +7,9 @@ const STATUS_CLASSES: Record<string, string> = {
   scheduled: "border-[--color-border-strong] text-[--color-fg-muted]",
   boarded: "border-brand/40 text-brand",
   in_air: "border-brand/40 text-brand",
-  landed: "border-[--color-brand-mint]/40 text-mint",
-  delayed: "border-[--color-brand-coral]/40 text-coral",
-  cancelled: "border-[--color-brand-coral]/40 text-coral",
+  landed: "border-[--color-brand]/40 text-mint",
+  delayed: "border-[--color-danger]/40 text-coral",
+  cancelled: "border-[--color-danger]/40 text-coral",
 };
 
 interface Props {
@@ -65,7 +65,9 @@ export default function FlightsTable({ flights, people }: Props) {
                 <td className="px-4 py-2 text-mono text-xs text-[--color-fg]">
                   {f.flightNumber ?? ""}
                   {f.airline && (
-                    <div className="text-[10px] text-[--color-fg-subtle]">{f.airline}</div>
+                    <div className="text-[10px] text-[--color-fg-subtle]">
+                      {f.airline}
+                    </div>
                   )}
                 </td>
                 <td className="px-4 py-2 text-mono text-xs text-[--color-fg-muted]">

@@ -8,8 +8,8 @@ import { formatCents } from "@/lib/utils";
 const STATUS_CLASSES: Record<string, string> = {
   scheduled: "border-[--color-border-strong] text-[--color-fg-muted]",
   dispatched: "border-brand/40 text-brand",
-  completed: "border-[--color-brand-mint]/40 text-mint",
-  cancelled: "border-[--color-brand-coral]/40 text-coral",
+  completed: "border-[--color-brand]/40 text-mint",
+  cancelled: "border-[--color-danger]/40 text-coral",
 };
 
 interface VendorRef {
@@ -76,7 +76,9 @@ export default function PickupsTable({ pickups, people, vendorsById }: Props) {
                   </span>
                   {(p.routeFromDetail || p.routeToDetail) && (
                     <div className="text-[10px] text-[--color-fg-subtle] mt-0.5">
-                      {p.routeFromDetail ?? ""}{p.routeFromDetail && p.routeToDetail ? " - " : ""}{p.routeToDetail ?? ""}
+                      {p.routeFromDetail ?? ""}
+                      {p.routeFromDetail && p.routeToDetail ? " - " : ""}
+                      {p.routeToDetail ?? ""}
                     </div>
                   )}
                 </td>

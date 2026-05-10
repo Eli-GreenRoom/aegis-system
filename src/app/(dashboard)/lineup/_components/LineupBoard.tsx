@@ -6,10 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCents } from "@/lib/utils";
-import type {
-  Day,
-  SetStatus,
-} from "@/lib/lineup/schema";
+import type { Day, SetStatus } from "@/lib/lineup/schema";
 import type {
   Slot,
   SlotWithSets,
@@ -39,12 +36,12 @@ const STATUS_LABEL: Record<SetStatus, string> = {
 };
 
 const STATUS_CLASSES: Record<SetStatus, string> = {
-  confirmed: "border-[--color-brand-mint]/40 text-mint",
+  confirmed: "border-[--color-brand]/40 text-mint",
   option: "border-brand/40 text-brand",
-  not_available: "border-[--color-brand-coral]/40 text-coral",
-  live: "border-[--color-brand-mint]/60 text-mint",
+  not_available: "border-[--color-danger]/40 text-coral",
+  live: "border-[--color-brand]/60 text-mint",
   done: "border-[--color-fg-subtle]/40 text-[--color-fg-muted]",
-  withdrawn: "border-[--color-brand-coral]/40 text-coral",
+  withdrawn: "border-[--color-danger]/40 text-coral",
 };
 
 export default function LineupBoard({ day, grid, artists }: Props) {
@@ -65,7 +62,8 @@ export default function LineupBoard({ day, grid, artists }: Props) {
   >({});
 
   async function deleteSlot(id: string) {
-    if (!confirm("Delete this slot? Any sets on it will be deleted too.")) return;
+    if (!confirm("Delete this slot? Any sets on it will be deleted too."))
+      return;
     setBusy(true);
     const res = await fetch(`/api/slots/${id}`, { method: "DELETE" });
     setBusy(false);
@@ -85,7 +83,7 @@ export default function LineupBoard({ day, grid, artists }: Props) {
     e: React.DragEvent<HTMLDivElement>,
     targetSlotId: string,
     stageId: string,
-    stageSlots: SlotWithSets[]
+    stageSlots: SlotWithSets[],
   ) {
     if (!dragSlotId || dragSlotId === targetSlotId) return;
     const sourceStageId = stageSlots.find((s) => s.id === dragSlotId)?.stageId;
@@ -107,7 +105,10 @@ export default function LineupBoard({ day, grid, artists }: Props) {
     setDragSlotId(null);
     if (!order) return;
     const baseline = stageSlots.map((s) => s.id);
-    if (order.length !== baseline.length || order.every((id, i) => id === baseline[i])) {
+    if (
+      order.length !== baseline.length ||
+      order.every((id, i) => id === baseline[i])
+    ) {
       // No-op reorder.
       setLocalOrder((o) => ({ ...o, [stageId]: undefined }));
       return;
@@ -140,7 +141,7 @@ export default function LineupBoard({ day, grid, artists }: Props) {
    */
   function displaySlots(
     stageId: string,
-    stageSlots: SlotWithSets[]
+    stageSlots: SlotWithSets[],
   ): SlotWithSets[] {
     const order = localOrder[stageId];
     if (!order) return stageSlots;
@@ -176,9 +177,13 @@ export default function LineupBoard({ day, grid, artists }: Props) {
               <div className="flex items-center gap-2">
                 <span
                   className="inline-block w-2 h-2 rounded-full"
-                  style={{ background: stage.color ?? "var(--color-fg-subtle)" }}
+                  style={{
+                    background: stage.color ?? "var(--color-fg-subtle)",
+                  }}
                 />
-                <span className="text-[13px] text-[--color-fg]">{stage.name}</span>
+                <span className="text-[13px] text-[--color-fg]">
+                  {stage.name}
+                </span>
                 <span className="text-mono text-[10px] text-[--color-fg-subtle]">
                   {slots.length}
                 </span>
@@ -209,7 +214,9 @@ export default function LineupBoard({ day, grid, artists }: Props) {
                   key={slot.id}
                   draggable
                   onDragStart={() => onSlotDragStart(slot.id)}
-                  onDragOver={(e) => onSlotDragOver(e, slot.id, stage.id, slots)}
+                  onDragOver={(e) =>
+                    onSlotDragOver(e, slot.id, stage.id, slots)
+                  }
                   onDragEnd={onSlotDragEnd}
                   className={`border rounded-md p-2 cursor-move transition-opacity ${
                     dragSlotId === slot.id
@@ -243,7 +250,9 @@ export default function LineupBoard({ day, grid, artists }: Props) {
                   </div>
 
                   {slot.sets.length === 0 ? (
-                    <p className="text-[--color-fg-subtle] text-[11px] italic">empty</p>
+                    <p className="text-[--color-fg-subtle] text-[11px] italic">
+                      empty
+                    </p>
                   ) : (
                     <ul className="space-y-1">
                       {slot.sets.map((s) => (
@@ -255,7 +264,9 @@ export default function LineupBoard({ day, grid, artists }: Props) {
                             onClick={() => setEditSet(s)}
                             className="flex items-center gap-2 text-left flex-1 min-w-0 hover:text-brand"
                           >
-                            <span className="truncate text-[--color-fg]">{s.artist.name}</span>
+                            <span className="truncate text-[--color-fg]">
+                              {s.artist.name}
+                            </span>
                             {s.artist.agency && (
                               <span className="text-mono text-[10px] text-[--color-fg-subtle] truncate">
                                 {s.artist.agency}
@@ -588,7 +599,12 @@ function AddSetDialog({
           <Button type="submit" disabled={saving || artists.length === 0}>
             {saving ? "Saving" : "Add"}
           </Button>
-          <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onClose}
+            disabled={saving}
+          >
             Cancel
           </Button>
         </div>
@@ -609,7 +625,7 @@ function EditSetDialog({
   const [status, setStatus] = useState<SetStatus>(set.status as SetStatus);
   const [announceBatch, setAnnounceBatch] = useState(set.announceBatch ?? "");
   const [feeUsd, setFeeUsd] = useState(
-    set.feeAmountCents != null ? (set.feeAmountCents / 100).toFixed(2) : ""
+    set.feeAmountCents != null ? (set.feeAmountCents / 100).toFixed(2) : "",
   );
   const [agency, setAgency] = useState(set.agency ?? "");
   const [error, setError] = useState("");
@@ -680,10 +696,7 @@ function EditSetDialog({
           </div>
           <div className="space-y-1.5">
             <Label>Agency override</Label>
-            <Input
-              value={agency}
-              onChange={(e) => setAgency(e.target.value)}
-            />
+            <Input value={agency} onChange={(e) => setAgency(e.target.value)} />
           </div>
         </div>
         {set.feeAmountCents != null && (
@@ -696,7 +709,12 @@ function EditSetDialog({
           <Button type="submit" disabled={saving}>
             {saving ? "Saving" : "Save"}
           </Button>
-          <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onClose}
+            disabled={saving}
+          >
             Cancel
           </Button>
         </div>

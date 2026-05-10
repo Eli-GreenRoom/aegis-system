@@ -9,7 +9,7 @@ export default async function HomePage() {
     <main className="min-h-screen flex items-center justify-center px-6">
       <div className="max-w-xl w-full">
         <div className="text-mono text-xs uppercase tracking-[0.2em] text-brand mb-6">
-          Aegis System
+          GreenRoom Stages
         </div>
         <h1 className="text-display text-4xl mb-3 leading-[1.1]">
           The festival, organised.

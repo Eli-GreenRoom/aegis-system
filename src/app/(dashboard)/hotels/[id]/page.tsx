@@ -33,11 +33,11 @@ export default async function HotelDetailPage({ params }: PageProps) {
   // Capacity per block. Sequential calls are fine here - blocks per hotel
   // is small (single digits in practice).
   const capacities = await Promise.all(
-    blocks.map((b) => getBlockCapacity(b.id))
+    blocks.map((b) => getBlockCapacity(b.id)),
   );
 
   const people = await resolvePeople(
-    bookings.map((bk) => ({ kind: bk.personKind, id: bk.personId }))
+    bookings.map((bk) => ({ kind: bk.personKind, id: bk.personId })),
   );
 
   return (
@@ -101,17 +101,27 @@ export default async function HotelDetailPage({ params }: PageProps) {
                 <thead className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] bg-[--color-surface]">
                   <tr>
                     <th className="text-left px-4 py-2 font-normal">Person</th>
-                    <th className="text-left px-4 py-2 font-normal">Check-in</th>
-                    <th className="text-left px-4 py-2 font-normal">Check-out</th>
-                    <th className="text-left px-4 py-2 font-normal">Room type</th>
-                    <th className="text-right px-4 py-2 font-normal">Credits</th>
+                    <th className="text-left px-4 py-2 font-normal">
+                      Check-in
+                    </th>
+                    <th className="text-left px-4 py-2 font-normal">
+                      Check-out
+                    </th>
+                    <th className="text-left px-4 py-2 font-normal">
+                      Room type
+                    </th>
+                    <th className="text-right px-4 py-2 font-normal">
+                      Credits
+                    </th>
                     <th className="text-left px-4 py-2 font-normal">Status</th>
                     <th className="text-right px-4 py-2 font-normal w-[1%]"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {bookings.map((bk) => {
-                    const person = people.get(`${bk.personKind}:${bk.personId}`);
+                    const person = people.get(
+                      `${bk.personKind}:${bk.personId}`,
+                    );
                     return (
                       <tr
                         key={bk.id}
@@ -175,7 +185,9 @@ function Row({
       <dt className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted] mb-1">
         {label}
       </dt>
-      <dd className={mono ? "text-mono text-[--color-fg]" : "text-[--color-fg]"}>
+      <dd
+        className={mono ? "text-mono text-[--color-fg]" : "text-[--color-fg]"}
+      >
         {value ? value : <span className="text-[--color-fg-subtle]">-</span>}
       </dd>
     </div>
@@ -185,21 +197,21 @@ function Row({
 const STATUS_CLASSES: Record<string, string> = {
   tentative: "border-[--color-border-strong] text-[--color-fg-muted]",
   booked: "border-brand/40 text-brand",
-  checked_in: "border-[--color-brand-mint]/60 text-mint",
+  checked_in: "border-[--color-brand]/60 text-mint",
   checked_out: "border-[--color-fg-subtle]/40 text-[--color-fg-muted]",
-  no_show: "border-[--color-brand-coral]/40 text-coral",
-  cancelled: "border-[--color-brand-coral]/40 text-coral",
+  no_show: "border-[--color-danger]/40 text-coral",
+  cancelled: "border-[--color-danger]/40 text-coral",
 };
 
 function BookingStatusPill({ status }: { status: string }) {
   return (
     <span
       className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${
-        STATUS_CLASSES[status] ?? "border-[--color-border-strong] text-[--color-fg-muted]"
+        STATUS_CLASSES[status] ??
+        "border-[--color-border-strong] text-[--color-fg-muted]"
       }`}
     >
       {status}
     </span>
   );
 }
-
