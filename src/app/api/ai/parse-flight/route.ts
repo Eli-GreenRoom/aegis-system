@@ -13,11 +13,12 @@ const inputSchema = z.object({
  * ParsedFlight). Operator reviews, then submits the regular flight
  * form to write to DB.
  *
- * Spec: AGENT.md §6.
+ * Spec: AGENT.md -6.
  */
 export async function POST(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "flights");
   if (denied) return denied;
 
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

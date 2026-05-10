@@ -17,11 +17,11 @@ export interface ActiveBooking {
  * hotels module uses). Walk-up bookings (no `roomBlockId`) are included
  * regardless of edition since they can't be otherwise scoped.
  *
- * Spec: docs/OPERATIONS-FLOW.md §4.
+ * Spec: docs/OPERATIONS-FLOW.md -4.
  */
 export async function getCurrentlyActiveBookings(
   editionId: string,
-  date: string
+  date: string,
 ): Promise<ActiveBooking[]> {
   // Limit to bookings whose linked block is in this edition (or no block).
   const blockRows = await db
@@ -34,15 +34,12 @@ export async function getCurrentlyActiveBookings(
     .select()
     .from(hotelBookings)
     .where(
-      and(
-        lte(hotelBookings.checkin, date),
-        gt(hotelBookings.checkout, date)
-      )
+      and(lte(hotelBookings.checkin, date), gt(hotelBookings.checkout, date)),
     )
     .orderBy(asc(hotelBookings.checkin));
 
   const scoped = bookingRows.filter(
-    (b) => b.roomBlockId === null || editionBlockIds.includes(b.roomBlockId)
+    (b) => b.roomBlockId === null || editionBlockIds.includes(b.roomBlockId),
   );
 
   if (scoped.length === 0) return [];
@@ -55,7 +52,7 @@ export async function getCurrentlyActiveBookings(
   const hotelsById = new Map(hotelRows.map((h) => [h.id, h]));
 
   const people = await resolvePeople(
-    scoped.map((b) => ({ kind: b.personKind, id: b.personId }))
+    scoped.map((b) => ({ kind: b.personKind, id: b.personId })),
   );
 
   return scoped

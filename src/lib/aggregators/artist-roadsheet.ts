@@ -52,11 +52,11 @@ export interface ArtistRoadsheet {
  * `day` is a YYYY-MM-DD string. When provided, set/flight/hotel/pickup
  * lookups are scoped to that calendar day.
  *
- * Spec: docs/OPERATIONS-FLOW.md §4.
+ * Spec: docs/OPERATIONS-FLOW.md -4.
  */
 export async function getArtistRoadsheet(
   artistId: string,
-  day?: string
+  day?: string,
 ): Promise<ArtistRoadsheet | null> {
   const [artist] = await db
     .select()
@@ -94,7 +94,7 @@ export async function getArtistRoadsheet(
     .select()
     .from(flights)
     .where(
-      and(eq(flights.personKind, "artist"), eq(flights.personId, artistId))
+      and(eq(flights.personKind, "artist"), eq(flights.personId, artistId)),
     )
     .orderBy(asc(flights.scheduledDt));
 
@@ -103,15 +103,11 @@ export async function getArtistRoadsheet(
   if (dayStart && dayEnd) {
     inboundCandidates = inboundCandidates.filter(
       (f) =>
-        f.scheduledDt &&
-        f.scheduledDt >= dayStart &&
-        f.scheduledDt < dayEnd
+        f.scheduledDt && f.scheduledDt >= dayStart && f.scheduledDt < dayEnd,
     );
     outboundCandidates = outboundCandidates.filter(
       (f) =>
-        f.scheduledDt &&
-        f.scheduledDt >= dayStart &&
-        f.scheduledDt < dayEnd
+        f.scheduledDt && f.scheduledDt >= dayStart && f.scheduledDt < dayEnd,
     );
   }
   const inboundFlight =
@@ -121,9 +117,7 @@ export async function getArtistRoadsheet(
   const outboundFlight = outboundCandidates[0] ?? null;
 
   // Hotel: booking active on `day` if filter, else most recent overall.
-  let hotelBookingRow:
-    | typeof hotelBookings.$inferSelect
-    | null = null;
+  let hotelBookingRow: typeof hotelBookings.$inferSelect | null = null;
   if (day) {
     const [active] = await db
       .select()
@@ -133,8 +127,8 @@ export async function getArtistRoadsheet(
           eq(hotelBookings.personKind, "artist"),
           eq(hotelBookings.personId, artistId),
           lte(hotelBookings.checkin, day),
-          gt(hotelBookings.checkout, day)
-        )
+          gt(hotelBookings.checkout, day),
+        ),
       )
       .orderBy(asc(hotelBookings.checkin))
       .limit(1);
@@ -146,8 +140,8 @@ export async function getArtistRoadsheet(
       .where(
         and(
           eq(hotelBookings.personKind, "artist"),
-          eq(hotelBookings.personId, artistId)
-        )
+          eq(hotelBookings.personId, artistId),
+        ),
       )
       .orderBy(desc(hotelBookings.checkin))
       .limit(1);
@@ -200,7 +194,7 @@ export async function getArtistRoadsheet(
   ]);
 
   const outstanding = paymentRows.filter(
-    (p) => p.status !== "paid" && p.status !== "void"
+    (p) => p.status !== "paid" && p.status !== "void",
   );
 
   return {

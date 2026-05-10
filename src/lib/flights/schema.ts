@@ -28,10 +28,7 @@ const isoDateTime = z
   .optional();
 
 const optionalUrl = z
-  .union([
-    z.literal(""),
-    z.string().trim().url("must be a valid URL"),
-  ])
+  .union([z.literal(""), z.string().trim().url("must be a valid URL")])
   .optional();
 
 export const flightInputSchema = z.object({
@@ -46,9 +43,15 @@ export const flightInputSchema = z.object({
   actualDt: isoDateTime,
   status: flightStatusEnum.optional(),
   // Set when status flips to `delayed`. UI subtracts the delta from any
-  // auto-computed pickup ETA (see OPERATIONS-FLOW.md §2). Capped at 48h —
+  // auto-computed pickup ETA (see OPERATIONS-FLOW.md -2). Capped at 48h -
   // anything longer is a separate flight, not a delay.
-  delayMinutes: z.number().int().min(0).max(60 * 48).nullable().optional(),
+  delayMinutes: z
+    .number()
+    .int()
+    .min(0)
+    .max(60 * 48)
+    .nullable()
+    .optional(),
   pnr: optionalString,
   ticketUrl: optionalUrl,
   confirmationEmailUrl: optionalUrl,
@@ -57,10 +60,11 @@ export const flightInputSchema = z.object({
 });
 export type FlightInput = z.infer<typeof flightInputSchema>;
 
-export const flightPatchSchema = flightInputSchema.partial().refine(
-  (v) => Object.keys(v).length > 0,
-  { message: "Body must contain at least one field" }
-);
+export const flightPatchSchema = flightInputSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Body must contain at least one field",
+  });
 export type FlightPatch = z.infer<typeof flightPatchSchema>;
 
 export interface FlightDbValues {
@@ -126,13 +130,17 @@ export function flightToDbValues(input: FlightInput): FlightDbValues {
 }
 
 export function flightToDbPatchValues(
-  input: FlightPatch
+  input: FlightPatch,
 ): Partial<FlightDbValues> {
   const out: Partial<FlightDbValues> = {};
-  if ("personKind" in input && input.personKind !== undefined) out.personKind = input.personKind;
-  if ("personId" in input && input.personId !== undefined) out.personId = input.personId;
-  if ("direction" in input && input.direction !== undefined) out.direction = input.direction;
-  if ("status" in input && input.status !== undefined) out.status = input.status;
+  if ("personKind" in input && input.personKind !== undefined)
+    out.personKind = input.personKind;
+  if ("personId" in input && input.personId !== undefined)
+    out.personId = input.personId;
+  if ("direction" in input && input.direction !== undefined)
+    out.direction = input.direction;
+  if ("status" in input && input.status !== undefined)
+    out.status = input.status;
   if ("delayMinutes" in input) {
     out.delayMinutes = input.delayMinutes ?? null;
   }

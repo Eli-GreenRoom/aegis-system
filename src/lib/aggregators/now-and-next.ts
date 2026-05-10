@@ -28,11 +28,11 @@ export interface NowAndNext {
  * Date; we extract its HH:MM in the local server timezone (Beirut/UTC+3
  * for production), matching how slot times are stored.
  *
- * Spec: docs/OPERATIONS-FLOW.md §4.
+ * Spec: docs/OPERATIONS-FLOW.md -4.
  */
 export async function getNowAndNext(
   stageId: string,
-  atTime: Date = new Date()
+  atTime: Date = new Date(),
 ): Promise<NowAndNext> {
   const slotRows = await db
     .select()
@@ -84,7 +84,7 @@ export async function getNowAndNext(
       all.find(
         (s) =>
           (s.status === "confirmed" || s.status === "live") &&
-          inSlotWindow(t, s.slotStartTime, s.slotEndTime)
+          inSlotWindow(t, s.slotStartTime, s.slotEndTime),
       ) ?? null;
   }
 
@@ -107,7 +107,7 @@ export async function getNowAndNext(
       (s) =>
         s.setId !== now?.setId &&
         (s.status === "confirmed" || s.status === "live") &&
-        s.slotStartTime > t
+        s.slotStartTime > t,
     ) ?? null;
 
   return { now, next };

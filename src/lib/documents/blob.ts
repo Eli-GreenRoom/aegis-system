@@ -1,6 +1,6 @@
 /**
  * Thin wrapper around `@vercel/blob` so route handlers don't import the
- * SDK directly. Mirrors the pattern in AGENT.md §6 ("never call SDK from
+ * SDK directly. Mirrors the pattern in AGENT.md -6 ("never call SDK from
  * a React component"). Tests mock this module instead of @vercel/blob
  * so the upload + delete paths can be exercised without network.
  */
@@ -21,7 +21,7 @@ export interface BlobUploadResult {
 export async function uploadToBlob(
   pathname: string,
   body: ArrayBuffer | Buffer | Blob,
-  contentType?: string
+  contentType?: string,
 ): Promise<BlobUploadResult> {
   const result = await put(pathname, body, {
     access: "private",

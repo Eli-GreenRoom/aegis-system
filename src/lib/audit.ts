@@ -2,10 +2,10 @@
  * Audit log of state transitions. Disputes ("the driver said they
  * dispatched at 5pm, the dashboard says 6pm") need this paper trail.
  *
- * Spec: docs/OPERATIONS-FLOW.md §6.
+ * Spec: docs/OPERATIONS-FLOW.md -6.
  *
  * Atomicity: under the neon-http driver Drizzle exposes `db.batch([...])`
- * — a single HTTP request that Neon wraps server-side in a transaction.
+ * - a single HTTP request that Neon wraps server-side in a transaction.
  * Callers compose `db.batch([update, recordTransition(...)])` so the
  * state change and the audit row commit together or not at all. The
  * shape mirrors what the local-pool `db.transaction(...)` API would
@@ -30,7 +30,7 @@ export type AuditEntityType =
 type Db = typeof db;
 
 export interface AuditDiff {
-  /** Column name being changed — almost always 'status' on transitions. */
+  /** Column name being changed - almost always 'status' on transitions. */
   field: string;
   from: unknown;
   to: unknown;
@@ -41,7 +41,7 @@ export interface AuditDiff {
 /**
  * Build the audit `insert` statement for a single transition. Returns the
  * unawaited Drizzle builder so the caller can pass it to `db.batch([...])`
- * alongside the actual state update — the two then commit atomically.
+ * alongside the actual state update - the two then commit atomically.
  *
  * Callers typically:
  *   const updateQ = db.update(flights).set({ status: 'landed' })
@@ -57,7 +57,7 @@ export function recordTransition(
     actorId: string;
     entity: { type: AuditEntityType; id: string };
     diff: AuditDiff;
-  }
+  },
 ) {
   const { actorId, entity, diff } = args;
   return client

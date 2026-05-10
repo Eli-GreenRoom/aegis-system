@@ -54,7 +54,7 @@ export async function listPeople(editionId: string): Promise<Person[]> {
  */
 export async function getPerson(
   kind: PersonKind,
-  id: string
+  id: string,
 ): Promise<Person | null> {
   if (kind === "artist") {
     const [row] = await db
@@ -77,22 +77,30 @@ export async function getPerson(
 }
 
 /**
- * Bulk resolver — for a list of (kind, id) pairs, returns a Map keyed by
+ * Bulk resolver - for a list of (kind, id) pairs, returns a Map keyed by
  * `${kind}:${id}`. Two queries total.
  */
 export async function resolvePeople(
-  pairs: Array<{ kind: PersonKind; id: string }>
+  pairs: Array<{ kind: PersonKind; id: string }>,
 ): Promise<Map<string, Person>> {
   const result = new Map<string, Person>();
   if (pairs.length === 0) return result;
 
-  const artistIds = [...new Set(pairs.filter((p) => p.kind === "artist").map((p) => p.id))];
-  const crewIds = [...new Set(pairs.filter((p) => p.kind === "crew").map((p) => p.id))];
+  const artistIds = [
+    ...new Set(pairs.filter((p) => p.kind === "artist").map((p) => p.id)),
+  ];
+  const crewIds = [
+    ...new Set(pairs.filter((p) => p.kind === "crew").map((p) => p.id)),
+  ];
 
   const [artistRows, crewRows] = await Promise.all([
     artistIds.length > 0
       ? db
-          .select({ id: artists.id, name: artists.name, agency: artists.agency })
+          .select({
+            id: artists.id,
+            name: artists.name,
+            agency: artists.agency,
+          })
           .from(artists)
           .where(inArray(artists.id, artistIds))
       : Promise.resolve([]),
@@ -122,4 +130,3 @@ export async function resolvePeople(
   }
   return result;
 }
-

@@ -6,7 +6,7 @@
  * AI never writes to the DB - the route returns parsed JSON, the
  * operator confirms each field, then submits the form normally.
  *
- * Spec: AGENT.md §6.
+ * Spec: AGENT.md -6.
  */
 
 import { z } from "zod";
@@ -35,7 +35,7 @@ export const parsedInvoiceSchema = z.object({
     z.object({
       description: z.string(),
       amount: z.number().nullable(),
-    })
+    }),
   ),
   /** What kind of issuer this looks like (agency / hotel / vendor / freight /
    *  catering / production / venue / artist / other). */
@@ -102,7 +102,7 @@ export async function parseInvoiceText(text: string): Promise<ParsedInvoice> {
   const validated = parsedInvoiceSchema.safeParse(parsed);
   if (!validated.success) {
     throw new Error(
-      `Model output failed validation: ${JSON.stringify(validated.error.flatten())}`
+      `Model output failed validation: ${JSON.stringify(validated.error.flatten())}`,
     );
   }
   return validated.data;

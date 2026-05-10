@@ -17,11 +17,11 @@ export interface ArrivalToday {
  * pickup so the festival-day Arrivals screen can render without further
  * joins.
  *
- * Spec: docs/OPERATIONS-FLOW.md §4.
+ * Spec: docs/OPERATIONS-FLOW.md -4.
  */
 export async function getArrivalsToday(
   editionId: string,
-  date: string
+  date: string,
 ): Promise<ArrivalToday[]> {
   // Treat `date` as a UTC calendar day. Match scheduledDt in
   // [date 00:00:00, next-day 00:00:00).
@@ -36,8 +36,8 @@ export async function getArrivalsToday(
         eq(flights.editionId, editionId),
         eq(flights.direction, "inbound"),
         gte(flights.scheduledDt, start),
-        lt(flights.scheduledDt, end)
-      )
+        lt(flights.scheduledDt, end),
+      ),
     )
     .orderBy(asc(flights.scheduledDt));
 
@@ -61,7 +61,7 @@ export async function getArrivalsToday(
   }
 
   const people = await resolvePeople(
-    flightRows.map((f) => ({ kind: f.personKind, id: f.personId }))
+    flightRows.map((f) => ({ kind: f.personKind, id: f.personId })),
   );
 
   return flightRows.map((flight) => ({

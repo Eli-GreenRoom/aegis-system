@@ -4,12 +4,7 @@ const slugRegex = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const hhmmRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 const hexRegex = /^#[0-9A-Fa-f]{6}$/;
 
-const optionalString = z
-  .string()
-  .trim()
-  .max(500)
-  .optional()
-  .or(z.literal(""));
+const optionalString = z.string().trim().max(500).optional().or(z.literal(""));
 
 const optionalHexColor = z
   .union([
@@ -18,7 +13,7 @@ const optionalHexColor = z
   ])
   .optional();
 
-// ── Stage ────────────────────────────────────────────────────────────────
+// -- Stage ----------------------------------------------------------------
 
 export const stageInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -27,17 +22,21 @@ export const stageInputSchema = z.object({
     .trim()
     .min(1)
     .max(60)
-    .regex(slugRegex, "lowercase letters, numbers, hyphens; no leading/trailing hyphen"),
+    .regex(
+      slugRegex,
+      "lowercase letters, numbers, hyphens; no leading/trailing hyphen",
+    ),
   color: optionalHexColor,
   sortOrder: z.number().int().min(0).max(999).optional(),
 });
 
 export type StageInput = z.infer<typeof stageInputSchema>;
 
-export const stagePatchSchema = stageInputSchema.partial().refine(
-  (v) => Object.keys(v).length > 0,
-  { message: "Body must contain at least one field" }
-);
+export const stagePatchSchema = stageInputSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Body must contain at least one field",
+  });
 export type StagePatch = z.infer<typeof stagePatchSchema>;
 
 export interface StageDbValues {
@@ -56,12 +55,15 @@ export function stageToDbValues(input: StageInput): StageDbValues {
   };
 }
 
-export function stageToDbPatchValues(input: StagePatch): Partial<StageDbValues> {
+export function stageToDbPatchValues(
+  input: StagePatch,
+): Partial<StageDbValues> {
   const out: Partial<StageDbValues> = {};
   if ("name" in input && input.name !== undefined) out.name = input.name;
   if ("slug" in input && input.slug !== undefined) out.slug = input.slug;
   if ("color" in input) {
-    out.color = input.color === undefined || input.color === "" ? null : input.color;
+    out.color =
+      input.color === undefined || input.color === "" ? null : input.color;
   }
   if ("sortOrder" in input && input.sortOrder !== undefined) {
     out.sortOrder = input.sortOrder;
@@ -69,7 +71,7 @@ export function stageToDbPatchValues(input: StagePatch): Partial<StageDbValues> 
   return out;
 }
 
-// ── Slot ─────────────────────────────────────────────────────────────────
+// -- Slot -----------------------------------------------------------------
 
 export const dayEnum = z.enum(["friday", "saturday", "sunday"]);
 export type Day = z.infer<typeof dayEnum>;
@@ -105,8 +107,13 @@ export const slotPatchSchema = slotInputBase
     message: "Body must contain at least one field",
   })
   .refine(
-    (v) => !(v.startTime !== undefined && v.endTime !== undefined && v.startTime === v.endTime),
-    { message: "Start and end can't be the same", path: ["endTime"] }
+    (v) =>
+      !(
+        v.startTime !== undefined &&
+        v.endTime !== undefined &&
+        v.startTime === v.endTime
+      ),
+    { message: "Start and end can't be the same", path: ["endTime"] },
   );
 export type SlotPatch = z.infer<typeof slotPatchSchema>;
 
@@ -130,15 +137,19 @@ export function slotToDbValues(input: SlotInput): SlotDbValues {
 
 export function slotToDbPatchValues(input: SlotPatch): Partial<SlotDbValues> {
   const out: Partial<SlotDbValues> = {};
-  if ("stageId" in input && input.stageId !== undefined) out.stageId = input.stageId;
+  if ("stageId" in input && input.stageId !== undefined)
+    out.stageId = input.stageId;
   if ("day" in input && input.day !== undefined) out.day = input.day;
-  if ("startTime" in input && input.startTime !== undefined) out.startTime = input.startTime;
-  if ("endTime" in input && input.endTime !== undefined) out.endTime = input.endTime;
-  if ("sortOrder" in input && input.sortOrder !== undefined) out.sortOrder = input.sortOrder;
+  if ("startTime" in input && input.startTime !== undefined)
+    out.startTime = input.startTime;
+  if ("endTime" in input && input.endTime !== undefined)
+    out.endTime = input.endTime;
+  if ("sortOrder" in input && input.sortOrder !== undefined)
+    out.sortOrder = input.sortOrder;
   return out;
 }
 
-// ── Set ──────────────────────────────────────────────────────────────────
+// -- Set ------------------------------------------------------------------
 
 export const setStatusEnum = z.enum([
   "confirmed",
@@ -164,10 +175,11 @@ export const setInputSchema = z.object({
 });
 export type SetInput = z.infer<typeof setInputSchema>;
 
-export const setPatchSchema = setInputSchema.partial().refine(
-  (v) => Object.keys(v).length > 0,
-  { message: "Body must contain at least one field" }
-);
+export const setPatchSchema = setInputSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Body must contain at least one field",
+  });
 export type SetPatch = z.infer<typeof setPatchSchema>;
 
 export interface SetDbValues {
@@ -192,7 +204,9 @@ export function setToDbValues(input: SetInput): SetDbValues {
     feeAmountCents:
       input.feeAmountCents === undefined ? null : input.feeAmountCents,
     feeCurrency:
-      input.feeCurrency === undefined || input.feeCurrency === "" ? null : input.feeCurrency,
+      input.feeCurrency === undefined || input.feeCurrency === ""
+        ? null
+        : input.feeCurrency,
     agency: null,
     comments: null,
   };
@@ -205,15 +219,21 @@ export function setToDbValues(input: SetInput): SetDbValues {
 
 export function setToDbPatchValues(input: SetPatch): Partial<SetDbValues> {
   const out: Partial<SetDbValues> = {};
-  if ("slotId" in input && input.slotId !== undefined) out.slotId = input.slotId;
-  if ("artistId" in input && input.artistId !== undefined) out.artistId = input.artistId;
-  if ("status" in input && input.status !== undefined) out.status = input.status;
+  if ("slotId" in input && input.slotId !== undefined)
+    out.slotId = input.slotId;
+  if ("artistId" in input && input.artistId !== undefined)
+    out.artistId = input.artistId;
+  if ("status" in input && input.status !== undefined)
+    out.status = input.status;
   if ("feeAmountCents" in input) {
-    out.feeAmountCents = input.feeAmountCents === undefined ? null : input.feeAmountCents;
+    out.feeAmountCents =
+      input.feeAmountCents === undefined ? null : input.feeAmountCents;
   }
   if ("feeCurrency" in input) {
     out.feeCurrency =
-      input.feeCurrency === undefined || input.feeCurrency === "" ? null : input.feeCurrency;
+      input.feeCurrency === undefined || input.feeCurrency === ""
+        ? null
+        : input.feeCurrency;
   }
   for (const k of NULLABLE_SET_STRINGS) {
     if (k in input) {

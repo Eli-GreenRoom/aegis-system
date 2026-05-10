@@ -2,12 +2,7 @@ import { z } from "zod";
 
 const slugRegex = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
-const optionalString = z
-  .string()
-  .trim()
-  .max(500)
-  .optional()
-  .or(z.literal(""));
+const optionalString = z.string().trim().max(500).optional().or(z.literal(""));
 
 const optionalEmail = z
   .union([z.literal(""), z.string().trim().email()])
@@ -35,9 +30,7 @@ export const visaStatusEnum = z.enum([
 ]);
 export type VisaStatus = z.infer<typeof visaStatusEnum>;
 
-const optionalVisaStatus = z
-  .union([z.literal(""), visaStatusEnum])
-  .optional();
+const optionalVisaStatus = z.union([z.literal(""), visaStatusEnum]).optional();
 
 /**
  * Form-side schema. Strings can be empty; nothing transforms to null.
@@ -50,7 +43,10 @@ export const artistInputSchema = z.object({
     .trim()
     .min(1)
     .max(120)
-    .regex(slugRegex, "lowercase letters, numbers, hyphens; no leading/trailing hyphen"),
+    .regex(
+      slugRegex,
+      "lowercase letters, numbers, hyphens; no leading/trailing hyphen",
+    ),
   legalName: optionalString,
   nationality: optionalString,
   email: optionalEmail,
@@ -74,14 +70,15 @@ export type ArtistInput = z.infer<typeof artistInputSchema>;
  * are present they still have to satisfy their format constraints. Body must
  * carry at least one field.
  */
-export const artistPatchSchema = artistInputSchema.partial().refine(
-  (v) => Object.keys(v).length > 0,
-  { message: "Body must contain at least one field" }
-);
+export const artistPatchSchema = artistInputSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Body must contain at least one field",
+  });
 
 export type ArtistPatch = z.infer<typeof artistPatchSchema>;
 
-/** DB-side payload — empty strings normalised to null. */
+/** DB-side payload - empty strings normalised to null. */
 export interface ArtistDbValues {
   name: string;
   slug: string;
@@ -139,7 +136,7 @@ export function toDbPatchValues(input: ArtistPatch): Partial<ArtistDbValues> {
   return out;
 }
 
-/** Convert form input to DB row shape — empty strings become null. */
+/** Convert form input to DB row shape - empty strings become null. */
 export function toDbValues(input: ArtistInput): ArtistDbValues {
   const out: ArtistDbValues = {
     name: input.name,

@@ -10,14 +10,19 @@ const CURRENT_LOCATION = "Aranoon Village, Batroun";
 
 /**
  * The four canonical stages, in display order. Stages are global (not
- * per-edition) — same id year over year. Colors come from
+ * per-edition) - same id year over year. Colors come from
  * `--color-stage-*` tokens in src/styles/tokens.css.
  */
 const DEFAULT_STAGES = [
-  { name: "Main Stage",        slug: "main",         color: "#E5B85A", sortOrder: 0 },
-  { name: "Alternative Stage", slug: "alternative",  color: "#7C9EFF", sortOrder: 1 },
-  { name: "Select Pool",       slug: "select-pool",  color: "#A78BFA", sortOrder: 2 },
-  { name: "Collectives",       slug: "collectives",  color: "#F472B6", sortOrder: 3 },
+  { name: "Main Stage", slug: "main", color: "#E5B85A", sortOrder: 0 },
+  {
+    name: "Alternative Stage",
+    slug: "alternative",
+    color: "#7C9EFF",
+    sortOrder: 1,
+  },
+  { name: "Select Pool", slug: "select-pool", color: "#A78BFA", sortOrder: 2 },
+  { name: "Collectives", slug: "collectives", color: "#F472B6", sortOrder: 3 },
 ] as const;
 
 async function ensureDefaultStages() {
@@ -51,4 +56,3 @@ export async function getCurrentEdition() {
 
   return created;
 }
-

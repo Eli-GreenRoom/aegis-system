@@ -12,7 +12,7 @@ import type {
 export type Vendor = typeof vendors.$inferSelect;
 export type Pickup = typeof groundTransportPickups.$inferSelect;
 
-// ── Vendors ─────────────────────────────────────────────────────────────
+// -- Vendors -------------------------------------------------------------
 
 export async function listVendors(): Promise<Vendor[]> {
   return db.select().from(vendors).orderBy(asc(vendors.name));
@@ -34,7 +34,7 @@ export async function createVendor(input: VendorDbValues): Promise<Vendor> {
 
 export async function updateVendor(
   id: string,
-  input: Partial<VendorDbValues>
+  input: Partial<VendorDbValues>,
 ): Promise<Vendor | null> {
   if (Object.keys(input).length === 0) return getVendor(id);
   const [row] = await db
@@ -50,7 +50,7 @@ export async function deleteVendor(id: string): Promise<Vendor | null> {
   return row ?? null;
 }
 
-// ── Pickups ─────────────────────────────────────────────────────────────
+// -- Pickups -------------------------------------------------------------
 
 export interface ListPickupsParams {
   editionId: string;
@@ -89,7 +89,7 @@ export async function listPickups({
       ilike(groundTransportPickups.driverPhone, q),
       ilike(groundTransportPickups.vehicleType, q),
       ilike(groundTransportPickups.routeFromDetail, q),
-      ilike(groundTransportPickups.routeToDetail, q)
+      ilike(groundTransportPickups.routeToDetail, q),
     );
     if (searchOr) filters.push(searchOr);
   }
@@ -112,7 +112,7 @@ export async function getPickup(id: string): Promise<Pickup | null> {
 
 export async function createPickup(
   editionId: string,
-  input: PickupDbValues
+  input: PickupDbValues,
 ): Promise<Pickup> {
   const [row] = await db
     .insert(groundTransportPickups)
@@ -123,7 +123,7 @@ export async function createPickup(
 
 export async function updatePickup(
   id: string,
-  input: Partial<PickupDbValues>
+  input: Partial<PickupDbValues>,
 ): Promise<Pickup | null> {
   if (Object.keys(input).length === 0) return getPickup(id);
   const [row] = await db
@@ -135,10 +135,7 @@ export async function updatePickup(
 }
 
 /** Unawaited update builder for use inside `db.batch([..., recordTransition])`. */
-export function buildUpdatePickup(
-  id: string,
-  input: Partial<PickupDbValues>
-) {
+export function buildUpdatePickup(id: string, input: Partial<PickupDbValues>) {
   return db
     .update(groundTransportPickups)
     .set(input)

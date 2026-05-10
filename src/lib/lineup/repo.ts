@@ -1,19 +1,14 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
 import { stages, slots, sets, artists } from "@/db/schema";
-import type {
-  Day,
-  SetDbValues,
-  SlotDbValues,
-  StageDbValues,
-} from "./schema";
+import type { Day, SetDbValues, SlotDbValues, StageDbValues } from "./schema";
 
 export type Stage = typeof stages.$inferSelect;
 export type Slot = typeof slots.$inferSelect;
 export type SetRow = typeof sets.$inferSelect;
 export type Artist = typeof artists.$inferSelect;
 
-// ── Stages ──────────────────────────────────────────────────────────────
+// -- Stages --------------------------------------------------------------
 
 export async function listStages(): Promise<Stage[]> {
   return db
@@ -23,12 +18,20 @@ export async function listStages(): Promise<Stage[]> {
 }
 
 export async function getStage(id: string): Promise<Stage | null> {
-  const [row] = await db.select().from(stages).where(eq(stages.id, id)).limit(1);
+  const [row] = await db
+    .select()
+    .from(stages)
+    .where(eq(stages.id, id))
+    .limit(1);
   return row ?? null;
 }
 
 export async function getStageBySlug(slug: string): Promise<Stage | null> {
-  const [row] = await db.select().from(stages).where(eq(stages.slug, slug)).limit(1);
+  const [row] = await db
+    .select()
+    .from(stages)
+    .where(eq(stages.slug, slug))
+    .limit(1);
   return row ?? null;
 }
 
@@ -39,7 +42,7 @@ export async function createStage(input: StageDbValues): Promise<Stage> {
 
 export async function updateStage(
   id: string,
-  input: Partial<StageDbValues>
+  input: Partial<StageDbValues>,
 ): Promise<Stage | null> {
   if (Object.keys(input).length === 0) return getStage(id);
   const [row] = await db
@@ -55,7 +58,7 @@ export async function deleteStage(id: string): Promise<Stage | null> {
   return row ?? null;
 }
 
-// ── Slots ───────────────────────────────────────────────────────────────
+// -- Slots ---------------------------------------------------------------
 
 export interface ListSlotsParams {
   editionId: string;
@@ -85,7 +88,7 @@ export async function getSlot(id: string): Promise<Slot | null> {
 
 export async function createSlot(
   editionId: string,
-  input: SlotDbValues
+  input: SlotDbValues,
 ): Promise<Slot> {
   const [row] = await db
     .insert(slots)
@@ -96,7 +99,7 @@ export async function createSlot(
 
 export async function updateSlot(
   id: string,
-  input: Partial<SlotDbValues>
+  input: Partial<SlotDbValues>,
 ): Promise<Slot | null> {
   if (Object.keys(input).length === 0) return getSlot(id);
   const [row] = await db
@@ -124,7 +127,7 @@ export async function reorderSlots(
   editionId: string,
   stageId: string,
   day: Day,
-  slotIds: string[]
+  slotIds: string[],
 ): Promise<{ updated: number } | null> {
   if (slotIds.length === 0) return { updated: 0 };
 
@@ -136,8 +139,8 @@ export async function reorderSlots(
         eq(slots.editionId, editionId),
         eq(slots.stageId, stageId),
         eq(slots.day, day),
-        inArray(slots.id, slotIds)
-      )
+        inArray(slots.id, slotIds),
+      ),
     );
   if (rows.length !== slotIds.length) return null;
 
@@ -157,7 +160,7 @@ export async function reorderSlots(
   return { updated };
 }
 
-// ── Sets ────────────────────────────────────────────────────────────────
+// -- Sets ----------------------------------------------------------------
 
 export async function listSetsForSlot(slotId: string): Promise<SetRow[]> {
   return db
@@ -187,7 +190,7 @@ export async function createSet(input: SetDbValues): Promise<SetRow> {
 
 export async function updateSet(
   id: string,
-  input: Partial<SetDbValues>
+  input: Partial<SetDbValues>,
 ): Promise<SetRow | null> {
   if (Object.keys(input).length === 0) return getSet(id);
   const [row] = await db
@@ -211,7 +214,7 @@ export async function deleteSet(id: string): Promise<SetRow | null> {
   return row ?? null;
 }
 
-// ── Grid view ───────────────────────────────────────────────────────────
+// -- Grid view -----------------------------------------------------------
 
 export interface SetWithArtist extends SetRow {
   artist: Pick<Artist, "id" | "name" | "slug" | "agency" | "color">;
@@ -234,7 +237,7 @@ export interface StageWithSlots {
  */
 export async function getLineupGrid(
   editionId: string,
-  day: Day
+  day: Day,
 ): Promise<StageWithSlots[]> {
   const allStages = await listStages();
 
@@ -289,4 +292,3 @@ export async function getLineupGrid(
     slots: slotsByStage.get(stage.id) ?? [],
   }));
 }
-
