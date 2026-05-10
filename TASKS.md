@@ -11,11 +11,13 @@ _(Pick from Later, or call something out by hand.)_
 
 ## Later
 
+- [ ] Phase 6 Cmd+K agent (next up)
+- [ ] Phase 7 polish + comms
 - [ ] Phase 5 polish: stage filter chips on Now/Pickups, polling /
       pull-to-refresh, PWA install prompt, roadsheet PDF export,
       coral-pulse animations on overdue rows.
-- [ ] Phase 6 Cmd+K agent
-- [ ] Phase 7 polish + comms
+- [ ] Phase D (backlog): GitHub repo rename aegis-system -> greenroom-stages,
+      Vercel project rename. Manual infra steps only.
 
 ---
 
