@@ -7,21 +7,43 @@
 
 ## Now
 
-_(Pick from Later, or call something out by hand.)_
+- [ ] **Phase 1 (GREENROOM_STAGES_PLAN.md) — Festivals as projects**
+      Rename `festival_editions → festivals`. Add `workspaceId`, `slug`, `description`,
+      `tenantBrand`. Drop `stageDayEnum`; replace `slots.day` enum with `slots.date` date
+      column. Make `stages` festival-scoped (add `festivalId`, `activeDates`). Replace
+      `src/lib/edition.ts` with `src/lib/festivals.ts` (`getActiveFestival`, `listFestivals`).
+      All routes that call `getCurrentEdition()` switch to `getActiveFestival(session)`.
+      DoD: two festivals can coexist; switching cookie swaps dashboard data.
 
 ## Later
 
-- [ ] Phase 6 Cmd+K agent (next up)
-- [ ] Phase 7 polish + comms
+- [ ] Phase 2 — Onboarding + festival creation (sign-up → workspace → festival → dashboard)
+- [ ] Phase 3 — Team page + invites (copy-link only, no Resend yet)
+- [ ] Phase 4 — Festival settings page (editable stages, per-stage activeDates)
+- [ ] Phase 5 — T-date fix + topbar festival/workspace switcher
+- [ ] Phase 6 — UI simplicity sweep (7-item sidebar, real Home page, HQ density)
+- [ ] Phase 7 — Brand + copy sweep (package.json name, docs, UI strings)
+- [ ] Phase 8 — Repo + Vercel rename (manual, Eli does this — aegis-system → greenroom-stages)
+- [ ] Original Phase 6 — Cmd+K AI agent (deferred; sits after the structural phases)
+- [ ] Original Phase 7 — Polish + comms (Resend email, roadsheet email, audit log in UI)
 - [ ] Phase 5 polish: stage filter chips on Now/Pickups, polling /
       pull-to-refresh, PWA install prompt, roadsheet PDF export,
       coral-pulse animations on overdue rows.
-- [ ] Phase D (backlog): GitHub repo rename aegis-system -> greenroom-stages,
-      Vercel project rename. Manual infra steps only.
 
 ---
 
 ## Done
+
+- 2026-05-10 — **Phase 0 (GREENROOM_STAGES_PLAN.md) — Workspace foundation + multi-tenant scoping**
+  Added `workspaces` table + 4-role `team_members` (owner/admin/member/viewer). New
+  `src/lib/permissions.ts` with 30 dot-notation keys and `resolvePermissions`. Rewrote
+  `src/lib/session.ts`: session resolves workspace via team membership, no more
+  `OWNER_EMAIL` shortcut. Added `workspaceId` FK (nullable → seed backfill → NOT NULL)
+  to 12 tenant tables via two migrations (`0005_phase_0a_workspaces_nullable`,
+  `0006_phase_0b_workspaceid_notnull`). `documents.ownerId` renamed to `workspaceId`.
+  `src/db/seed.ts` creates "Aegis Productions" workspace + owner team member, backfills
+  existing rows. Shared session fixture in `tests/fixtures/session.ts`; all 13 test
+  files updated. 413 tests green. Deployed: Neon has 6 migrations applied, seed ran.
 
 - 2026-05-10 — Fix: stage delete now works for all stages including the 4 seeded
   defaults. Root cause: `ensureDefaultStages()` was called inside
