@@ -77,16 +77,16 @@ export default function Sidebar({ userEmail, festivalMode }: Props) {
       {/* Wordmark */}
       <Link
         href={(festivalMode ? "/festival/now" : "/lineup") as Route}
-        className="h-14 flex items-center px-5 border-b border-[--color-border] shrink-0"
+        className="h-12 flex items-center px-5 border-b border-[--color-border] shrink-0"
       >
-        <span className="text-display text-[17px] leading-none text-[--color-fg]">
-          GreenRoom
+        <span className="text-[13px] font-bold tracking-tight text-[--color-fg] leading-none">
+          Green<span className="text-brand">[Room]</span>
         </span>
         <span
-          className={`ml-2 text-[9px] font-semibold border rounded-md px-[5px] py-[2px] leading-none uppercase tracking-[0.12em] ${
+          className={`ml-1.5 text-[9px] font-semibold border rounded-xs px-1.25 py-0.5 leading-none uppercase tracking-[0.12em] ${
             festivalMode
-              ? "text-mint border-[--color-brand]/60"
-              : "text-brand border-brand/40"
+              ? "text-brand border-[--color-brand]/60"
+              : "text-brand border-[--color-brand]/40"
           }`}
           style={{ fontFamily: "var(--font-mono)" }}
         >
