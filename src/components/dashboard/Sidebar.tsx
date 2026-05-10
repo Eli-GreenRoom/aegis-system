@@ -83,14 +83,10 @@ export default function Sidebar({ userEmail, festivalMode }: Props) {
           Green<span className="text-brand">[Room]</span>
         </span>
         <span
-          className={`ml-1.5 text-[9px] font-semibold border rounded-xs px-1.25 py-0.5 leading-none uppercase tracking-[0.12em] ${
-            festivalMode
-              ? "text-brand border-[--color-brand]/60"
-              : "text-brand border-[--color-brand]/40"
-          }`}
+          className="ml-1.5 text-[9px] font-semibold border rounded-xs px-1.25 py-0.5 leading-none uppercase tracking-[0.12em] text-brand border-[--color-brand]/40"
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          {festivalMode ? "Live" : "Stages"}
+          Stages
         </span>
       </Link>
 
