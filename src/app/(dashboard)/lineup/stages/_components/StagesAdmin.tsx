@@ -15,15 +15,25 @@ export default function StagesAdmin({ stages }: { stages: Stage[] }) {
   const [error, setError] = useState("");
 
   async function deleteStage(id: string, name: string) {
-    if (!confirm(`Delete ${name}? Slots and sets on this stage will be deleted.`)) return;
-    setBusy(true);
-    const res = await fetch(`/api/stages/${id}`, { method: "DELETE" });
-    setBusy(false);
-    if (!res.ok) {
-      setError("Couldn't delete stage.");
+    if (
+      !confirm(`Delete ${name}? Slots and sets on this stage will be deleted.`)
+    )
       return;
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/stages/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? `Delete failed (${res.status}).`);
+        return;
+      }
+      router.refresh();
+    } catch {
+      setError("Network error — couldn't reach server.");
+    } finally {
+      setBusy(false);
     }
-    router.refresh();
   }
 
   return (
@@ -51,7 +61,9 @@ export default function StagesAdmin({ stages }: { stages: Stage[] }) {
                   />
                 </td>
                 <td className="px-4 py-2 text-[--color-fg]">{s.name}</td>
-                <td className="px-4 py-2 text-mono text-xs text-[--color-fg-muted]">{s.slug}</td>
+                <td className="px-4 py-2 text-mono text-xs text-[--color-fg-muted]">
+                  {s.slug}
+                </td>
                 <td className="px-4 py-2 text-right text-mono text-[--color-fg-muted]">
                   {s.sortOrder}
                 </td>
@@ -155,16 +167,28 @@ function StageDialog({
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
             <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} required />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Slug</Label>
-            <Input value={slug} onChange={(e) => setSlug(e.target.value)} required />
+            <Input
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              required
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Colour</Label>
-              <Input value={color} onChange={(e) => setColor(e.target.value)} placeholder="#E5B85A" />
+              <Input
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                placeholder="#E5B85A"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Sort order</Label>
@@ -180,7 +204,12 @@ function StageDialog({
             <Button type="submit" disabled={saving}>
               {saving ? "Saving" : isEdit ? "Save" : "Create"}
             </Button>
-            <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              disabled={saving}
+            >
               Cancel
             </Button>
           </div>
