@@ -2,21 +2,21 @@
  * Aegis Festival tenant brand values.
  * These apply ONLY to customer-facing export templates (PDFs, roadsheet links,
  * contracts, marketing collateral). Never import this into app chrome.
- * See docs/BRAND.md — Tenant brand: Aegis Festival.
+ * See docs/BRAND.md - Tenant brand: Aegis Festival.
  */
 
 export const AEGIS_PALETTE = {
-  /** Deep indigo — marketing canvas (poster backgrounds, PDF covers) */
+  /** Deep indigo - marketing canvas (poster backgrounds, PDF covers) */
   indigo: "#1B0E5C",
-  /** Cream — inverse surfaces, print, light-on-dark exports */
+  /** Cream - inverse surfaces, print, light-on-dark exports */
   cream: "#FAF3EC",
-  /** Warm gold — primary accent, Main Stage chip color */
+  /** Warm gold - primary accent, Main Stage chip color */
   gold: "#E5B85A",
-  /** Coral — tension, destructive state in exports */
+  /** Coral - tension, destructive state in exports */
   coral: "#E73E54",
-  /** Mint — success, confirmed state in exports */
+  /** Mint - success, confirmed state in exports */
   mint: "#16D060",
-  /** Near-black — was the ops background pre-rebrand */
+  /** Near-black - was the ops background pre-rebrand */
   nearBlack: "#0E0E10",
 } as const;
 
