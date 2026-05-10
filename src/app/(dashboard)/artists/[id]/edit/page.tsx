@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { getArtist } from "@/lib/artists/repo";

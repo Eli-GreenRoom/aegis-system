@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
@@ -20,7 +22,8 @@ export default async function ArtistDetailPage({ params }: PageProps) {
         subtitle={
           artist.archivedAt
             ? "Archived"
-            : [artist.agency, artist.nationality].filter(Boolean).join(" - ") || undefined
+            : [artist.agency, artist.nationality].filter(Boolean).join(" - ") ||
+              undefined
         }
         actions={
           <Link href={`/artists/${artist.id}/edit`}>
@@ -49,7 +52,9 @@ export default async function ArtistDetailPage({ params }: PageProps) {
               <dt className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted] mb-1">
                 Comments
               </dt>
-              <dd className="text-[--color-fg] whitespace-pre-wrap">{artist.comments}</dd>
+              <dd className="text-[--color-fg] whitespace-pre-wrap">
+                {artist.comments}
+              </dd>
             </div>
           )}
         </dl>
@@ -72,7 +77,9 @@ function Row({
       <dt className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted] mb-1">
         {label}
       </dt>
-      <dd className={mono ? "text-mono text-[--color-fg]" : "text-[--color-fg]"}>
+      <dd
+        className={mono ? "text-mono text-[--color-fg]" : "text-[--color-fg]"}
+      >
         {value ? value : <span className="text-[--color-fg-subtle]">-</span>}
       </dd>
     </div>

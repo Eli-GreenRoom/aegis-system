@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import type { Route } from "next";
 import Topbar from "@/components/dashboard/Topbar";
@@ -32,7 +34,9 @@ export default async function GroundPage({ searchParams }: PageProps) {
   const statusParsed = sp.status ? pickupStatusEnum.safeParse(sp.status) : null;
   const fromParsed = sp.routeFrom ? routeEnum.safeParse(sp.routeFrom) : null;
   const toParsed = sp.routeTo ? routeEnum.safeParse(sp.routeTo) : null;
-  const personKindParsed = sp.personKind ? personKindEnum.safeParse(sp.personKind) : null;
+  const personKindParsed = sp.personKind
+    ? personKindEnum.safeParse(sp.personKind)
+    : null;
 
   const [pickups, vendors] = await Promise.all([
     listPickups({
@@ -49,10 +53,12 @@ export default async function GroundPage({ searchParams }: PageProps) {
   ]);
 
   const people = await resolvePeople(
-    pickups.map((p) => ({ kind: p.personKind, id: p.personId }))
+    pickups.map((p) => ({ kind: p.personKind, id: p.personId })),
   );
 
-  const vendorsById = new Map(vendors.map((v) => [v.id, { id: v.id, name: v.name }]));
+  const vendorsById = new Map(
+    vendors.map((v) => [v.id, { id: v.id, name: v.name }]),
+  );
 
   return (
     <>
@@ -71,8 +77,14 @@ export default async function GroundPage({ searchParams }: PageProps) {
         }
       />
       <div className="px-6 py-6">
-        <PickupsFilters vendors={vendors.map((v) => ({ id: v.id, name: v.name }))} />
-        <PickupsTable pickups={pickups} people={people} vendorsById={vendorsById} />
+        <PickupsFilters
+          vendors={vendors.map((v) => ({ id: v.id, name: v.name }))}
+        />
+        <PickupsTable
+          pickups={pickups}
+          people={people}
+          vendorsById={vendorsById}
+        />
       </div>
     </>
   );

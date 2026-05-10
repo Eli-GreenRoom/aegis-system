@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
@@ -31,7 +33,7 @@ export default async function LineupPage({ searchParams }: PageProps) {
 
   const totalSets = grid.reduce(
     (n, s) => n + s.slots.reduce((m, sl) => m + sl.sets.length, 0),
-    0
+    0,
   );
   const totalSlots = grid.reduce((n, s) => n + s.slots.length, 0);
 

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Topbar from "@/components/dashboard/Topbar";
 import { getCurrentEdition } from "@/lib/edition";
 import { listHotels, listRoomBlocks } from "@/lib/hotels/repo";
@@ -15,10 +17,7 @@ export default async function NewBookingPage() {
   if (hotels.length === 0) {
     return (
       <>
-        <Topbar
-          title="New booking"
-          subtitle="Add a hotel first."
-        />
+        <Topbar title="New booking" subtitle="Add a hotel first." />
         <div className="px-6 py-6 max-w-2xl">
           <p className="text-[--color-fg-muted]">
             No hotels in the catalogue yet. Create one before adding a booking.

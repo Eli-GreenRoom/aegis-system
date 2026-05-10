@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import type { Route } from "next";
 import Topbar from "@/components/dashboard/Topbar";
@@ -22,7 +24,11 @@ export default async function RidersPage({ searchParams }: PageProps) {
 
   const kindParsed = sp.kind ? riderKindEnum.safeParse(sp.kind) : null;
   const confirmed =
-    sp.confirmed === "true" ? true : sp.confirmed === "false" ? false : undefined;
+    sp.confirmed === "true"
+      ? true
+      : sp.confirmed === "false"
+        ? false
+        : undefined;
 
   const [riders, artists] = await Promise.all([
     listRiders({

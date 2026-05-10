@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Topbar from "@/components/dashboard/Topbar";
 import InvoiceForm from "../_components/InvoiceForm";
 

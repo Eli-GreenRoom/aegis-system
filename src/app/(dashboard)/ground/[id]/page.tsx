@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
@@ -35,14 +37,23 @@ export default async function PickupDetailPage({ params }: PageProps) {
       />
       <div className="px-6 py-6">
         <dl className="max-w-2xl grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-          <Row label="Person" value={person ? `${person.name} (${person.kind})` : "Unknown"} />
+          <Row
+            label="Person"
+            value={person ? `${person.name} (${person.kind})` : "Unknown"}
+          />
           <Row
             label="When"
             value={format(new Date(pickup.pickupDt), "EEE d MMM HH:mm")}
             mono
           />
-          <Row label="From" value={`${pickup.routeFrom}${pickup.routeFromDetail ? ` - ${pickup.routeFromDetail}` : ""}`} />
-          <Row label="To" value={`${pickup.routeTo}${pickup.routeToDetail ? ` - ${pickup.routeToDetail}` : ""}`} />
+          <Row
+            label="From"
+            value={`${pickup.routeFrom}${pickup.routeFromDetail ? ` - ${pickup.routeFromDetail}` : ""}`}
+          />
+          <Row
+            label="To"
+            value={`${pickup.routeTo}${pickup.routeToDetail ? ` - ${pickup.routeToDetail}` : ""}`}
+          />
           <Row label="Vehicle" value={pickup.vehicleType} />
           <Row label="Vendor" value={vendor?.name ?? null} />
           <Row label="Driver" value={pickup.driverName} />
@@ -59,17 +70,29 @@ export default async function PickupDetailPage({ params }: PageProps) {
           <Row label="Status" value={pickup.status} />
           <Row
             label="Dispatched"
-            value={pickup.dispatchedAt ? format(new Date(pickup.dispatchedAt), "EEE d MMM HH:mm") : null}
+            value={
+              pickup.dispatchedAt
+                ? format(new Date(pickup.dispatchedAt), "EEE d MMM HH:mm")
+                : null
+            }
             mono
           />
           <Row
             label="In transit"
-            value={pickup.inTransitAt ? format(new Date(pickup.inTransitAt), "EEE d MMM HH:mm") : null}
+            value={
+              pickup.inTransitAt
+                ? format(new Date(pickup.inTransitAt), "EEE d MMM HH:mm")
+                : null
+            }
             mono
           />
           <Row
             label="Completed"
-            value={pickup.completedAt ? format(new Date(pickup.completedAt), "EEE d MMM HH:mm") : null}
+            value={
+              pickup.completedAt
+                ? format(new Date(pickup.completedAt), "EEE d MMM HH:mm")
+                : null
+            }
             mono
           />
           {pickup.linkedFlightId && (
@@ -90,7 +113,9 @@ export default async function PickupDetailPage({ params }: PageProps) {
               <dt className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted] mb-1">
                 Comments
               </dt>
-              <dd className="text-[--color-fg] whitespace-pre-wrap">{pickup.comments}</dd>
+              <dd className="text-[--color-fg] whitespace-pre-wrap">
+                {pickup.comments}
+              </dd>
             </div>
           )}
         </dl>
@@ -113,7 +138,9 @@ function Row({
       <dt className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted] mb-1">
         {label}
       </dt>
-      <dd className={mono ? "text-mono text-[--color-fg]" : "text-[--color-fg]"}>
+      <dd
+        className={mono ? "text-mono text-[--color-fg]" : "text-[--color-fg]"}
+      >
         {value ? value : <span className="text-[--color-fg-subtle]">-</span>}
       </dd>
     </div>

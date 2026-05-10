@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
@@ -30,26 +32,42 @@ export default async function FlightDetailPage({ params }: PageProps) {
       />
       <div className="px-6 py-6">
         <dl className="max-w-2xl grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-          <Row label="Person" value={person ? `${person.name} (${person.kind})` : "Unknown"} />
-          <Row label="Direction" value={flight.direction === "inbound" ? "Arrival" : "Departure"} />
+          <Row
+            label="Person"
+            value={person ? `${person.name} (${person.kind})` : "Unknown"}
+          />
+          <Row
+            label="Direction"
+            value={flight.direction === "inbound" ? "Arrival" : "Departure"}
+          />
           <Row label="Airline" value={flight.airline} />
           <Row label="Flight no." value={flight.flightNumber} mono />
           <Row label="From" value={flight.fromAirport} mono />
           <Row label="To" value={flight.toAirport} mono />
           <Row
             label="Scheduled"
-            value={flight.scheduledDt ? format(new Date(flight.scheduledDt), "EEE d MMM HH:mm") : null}
+            value={
+              flight.scheduledDt
+                ? format(new Date(flight.scheduledDt), "EEE d MMM HH:mm")
+                : null
+            }
             mono
           />
           <Row
             label="Actual"
-            value={flight.actualDt ? format(new Date(flight.actualDt), "EEE d MMM HH:mm") : null}
+            value={
+              flight.actualDt
+                ? format(new Date(flight.actualDt), "EEE d MMM HH:mm")
+                : null
+            }
             mono
           />
           <Row label="Status" value={flight.status} />
           <Row
             label="Delay (min)"
-            value={flight.delayMinutes != null ? String(flight.delayMinutes) : null}
+            value={
+              flight.delayMinutes != null ? String(flight.delayMinutes) : null
+            }
             mono
           />
           <Row label="PNR" value={flight.pnr} mono />
@@ -58,7 +76,10 @@ export default async function FlightDetailPage({ params }: PageProps) {
             <Row
               label="Ticket"
               value={
-                <a className="text-brand underline-offset-4 hover:underline" href={flight.ticketUrl}>
+                <a
+                  className="text-brand underline-offset-4 hover:underline"
+                  href={flight.ticketUrl}
+                >
                   open
                 </a>
               }
@@ -82,7 +103,9 @@ export default async function FlightDetailPage({ params }: PageProps) {
               <dt className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted] mb-1">
                 Comments
               </dt>
-              <dd className="text-[--color-fg] whitespace-pre-wrap">{flight.comments}</dd>
+              <dd className="text-[--color-fg] whitespace-pre-wrap">
+                {flight.comments}
+              </dd>
             </div>
           )}
         </dl>
@@ -105,7 +128,9 @@ function Row({
       <dt className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted] mb-1">
         {label}
       </dt>
-      <dd className={mono ? "text-mono text-[--color-fg]" : "text-[--color-fg]"}>
+      <dd
+        className={mono ? "text-mono text-[--color-fg]" : "text-[--color-fg]"}
+      >
         {value ? value : <span className="text-[--color-fg-subtle]">-</span>}
       </dd>
     </div>

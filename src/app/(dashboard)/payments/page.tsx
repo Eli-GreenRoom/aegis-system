@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import type { Route } from "next";
 import Topbar from "@/components/dashboard/Topbar";

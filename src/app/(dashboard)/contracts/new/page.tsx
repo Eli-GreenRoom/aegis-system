@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Topbar from "@/components/dashboard/Topbar";
 import { getCurrentEdition } from "@/lib/edition";
 import { listArtists } from "@/lib/artists/repo";
@@ -25,10 +27,7 @@ export default async function NewContractPage() {
 
   return (
     <>
-      <Topbar
-        title="New contract"
-        subtitle="Draft -> sent -> signed."
-      />
+      <Topbar title="New contract" subtitle="Draft -> sent -> signed." />
       <div className="px-6 py-6">
         <ContractForm artists={artists} />
       </div>

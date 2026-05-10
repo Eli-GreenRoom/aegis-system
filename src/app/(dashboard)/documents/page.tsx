@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import EmptyModule from "@/components/dashboard/EmptyModule";
 
 export default function DocumentsPage() {

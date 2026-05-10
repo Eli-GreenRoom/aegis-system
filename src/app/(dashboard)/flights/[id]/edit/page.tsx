@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { getCurrentEdition } from "@/lib/edition";
@@ -21,7 +23,9 @@ export default async function EditFlightPage({ params }: PageProps) {
     <>
       <Topbar
         title={`Edit ${flight.flightNumber ?? "flight"}`}
-        subtitle={flight.direction === "inbound" ? "Arrival leg" : "Departure leg"}
+        subtitle={
+          flight.direction === "inbound" ? "Arrival leg" : "Departure leg"
+        }
       />
       <div className="px-6 py-6">
         <FlightForm flight={flight} people={people} />

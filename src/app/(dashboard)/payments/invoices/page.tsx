@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import type { Route } from "next";
 import Topbar from "@/components/dashboard/Topbar";
@@ -53,7 +55,11 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
             <option value="rejected">Rejected</option>
             <option value="paid">Paid</option>
           </Filter>
-          <Filter label="Issuer kind" name="issuerKind" value={sp.issuerKind ?? ""}>
+          <Filter
+            label="Issuer kind"
+            name="issuerKind"
+            value={sp.issuerKind ?? ""}
+          >
             <option value="">Any</option>
             {kinds.map((k) => (
               <option key={k} value={k}>
@@ -87,7 +93,9 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
               <thead className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] bg-[--color-surface]">
                 <tr>
                   <th className="text-left px-4 py-2 font-normal">Number</th>
-                  <th className="text-left px-4 py-2 font-normal">Issuer kind</th>
+                  <th className="text-left px-4 py-2 font-normal">
+                    Issuer kind
+                  </th>
                   <th className="text-left px-4 py-2 font-normal">Issued</th>
                   <th className="text-left px-4 py-2 font-normal">Due</th>
                   <th className="text-right px-4 py-2 font-normal">Amount</th>
@@ -106,7 +114,9 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
                         href={`/payments/invoices/${i.id}` as Route}
                         className="text-[--color-fg] text-mono text-xs hover:text-brand"
                       >
-                        {i.number ?? <span className="text-[--color-fg-subtle]">-</span>}
+                        {i.number ?? (
+                          <span className="text-[--color-fg-subtle]">-</span>
+                        )}
                       </Link>
                     </td>
                     <td className="px-4 py-2 text-[--color-fg-muted] text-xs">

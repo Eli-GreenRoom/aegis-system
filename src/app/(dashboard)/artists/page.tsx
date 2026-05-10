@@ -1,8 +1,14 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
 import { getCurrentEdition } from "@/lib/edition";
-import { listAgencies, listArtists, type ListArtistsParams } from "@/lib/artists/repo";
+import {
+  listAgencies,
+  listArtists,
+  type ListArtistsParams,
+} from "@/lib/artists/repo";
 import { listStages } from "@/lib/lineup/repo";
 import { setStatusEnum } from "@/lib/lineup/schema";
 import ArtistsTable from "./_components/ArtistsTable";
@@ -23,7 +29,9 @@ export default async function ArtistsPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const archivedRaw = sp.archived ?? "active";
   const archived: ListArtistsParams["archived"] =
-    archivedRaw === "archived" || archivedRaw === "all" ? archivedRaw : "active";
+    archivedRaw === "archived" || archivedRaw === "all"
+      ? archivedRaw
+      : "active";
 
   const setStatusParsed = sp.setStatus
     ? setStatusEnum.safeParse(sp.setStatus)
