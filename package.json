@@ -1,8 +1,8 @@
 {
-  "name": "aegis-system",
+  "name": "greenroom-stages",
   "version": "0.1.0",
   "private": true,
-  "description": "Operations backend for Aegis Festival",
+  "description": "GreenRoom Stages — festival & live-event operations. Part of the GreenRoom HQ family.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
