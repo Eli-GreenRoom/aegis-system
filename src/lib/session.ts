@@ -14,7 +14,7 @@ import { teamMembers } from "@/db/schema";
 
 /** The single email address that resolves to the festival owner. */
 export const OWNER_EMAIL =
-  process.env.OWNER_EMAIL ?? "logistics@aegisfestival.com";
+  process.env.OWNER_EMAIL ?? "booking@aegisfestival.com";
 
 export type AppRole = "owner" | "coordinator" | "viewer";
 

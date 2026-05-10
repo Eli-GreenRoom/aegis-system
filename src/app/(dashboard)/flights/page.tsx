@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
@@ -26,9 +28,13 @@ export default async function FlightsPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const edition = await getCurrentEdition();
 
-  const directionParsed = sp.direction ? directionEnum.safeParse(sp.direction) : null;
+  const directionParsed = sp.direction
+    ? directionEnum.safeParse(sp.direction)
+    : null;
   const statusParsed = sp.status ? flightStatusEnum.safeParse(sp.status) : null;
-  const personKindParsed = sp.personKind ? personKindEnum.safeParse(sp.personKind) : null;
+  const personKindParsed = sp.personKind
+    ? personKindEnum.safeParse(sp.personKind)
+    : null;
 
   const flights = await listFlights({
     editionId: edition.id,
@@ -40,7 +46,7 @@ export default async function FlightsPage({ searchParams }: PageProps) {
   });
 
   const people = await resolvePeople(
-    flights.map((f) => ({ kind: f.personKind, id: f.personId }))
+    flights.map((f) => ({ kind: f.personKind, id: f.personId })),
   );
 
   return (

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";

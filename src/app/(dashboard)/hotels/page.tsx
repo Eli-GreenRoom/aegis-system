@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import type { Route } from "next";
 import Topbar from "@/components/dashboard/Topbar";
@@ -24,7 +26,7 @@ export default async function HotelsPage({ searchParams }: PageProps) {
   for (const b of blocks) {
     reservedByHotel.set(
       b.hotelId,
-      (reservedByHotel.get(b.hotelId) ?? 0) + (b.roomsReserved ?? 0)
+      (reservedByHotel.get(b.hotelId) ?? 0) + (b.roomsReserved ?? 0),
     );
     blocksByHotel.set(b.hotelId, (blocksByHotel.get(b.hotelId) ?? 0) + 1);
   }
@@ -70,7 +72,9 @@ export default async function HotelsPage({ searchParams }: PageProps) {
                   <th className="text-left px-4 py-2 font-normal">Name</th>
                   <th className="text-left px-4 py-2 font-normal">Location</th>
                   <th className="text-right px-4 py-2 font-normal">Blocks</th>
-                  <th className="text-right px-4 py-2 font-normal">Rooms reserved</th>
+                  <th className="text-right px-4 py-2 font-normal">
+                    Rooms reserved
+                  </th>
                   <th className="text-left px-4 py-2 font-normal">Contact</th>
                 </tr>
               </thead>

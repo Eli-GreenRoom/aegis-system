@@ -1,13 +1,12 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import type { Route } from "next";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
 import { getCurrentEdition } from "@/lib/edition";
 import { listArtists } from "@/lib/artists/repo";
-import {
-  getGuestlistSummary,
-  listGuestlist,
-} from "@/lib/guestlist/repo";
+import { getGuestlistSummary, listGuestlist } from "@/lib/guestlist/repo";
 import { guestCategoryEnum } from "@/lib/guestlist/schema";
 import GuestlistTable from "./_components/GuestlistTable";
 
@@ -106,7 +105,11 @@ export default async function GuestlistPage({ searchParams }: PageProps) {
             <option value="international">International</option>
             <option value="general_admission">General admission</option>
           </Filter>
-          <Filter label="Host" name="hostArtistId" value={sp.hostArtistId ?? ""}>
+          <Filter
+            label="Host"
+            name="hostArtistId"
+            value={sp.hostArtistId ?? ""}
+          >
             <option value="">Any</option>
             {artists.map((a) => (
               <option key={a.id} value={a.id}>
@@ -125,7 +128,11 @@ export default async function GuestlistPage({ searchParams }: PageProps) {
             <option value="true">Sent</option>
             <option value="false">Pending</option>
           </Filter>
-          <Filter label="Checked in" name="checkedIn" value={sp.checkedIn ?? ""}>
+          <Filter
+            label="Checked in"
+            name="checkedIn"
+            value={sp.checkedIn ?? ""}
+          >
             <option value="">Any</option>
             <option value="true">Yes</option>
             <option value="false">No</option>

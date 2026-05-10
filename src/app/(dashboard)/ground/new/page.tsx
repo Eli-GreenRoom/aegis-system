@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Topbar from "@/components/dashboard/Topbar";
 import { getCurrentEdition } from "@/lib/edition";
 import { listPeople } from "@/lib/people";

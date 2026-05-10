@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Topbar from "@/components/dashboard/Topbar";
 import { getCurrentEdition } from "@/lib/edition";
 import { listPeople } from "@/lib/people";
@@ -26,7 +28,10 @@ export default async function NewFlightPage() {
 
   return (
     <>
-      <Topbar title="New flight" subtitle="Add a leg for an artist or crew member." />
+      <Topbar
+        title="New flight"
+        subtitle="Add a leg for an artist or crew member."
+      />
       <div className="px-6 py-6">
         <FlightForm people={people} />
       </div>

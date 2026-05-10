@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
@@ -18,7 +20,9 @@ export default async function CrewPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const archivedRaw = sp.archived ?? "active";
   const archived: ListCrewParams["archived"] =
-    archivedRaw === "archived" || archivedRaw === "all" ? archivedRaw : "active";
+    archivedRaw === "archived" || archivedRaw === "all"
+      ? archivedRaw
+      : "active";
 
   const edition = await getCurrentEdition();
   const [crew, roles] = await Promise.all([
