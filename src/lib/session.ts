@@ -47,7 +47,7 @@ const COORDINATOR_PERMS: Record<string, boolean> = {
 };
 
 const VIEWER_PERMS: Record<string, boolean> = Object.fromEntries(
-  Object.keys(ALL_PERMS).map((k) => [k, false])
+  Object.keys(ALL_PERMS).map((k) => [k, false]),
 );
 
 function permsForRole(role: AppRole): Record<string, boolean> {
@@ -57,7 +57,7 @@ function permsForRole(role: AppRole): Record<string, boolean> {
 }
 
 export async function getAppSession(
-  reqHeaders?: Headers
+  reqHeaders?: Headers,
 ): Promise<AppSession | null> {
   const h = reqHeaders ?? (await nextHeaders());
   const session = await auth.api.getSession({ headers: h });
@@ -83,12 +83,12 @@ export async function getAppSession(
     .select()
     .from(teamMembers)
     .where(
-      and(eq(teamMembers.userId, userId), eq(teamMembers.status, "active"))
+      and(eq(teamMembers.userId, userId), eq(teamMembers.status, "active")),
     )
     .limit(1);
 
   if (!member) {
-    // Authenticated but not the owner and not on any team — treated as viewer
+    // Authenticated but not the owner and not on any team - treated as viewer
     // with no perms. Safer than denying outright; route handlers still gate
     // via requirePermission().
     return {
@@ -113,7 +113,7 @@ export async function getAppSession(
 }
 
 export async function requireSession(
-  reqHeaders?: Headers
+  reqHeaders?: Headers,
 ): Promise<AppSession> {
   const s = await getAppSession(reqHeaders);
   if (!s) {
@@ -124,12 +124,12 @@ export async function requireSession(
 
 export function requirePermission(
   session: AppSession,
-  key: string
+  key: string,
 ): Response | null {
   if (!session.permissions[key]) {
     return Response.json(
       { error: "Forbidden: you don't have permission to do this." },
-      { status: 403 }
+      { status: 403 },
     );
   }
   return null;
@@ -139,7 +139,7 @@ export function requireOwner(session: AppSession): Response | null {
   if (!session.isOwner) {
     return Response.json(
       { error: "Forbidden: only the owner can do this." },
-      { status: 403 }
+      { status: 403 },
     );
   }
   return null;

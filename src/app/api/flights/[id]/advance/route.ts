@@ -21,7 +21,7 @@ const NEXT_FORWARD: Partial<Record<FlightStatus, FlightStatus>> = {
  * One-tap forward state advance. The current status determines the next:
  *   scheduled -> boarded -> in_air -> landed
  * On `landed` the server stamps `actualDt = now()` (per
- * docs/OPERATIONS-FLOW.md §5: never trust user-typed timestamps on a
+ * docs/OPERATIONS-FLOW.md -5: never trust user-typed timestamps on a
  * phone in a field). Audit row is written atomically via db.batch.
  *
  * No-op (returns the row unchanged) if the flight is already at a
@@ -29,7 +29,8 @@ const NEXT_FORWARD: Partial<Record<FlightStatus, FlightStatus>> = {
  */
 export async function POST(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "flights");
   if (denied) return denied;
 
@@ -43,7 +44,7 @@ export async function POST(_req: NextRequest, ctx: Ctx) {
       {
         error: `Flight is already at terminal status '${existing.status}'. Use the planning UI to revise.`,
       },
-      { status: 409 }
+      { status: 409 },
     );
   }
 

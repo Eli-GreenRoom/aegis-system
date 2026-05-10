@@ -6,7 +6,7 @@ const optionalEmail = z
   .union([z.literal(""), z.string().trim().email()])
   .optional();
 
-// ── Vendor ──────────────────────────────────────────────────────────────
+// -- Vendor --------------------------------------------------------------
 
 export const vendorInputSchema = z.object({
   name: z.string().trim().min(1).max(200),
@@ -18,10 +18,11 @@ export const vendorInputSchema = z.object({
 });
 export type VendorInput = z.infer<typeof vendorInputSchema>;
 
-export const vendorPatchSchema = vendorInputSchema.partial().refine(
-  (v) => Object.keys(v).length > 0,
-  { message: "Body must contain at least one field" }
-);
+export const vendorPatchSchema = vendorInputSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Body must contain at least one field",
+  });
 export type VendorPatch = z.infer<typeof vendorPatchSchema>;
 
 export interface VendorDbValues {
@@ -57,11 +58,12 @@ export function vendorToDbValues(input: VendorInput): VendorDbValues {
 }
 
 export function vendorToDbPatchValues(
-  input: VendorPatch
+  input: VendorPatch,
 ): Partial<VendorDbValues> {
   const out: Partial<VendorDbValues> = {};
   if ("name" in input && input.name !== undefined) out.name = input.name;
-  if ("service" in input && input.service !== undefined) out.service = input.service;
+  if ("service" in input && input.service !== undefined)
+    out.service = input.service;
   for (const k of NULLABLE_VENDOR_STRINGS) {
     if (k in input) {
       const v = input[k];
@@ -71,7 +73,7 @@ export function vendorToDbPatchValues(
   return out;
 }
 
-// ── Pickup ──────────────────────────────────────────────────────────────
+// -- Pickup --------------------------------------------------------------
 
 export const personKindEnum = z.enum(["artist", "crew"]);
 export type PersonKind = z.infer<typeof personKindEnum>;
@@ -94,9 +96,7 @@ const isoDateTime = z.string().refine((v) => !Number.isNaN(Date.parse(v)), {
   message: "must be an ISO date-time",
 });
 
-const optionalUuid = z
-  .union([z.literal(""), z.string().uuid()])
-  .optional();
+const optionalUuid = z.union([z.literal(""), z.string().uuid()]).optional();
 
 export const pickupInputSchema = z.object({
   personKind: personKindEnum,
@@ -111,7 +111,13 @@ export const pickupInputSchema = z.object({
   vendorId: optionalUuid,
   driverName: optionalString,
   driverPhone: optionalString,
-  costAmountCents: z.number().int().min(0).max(100_000_00).nullable().optional(),
+  costAmountCents: z
+    .number()
+    .int()
+    .min(0)
+    .max(100_000_00)
+    .nullable()
+    .optional(),
   costCurrency: currencyEnum.optional().or(z.literal("")),
   status: pickupStatusEnum.optional(),
   comments: z.string().trim().max(4000).optional().or(z.literal("")),
@@ -132,15 +138,22 @@ const pickupPatchBase = z.object({
   vendorId: optionalUuid,
   driverName: optionalString,
   driverPhone: optionalString,
-  costAmountCents: z.number().int().min(0).max(100_000_00).nullable().optional(),
+  costAmountCents: z
+    .number()
+    .int()
+    .min(0)
+    .max(100_000_00)
+    .nullable()
+    .optional(),
   costCurrency: currencyEnum.optional().or(z.literal("")),
   status: pickupStatusEnum.optional(),
   comments: z.string().trim().max(4000).optional().or(z.literal("")),
 });
-export const pickupPatchSchema = pickupPatchBase.partial().refine(
-  (v) => Object.keys(v).length > 0,
-  { message: "Body must contain at least one field" }
-);
+export const pickupPatchSchema = pickupPatchBase
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Body must contain at least one field",
+  });
 export type PickupPatch = z.infer<typeof pickupPatchSchema>;
 
 export interface PickupDbValues {
@@ -214,17 +227,24 @@ export function pickupToDbValues(input: PickupInput): PickupDbValues {
 }
 
 export function pickupToDbPatchValues(
-  input: PickupPatch
+  input: PickupPatch,
 ): Partial<PickupDbValues> {
   const out: Partial<PickupDbValues> = {};
-  if ("personKind" in input && input.personKind !== undefined) out.personKind = input.personKind;
-  if ("personId" in input && input.personId !== undefined) out.personId = input.personId;
-  if ("routeFrom" in input && input.routeFrom !== undefined) out.routeFrom = input.routeFrom;
-  if ("routeTo" in input && input.routeTo !== undefined) out.routeTo = input.routeTo;
-  if ("linkedFlightId" in input) out.linkedFlightId = emptyToNull(input.linkedFlightId);
+  if ("personKind" in input && input.personKind !== undefined)
+    out.personKind = input.personKind;
+  if ("personId" in input && input.personId !== undefined)
+    out.personId = input.personId;
+  if ("routeFrom" in input && input.routeFrom !== undefined)
+    out.routeFrom = input.routeFrom;
+  if ("routeTo" in input && input.routeTo !== undefined)
+    out.routeTo = input.routeTo;
+  if ("linkedFlightId" in input)
+    out.linkedFlightId = emptyToNull(input.linkedFlightId);
   if ("vendorId" in input) out.vendorId = emptyToNull(input.vendorId);
-  if ("pickupDt" in input && input.pickupDt !== undefined) out.pickupDt = new Date(input.pickupDt);
-  if ("status" in input && input.status !== undefined) out.status = input.status;
+  if ("pickupDt" in input && input.pickupDt !== undefined)
+    out.pickupDt = new Date(input.pickupDt);
+  if ("status" in input && input.status !== undefined)
+    out.status = input.status;
   if ("costAmountCents" in input) {
     out.costAmountCents =
       input.costAmountCents === undefined ? null : input.costAmountCents;

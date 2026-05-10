@@ -9,7 +9,7 @@ const optionalUrl = z
   .union([z.literal(""), z.string().trim().url("must be a valid URL")])
   .optional();
 
-// ── Hotel (venue catalogue) ─────────────────────────────────────────────
+// -- Hotel (venue catalogue) ---------------------------------------------
 
 export const hotelInputSchema = z.object({
   name: z.string().trim().min(1).max(200),
@@ -22,10 +22,11 @@ export const hotelInputSchema = z.object({
 });
 export type HotelInput = z.infer<typeof hotelInputSchema>;
 
-export const hotelPatchSchema = hotelInputSchema.partial().refine(
-  (v) => Object.keys(v).length > 0,
-  { message: "Body must contain at least one field" }
-);
+export const hotelPatchSchema = hotelInputSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Body must contain at least one field",
+  });
 export type HotelPatch = z.infer<typeof hotelPatchSchema>;
 
 export interface HotelDbValues {
@@ -65,7 +66,9 @@ export function hotelToDbValues(input: HotelInput): HotelDbValues {
   return out;
 }
 
-export function hotelToDbPatchValues(input: HotelPatch): Partial<HotelDbValues> {
+export function hotelToDbPatchValues(
+  input: HotelPatch,
+): Partial<HotelDbValues> {
   const out: Partial<HotelDbValues> = {};
   if ("name" in input && input.name !== undefined) out.name = input.name;
   for (const k of HOTEL_NULLABLE) {
@@ -74,7 +77,7 @@ export function hotelToDbPatchValues(input: HotelPatch): Partial<HotelDbValues> 
   return out;
 }
 
-// ── Room block ──────────────────────────────────────────────────────────
+// -- Room block ----------------------------------------------------------
 
 export const currencyEnum = z.enum(["USD", "EUR"]);
 
@@ -99,10 +102,11 @@ export const roomBlockInputSchema = z.object({
 });
 export type RoomBlockInput = z.infer<typeof roomBlockInputSchema>;
 
-export const roomBlockPatchSchema = roomBlockInputSchema.partial().refine(
-  (v) => Object.keys(v).length > 0,
-  { message: "Body must contain at least one field" }
-);
+export const roomBlockPatchSchema = roomBlockInputSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Body must contain at least one field",
+  });
 export type RoomBlockPatch = z.infer<typeof roomBlockPatchSchema>;
 
 export interface RoomBlockDbValues {
@@ -138,14 +142,17 @@ export function roomBlockToDbValues(input: RoomBlockInput): RoomBlockDbValues {
 }
 
 export function roomBlockToDbPatchValues(
-  input: RoomBlockPatch
+  input: RoomBlockPatch,
 ): Partial<RoomBlockDbValues> {
   const out: Partial<RoomBlockDbValues> = {};
-  if ("hotelId" in input && input.hotelId !== undefined) out.hotelId = input.hotelId;
-  if ("roomType" in input && input.roomType !== undefined) out.roomType = input.roomType;
+  if ("hotelId" in input && input.hotelId !== undefined)
+    out.hotelId = input.hotelId;
+  if ("roomType" in input && input.roomType !== undefined)
+    out.roomType = input.roomType;
   if ("label" in input) out.label = emptyToNull(input.label);
   if ("nights" in input) out.nights = intOrNull(input.nights);
-  if ("roomsReserved" in input) out.roomsReserved = intOrNull(input.roomsReserved);
+  if ("roomsReserved" in input)
+    out.roomsReserved = intOrNull(input.roomsReserved);
   if ("pricePerNightAmountCents" in input) {
     out.pricePerNightAmountCents = intOrNull(input.pricePerNightAmountCents);
   }
@@ -156,11 +163,12 @@ export function roomBlockToDbPatchValues(
         ? null
         : input.pricePerNightCurrency;
   }
-  if ("breakfastNote" in input) out.breakfastNote = emptyToNull(input.breakfastNote);
+  if ("breakfastNote" in input)
+    out.breakfastNote = emptyToNull(input.breakfastNote);
   return out;
 }
 
-// ── Hotel booking (per-person assignment) ───────────────────────────────
+// -- Hotel booking (per-person assignment) -------------------------------
 
 export const personKindEnum = z.enum(["artist", "crew"]);
 export type PersonKind = z.infer<typeof personKindEnum>;
@@ -175,13 +183,9 @@ export const hotelBookingStatusEnum = z.enum([
 ]);
 export type HotelBookingStatus = z.infer<typeof hotelBookingStatusEnum>;
 
-const isoDate = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "must be YYYY-MM-DD");
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "must be YYYY-MM-DD");
 
-const optionalUuid = z
-  .union([z.literal(""), z.string().uuid()])
-  .optional();
+const optionalUuid = z.union([z.literal(""), z.string().uuid()]).optional();
 
 /**
  * Base object (unrefined) so callers like the booking form can `.omit(...)`
@@ -212,7 +216,7 @@ export const hotelBookingBaseSchema = z.object({
 
 export const hotelBookingInputSchema = hotelBookingBaseSchema.refine(
   (v) => v.checkin <= v.checkout,
-  { message: "checkout must be on or after checkin", path: ["checkout"] }
+  { message: "checkout must be on or after checkin", path: ["checkout"] },
 );
 export type HotelBookingInput = z.infer<typeof hotelBookingInputSchema>;
 
@@ -225,8 +229,12 @@ export const hotelBookingPatchSchema = hotelBookingBaseSchema
   })
   .refine(
     (v) =>
-      !(v.checkin !== undefined && v.checkout !== undefined && v.checkin > v.checkout),
-    { message: "checkout must be on or after checkin", path: ["checkout"] }
+      !(
+        v.checkin !== undefined &&
+        v.checkout !== undefined &&
+        v.checkin > v.checkout
+      ),
+    { message: "checkout must be on or after checkin", path: ["checkout"] },
   );
 export type HotelBookingPatch = z.infer<typeof hotelBookingPatchSchema>;
 
@@ -258,7 +266,7 @@ const BOOKING_NULLABLE_STRINGS = [
 ] as const;
 
 export function hotelBookingToDbValues(
-  input: HotelBookingInput
+  input: HotelBookingInput,
 ): HotelBookingDbValues {
   const out: HotelBookingDbValues = {
     hotelId: input.hotelId,
@@ -288,10 +296,11 @@ export function hotelBookingToDbValues(
 }
 
 export function hotelBookingToDbPatchValues(
-  input: HotelBookingPatch
+  input: HotelBookingPatch,
 ): Partial<HotelBookingDbValues> {
   const out: Partial<HotelBookingDbValues> = {};
-  if ("hotelId" in input && input.hotelId !== undefined) out.hotelId = input.hotelId;
+  if ("hotelId" in input && input.hotelId !== undefined)
+    out.hotelId = input.hotelId;
   if ("roomBlockId" in input) {
     out.roomBlockId =
       input.roomBlockId === undefined || input.roomBlockId === ""
@@ -300,10 +309,14 @@ export function hotelBookingToDbPatchValues(
   }
   if ("personKind" in input && input.personKind !== undefined)
     out.personKind = input.personKind;
-  if ("personId" in input && input.personId !== undefined) out.personId = input.personId;
-  if ("checkin" in input && input.checkin !== undefined) out.checkin = input.checkin;
-  if ("checkout" in input && input.checkout !== undefined) out.checkout = input.checkout;
-  if ("status" in input && input.status !== undefined) out.status = input.status;
+  if ("personId" in input && input.personId !== undefined)
+    out.personId = input.personId;
+  if ("checkin" in input && input.checkin !== undefined)
+    out.checkin = input.checkin;
+  if ("checkout" in input && input.checkout !== undefined)
+    out.checkout = input.checkout;
+  if ("status" in input && input.status !== undefined)
+    out.status = input.status;
   if ("creditsAmountCents" in input) {
     out.creditsAmountCents = intOrNull(input.creditsAmountCents);
   }

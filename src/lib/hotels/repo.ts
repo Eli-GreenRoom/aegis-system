@@ -13,21 +13,21 @@ export type Hotel = typeof hotels.$inferSelect;
 export type RoomBlock = typeof hotelRoomBlocks.$inferSelect;
 export type Booking = typeof hotelBookings.$inferSelect;
 
-// ── Hotels (venue catalogue, not edition-scoped) ─────────────────────────
+// -- Hotels (venue catalogue, not edition-scoped) -------------------------
 
 export interface ListHotelsParams {
   search?: string;
 }
 
-export async function listHotels({
-  search,
-}: ListHotelsParams = {}): Promise<Hotel[]> {
+export async function listHotels({ search }: ListHotelsParams = {}): Promise<
+  Hotel[]
+> {
   if (search && search.trim() !== "") {
     const q = `%${search.trim()}%`;
     const searchOr = or(
       ilike(hotels.name, q),
       ilike(hotels.location, q),
-      ilike(hotels.address, q)
+      ilike(hotels.address, q),
     );
     if (searchOr) {
       return db.select().from(hotels).where(searchOr).orderBy(asc(hotels.name));
@@ -37,7 +37,11 @@ export async function listHotels({
 }
 
 export async function getHotel(id: string): Promise<Hotel | null> {
-  const [row] = await db.select().from(hotels).where(eq(hotels.id, id)).limit(1);
+  const [row] = await db
+    .select()
+    .from(hotels)
+    .where(eq(hotels.id, id))
+    .limit(1);
   return row ?? null;
 }
 
@@ -48,7 +52,7 @@ export async function createHotel(input: HotelDbValues): Promise<Hotel> {
 
 export async function updateHotel(
   id: string,
-  input: Partial<HotelDbValues>
+  input: Partial<HotelDbValues>,
 ): Promise<Hotel | null> {
   if (Object.keys(input).length === 0) return getHotel(id);
   const [row] = await db
@@ -64,7 +68,7 @@ export async function deleteHotel(id: string): Promise<Hotel | null> {
   return row ?? null;
 }
 
-// ── Room blocks (edition-scoped deals) ───────────────────────────────────
+// -- Room blocks (edition-scoped deals) -----------------------------------
 
 export interface ListRoomBlocksParams {
   editionId: string;
@@ -95,7 +99,7 @@ export async function getRoomBlock(id: string): Promise<RoomBlock | null> {
 
 export async function createRoomBlock(
   editionId: string,
-  input: RoomBlockDbValues
+  input: RoomBlockDbValues,
 ): Promise<RoomBlock> {
   const [row] = await db
     .insert(hotelRoomBlocks)
@@ -106,7 +110,7 @@ export async function createRoomBlock(
 
 export async function updateRoomBlock(
   id: string,
-  input: Partial<RoomBlockDbValues>
+  input: Partial<RoomBlockDbValues>,
 ): Promise<RoomBlock | null> {
   if (Object.keys(input).length === 0) return getRoomBlock(id);
   const [row] = await db
@@ -125,7 +129,7 @@ export async function deleteRoomBlock(id: string): Promise<RoomBlock | null> {
   return row ?? null;
 }
 
-// ── Bookings (per-person assignments) ────────────────────────────────────
+// -- Bookings (per-person assignments) ------------------------------------
 
 export interface ListBookingsParams {
   editionId?: string;
@@ -140,7 +144,7 @@ export interface ListBookingsParams {
 }
 
 export async function listBookings(
-  params: ListBookingsParams = {}
+  params: ListBookingsParams = {},
 ): Promise<Booking[]> {
   const filters = [];
   if (params.hotelId) filters.push(eq(hotelBookings.hotelId, params.hotelId));
@@ -148,14 +152,17 @@ export async function listBookings(
     filters.push(eq(hotelBookings.roomBlockId, params.roomBlockId));
   if (params.personKind)
     filters.push(eq(hotelBookings.personKind, params.personKind));
-  if (params.personId) filters.push(eq(hotelBookings.personId, params.personId));
+  if (params.personId)
+    filters.push(eq(hotelBookings.personId, params.personId));
   if (params.status) filters.push(eq(hotelBookings.status, params.status));
 
   // Overlap check: a booking is active in [from, to] when checkin <= to AND
   // checkout >= from. Both bounds are date strings; date comparisons work
   // because the column is `date`.
-  if (params.activeFrom) filters.push(gte(hotelBookings.checkout, params.activeFrom));
-  if (params.activeTo) filters.push(lte(hotelBookings.checkin, params.activeTo));
+  if (params.activeFrom)
+    filters.push(gte(hotelBookings.checkout, params.activeFrom));
+  if (params.activeTo)
+    filters.push(lte(hotelBookings.checkin, params.activeTo));
 
   // edition filter goes through the linked block. Bookings without a block
   // (walk-up) are scoped only by date / hotel.
@@ -171,7 +178,7 @@ export async function listBookings(
     } else {
       const blockFilter = or(
         inArray(hotelBookings.roomBlockId, ids),
-        sql`${hotelBookings.roomBlockId} IS NULL`
+        sql`${hotelBookings.roomBlockId} IS NULL`,
       );
       if (blockFilter) filters.push(blockFilter);
     }
@@ -194,7 +201,7 @@ export async function getBooking(id: string): Promise<Booking | null> {
 }
 
 export async function createBooking(
-  input: HotelBookingDbValues
+  input: HotelBookingDbValues,
 ): Promise<Booking> {
   const [row] = await db.insert(hotelBookings).values(input).returning();
   return row;
@@ -202,7 +209,7 @@ export async function createBooking(
 
 export async function updateBooking(
   id: string,
-  input: Partial<HotelBookingDbValues>
+  input: Partial<HotelBookingDbValues>,
 ): Promise<Booking | null> {
   if (Object.keys(input).length === 0) return getBooking(id);
   const [row] = await db
@@ -216,7 +223,7 @@ export async function updateBooking(
 /** Unawaited update builder for use inside `db.batch([..., recordTransition])`. */
 export function buildUpdateBooking(
   id: string,
-  input: Partial<HotelBookingDbValues>
+  input: Partial<HotelBookingDbValues>,
 ) {
   return db
     .update(hotelBookings)
@@ -233,7 +240,7 @@ export async function deleteBooking(id: string): Promise<Booking | null> {
   return row ?? null;
 }
 
-// ── Capacity ─────────────────────────────────────────────────────────────
+// -- Capacity -------------------------------------------------------------
 
 export interface BlockCapacity {
   reserved: number;
@@ -247,7 +254,9 @@ export interface BlockCapacity {
  * peak number of overlapping non-cancelled bookings. `free = reserved -
  * peak`. A negative `free` means Eli is overbooked - flag it in the UI.
  */
-export async function getBlockCapacity(blockId: string): Promise<BlockCapacity> {
+export async function getBlockCapacity(
+  blockId: string,
+): Promise<BlockCapacity> {
   const [block] = await db
     .select({ roomsReserved: hotelRoomBlocks.roomsReserved })
     .from(hotelRoomBlocks)
@@ -265,8 +274,8 @@ export async function getBlockCapacity(blockId: string): Promise<BlockCapacity> 
     .where(
       and(
         eq(hotelBookings.roomBlockId, blockId),
-        sql`${hotelBookings.status} <> 'cancelled'`
-      )
+        sql`${hotelBookings.status} <> 'cancelled'`,
+      ),
     );
 
   // Peak overlap via a sweep line over (date, +1/-1) events.
@@ -277,7 +286,7 @@ export async function getBlockCapacity(blockId: string): Promise<BlockCapacity> 
     events.push({ date: r.checkout, delta: -1 });
   }
   events.sort((a, b) =>
-    a.date < b.date ? -1 : a.date > b.date ? 1 : a.delta - b.delta
+    a.date < b.date ? -1 : a.date > b.date ? 1 : a.delta - b.delta,
   );
   let cur = 0;
   let peak = 0;

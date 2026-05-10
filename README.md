@@ -1,11 +1,13 @@
-# Aegis System
+# GreenRoom Stages
 
-Operations backend for **Aegis Festival**. Replaces the Google Sheets stack
-used to run the festival in 2024 with a typed, multi-user web app — and adds
-AI extraction so flight, hotel, rider, and invoice files become structured
-rows in seconds.
+GreenRoom Stages is the festival & live-event operations product in the GreenRoom HQ family. First deployment: Aegis Festival, at `logistics.aegisfestival.com`.
 
-**Live:** `https://logistics.aegisfestival.com` (once deployed)
+Replaces the Google Sheets stack used to run the festival in 2024 with a typed,
+multi-user web app — and adds AI extraction so flight, hotel, rider, and invoice
+files become structured rows in seconds.
+
+**Live:** `https://logistics.aegisfestival.com` (Aegis Festival tenant)  
+**Marketing domain:** TBD (`greenroomstages.com` or `stages.greenroomhq.net`)
 
 ---
 
@@ -48,7 +50,7 @@ npm run dev
 ## Folder layout
 
 ```
-aegis-system/
+greenroom-stages/
 ├── AGENT.md              # canonical brief for AI coding agents
 ├── HANDOFF.md            # phased build roadmap
 ├── SETUP.md              # one-time setup

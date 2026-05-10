@@ -58,8 +58,8 @@ drizzle/meta/_journal.json.bak
 # uploads from session work
 /scratch/
 
-# claude code local settings (do not commit)
-.claude/
+# claude code — commit repo config, exclude local overrides
+.claude/settings.local.json
 
 .vercel
 .env*.local

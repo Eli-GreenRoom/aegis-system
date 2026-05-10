@@ -8,20 +8,16 @@ const optionalUrl = z
 
 const optionalUuid = z.union([z.literal(""), z.string().uuid()]).optional();
 
-const isoDate = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "must be YYYY-MM-DD");
-const optionalIsoDate = z
-  .union([z.literal(""), isoDate])
-  .optional();
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "must be YYYY-MM-DD");
+const optionalIsoDate = z.union([z.literal(""), isoDate]).optional();
 
 export const currencyEnum = z.enum(["USD", "EUR"]);
 export type Currency = z.infer<typeof currencyEnum>;
 
-// ── Invoice ─────────────────────────────────────────────────────────────
+// -- Invoice -------------------------------------------------------------
 
 /**
- * Issuer kind is open text rather than an enum — invoices come from
+ * Issuer kind is open text rather than an enum - invoices come from
  * artists, agencies, hotels, vendors, freight, catering, you name it.
  * Locking to an enum now would just slow Eli down. The UI suggests a
  * few common values via a datalist but accepts anything.
@@ -40,10 +36,11 @@ export const invoiceInputSchema = z.object({
 });
 export type InvoiceInput = z.infer<typeof invoiceInputSchema>;
 
-export const invoicePatchSchema = invoiceInputSchema.partial().refine(
-  (v) => Object.keys(v).length > 0,
-  { message: "Body must contain at least one field" }
-);
+export const invoicePatchSchema = invoiceInputSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Body must contain at least one field",
+  });
 export type InvoicePatch = z.infer<typeof invoicePatchSchema>;
 
 export interface InvoiceDbValues {
@@ -79,7 +76,7 @@ export function invoiceToDbValues(input: InvoiceInput): InvoiceDbValues {
 }
 
 export function invoiceToDbPatchValues(
-  input: InvoicePatch
+  input: InvoicePatch,
 ): Partial<InvoiceDbValues> {
   const out: Partial<InvoiceDbValues> = {};
   if ("issuerKind" in input && input.issuerKind !== undefined)
@@ -88,7 +85,8 @@ export function invoiceToDbPatchValues(
     out.amountCents = input.amountCents;
   if ("currency" in input && input.currency !== undefined)
     out.currency = input.currency;
-  if ("status" in input && input.status !== undefined) out.status = input.status;
+  if ("status" in input && input.status !== undefined)
+    out.status = input.status;
   if ("number" in input) out.number = emptyToNull(input.number);
   if ("issuerId" in input) out.issuerId = emptyToNull(input.issuerId);
   if ("issueDate" in input) out.issueDate = emptyToNull(input.issueDate);
@@ -98,7 +96,7 @@ export function invoiceToDbPatchValues(
   return out;
 }
 
-// ── Payment ─────────────────────────────────────────────────────────────
+// -- Payment -------------------------------------------------------------
 
 export const paymentStatusEnum = z.enum([
   "pending",
@@ -134,10 +132,11 @@ export const paymentInputSchema = z.object({
 });
 export type PaymentInput = z.infer<typeof paymentInputSchema>;
 
-export const paymentPatchSchema = paymentInputSchema.partial().refine(
-  (v) => Object.keys(v).length > 0,
-  { message: "Body must contain at least one field" }
-);
+export const paymentPatchSchema = paymentInputSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Body must contain at least one field",
+  });
 export type PaymentPatch = z.infer<typeof paymentPatchSchema>;
 
 export interface PaymentDbValues {
@@ -178,7 +177,7 @@ export function paymentToDbValues(input: PaymentInput): PaymentDbValues {
 }
 
 export function paymentToDbPatchValues(
-  input: PaymentPatch
+  input: PaymentPatch,
 ): Partial<PaymentDbValues> {
   const out: Partial<PaymentDbValues> = {};
   if ("description" in input && input.description !== undefined)
@@ -187,7 +186,8 @@ export function paymentToDbPatchValues(
     out.amountCents = input.amountCents;
   if ("currency" in input && input.currency !== undefined)
     out.currency = input.currency;
-  if ("status" in input && input.status !== undefined) out.status = input.status;
+  if ("status" in input && input.status !== undefined)
+    out.status = input.status;
   if ("artistId" in input) out.artistId = emptyToNull(input.artistId);
   if ("vendorId" in input) out.vendorId = emptyToNull(input.vendorId);
   if ("invoiceId" in input) out.invoiceId = emptyToNull(input.invoiceId);

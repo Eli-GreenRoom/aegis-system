@@ -1,16 +1,12 @@
 import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { invoices, payments } from "@/db/schema";
-import type {
-  InvoiceDbValues,
-  PaymentDbValues,
-  PaymentStatus,
-} from "./schema";
+import type { InvoiceDbValues, PaymentDbValues, PaymentStatus } from "./schema";
 
 export type Invoice = typeof invoices.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
 
-// ── Invoices ────────────────────────────────────────────────────────────
+// -- Invoices ------------------------------------------------------------
 
 export interface ListInvoicesParams {
   editionId: string;
@@ -34,7 +30,7 @@ export async function listInvoices({
     const searchOr = or(
       ilike(invoices.number, q),
       ilike(invoices.issuerKind, q),
-      ilike(invoices.comments, q)
+      ilike(invoices.comments, q),
     );
     if (searchOr) filters.push(searchOr);
   }
@@ -47,7 +43,7 @@ export async function listInvoices({
 }
 
 export async function listInvoiceIssuerKinds(
-  editionId: string
+  editionId: string,
 ): Promise<string[]> {
   const rows = await db
     .selectDistinct({ kind: invoices.issuerKind })
@@ -68,7 +64,7 @@ export async function getInvoice(id: string): Promise<Invoice | null> {
 
 export async function createInvoice(
   editionId: string,
-  input: InvoiceDbValues
+  input: InvoiceDbValues,
 ): Promise<Invoice> {
   const [row] = await db
     .insert(invoices)
@@ -79,7 +75,7 @@ export async function createInvoice(
 
 export async function updateInvoice(
   id: string,
-  input: Partial<InvoiceDbValues>
+  input: Partial<InvoiceDbValues>,
 ): Promise<Invoice | null> {
   if (Object.keys(input).length === 0) return getInvoice(id);
   const [row] = await db
@@ -93,21 +89,20 @@ export async function updateInvoice(
 /** Unawaited update builder for use inside `db.batch([..., recordTransition])`. */
 export function buildUpdateInvoice(
   id: string,
-  input: Partial<InvoiceDbValues>
+  input: Partial<InvoiceDbValues>,
 ) {
-  return db
-    .update(invoices)
-    .set(input)
-    .where(eq(invoices.id, id))
-    .returning();
+  return db.update(invoices).set(input).where(eq(invoices.id, id)).returning();
 }
 
 export async function deleteInvoice(id: string): Promise<Invoice | null> {
-  const [row] = await db.delete(invoices).where(eq(invoices.id, id)).returning();
+  const [row] = await db
+    .delete(invoices)
+    .where(eq(invoices.id, id))
+    .returning();
   return row ?? null;
 }
 
-// ── Payments ────────────────────────────────────────────────────────────
+// -- Payments ------------------------------------------------------------
 
 export interface ListPaymentsParams {
   editionId: string;
@@ -137,7 +132,7 @@ export async function listPayments({
     const searchOr = or(
       ilike(payments.description, q),
       ilike(payments.paidVia, q),
-      ilike(payments.comments, q)
+      ilike(payments.comments, q),
     );
     if (searchOr) filters.push(searchOr);
   }
@@ -160,7 +155,7 @@ export async function getPayment(id: string): Promise<Payment | null> {
 
 export async function createPayment(
   editionId: string,
-  input: PaymentDbValues
+  input: PaymentDbValues,
 ): Promise<Payment> {
   const [row] = await db
     .insert(payments)
@@ -171,7 +166,7 @@ export async function createPayment(
 
 export async function updatePayment(
   id: string,
-  input: Partial<PaymentDbValues>
+  input: Partial<PaymentDbValues>,
 ): Promise<Payment | null> {
   if (Object.keys(input).length === 0) return getPayment(id);
   const [row] = await db
@@ -185,21 +180,20 @@ export async function updatePayment(
 /** Unawaited update builder for use inside `db.batch([..., recordTransition])`. */
 export function buildUpdatePayment(
   id: string,
-  input: Partial<PaymentDbValues>
+  input: Partial<PaymentDbValues>,
 ) {
-  return db
-    .update(payments)
-    .set(input)
-    .where(eq(payments.id, id))
-    .returning();
+  return db.update(payments).set(input).where(eq(payments.id, id)).returning();
 }
 
 export async function deletePayment(id: string): Promise<Payment | null> {
-  const [row] = await db.delete(payments).where(eq(payments.id, id)).returning();
+  const [row] = await db
+    .delete(payments)
+    .where(eq(payments.id, id))
+    .returning();
   return row ?? null;
 }
 
-// ── Aggregator (lightweight summary card) ───────────────────────────────
+// -- Aggregator (lightweight summary card) -------------------------------
 
 export interface PaymentsSummary {
   /** Status counts. Zero-filled for every status so the UI can render
@@ -220,12 +214,12 @@ const ZERO_COUNTS: Record<PaymentStatus, number> = {
 
 /**
  * Roll-up of payment totals for the current edition. Used by the summary
- * card on `/payments`. Currencies are kept separate (USD vs EUR) — we
+ * card on `/payments`. Currencies are kept separate (USD vs EUR) - we
  * never convert. Returns aggregates as plain JS numbers so the UI can
  * format with `formatCents`.
  */
 export async function getPaymentsSummary(
-  editionId: string
+  editionId: string,
 ): Promise<PaymentsSummary> {
   const rows = await db
     .select({

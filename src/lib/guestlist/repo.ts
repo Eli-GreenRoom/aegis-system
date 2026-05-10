@@ -40,7 +40,7 @@ export async function listGuestlist({
       ilike(guestlistEntries.name, q),
       ilike(guestlistEntries.email, q),
       ilike(guestlistEntries.phone, q),
-      ilike(guestlistEntries.comments, q)
+      ilike(guestlistEntries.comments, q),
     );
     if (searchOr) filters.push(searchOr);
   }
@@ -53,7 +53,7 @@ export async function listGuestlist({
 }
 
 export async function getGuestlistEntry(
-  id: string
+  id: string,
 ): Promise<GuestlistEntry | null> {
   const [row] = await db
     .select()
@@ -65,7 +65,7 @@ export async function getGuestlistEntry(
 
 export async function createGuestlistEntry(
   editionId: string,
-  input: GuestlistDbValues
+  input: GuestlistDbValues,
 ): Promise<GuestlistEntry> {
   const [row] = await db
     .insert(guestlistEntries)
@@ -76,7 +76,7 @@ export async function createGuestlistEntry(
 
 export async function updateGuestlistEntry(
   id: string,
-  input: Partial<GuestlistDbValues>
+  input: Partial<GuestlistDbValues>,
 ): Promise<GuestlistEntry | null> {
   if (Object.keys(input).length === 0) return getGuestlistEntry(id);
   const [row] = await db
@@ -88,7 +88,7 @@ export async function updateGuestlistEntry(
 }
 
 export async function deleteGuestlistEntry(
-  id: string
+  id: string,
 ): Promise<GuestlistEntry | null> {
   const [row] = await db
     .delete(guestlistEntries)
@@ -97,7 +97,7 @@ export async function deleteGuestlistEntry(
   return row ?? null;
 }
 
-// ── Aggregator ──────────────────────────────────────────────────────────
+// -- Aggregator ----------------------------------------------------------
 
 export interface GuestlistSummary {
   countsByCategory: Record<GuestCategory, number>;
@@ -116,7 +116,7 @@ const ZERO_COUNTS: Record<GuestCategory, number> = {
 };
 
 export async function getGuestlistSummary(
-  editionId: string
+  editionId: string,
 ): Promise<GuestlistSummary> {
   const rows = await db
     .select({
@@ -130,7 +130,7 @@ export async function getGuestlistSummary(
     .groupBy(
       guestlistEntries.category,
       guestlistEntries.inviteSent,
-      guestlistEntries.checkedIn
+      guestlistEntries.checkedIn,
     );
 
   const countsByCategory: Record<GuestCategory, number> = { ...ZERO_COUNTS };

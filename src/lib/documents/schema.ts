@@ -7,7 +7,7 @@ import { z } from "zod";
  * `access: 'private'`. Clients only ever see the proxy URL
  * `/api/documents/[id]` which auth-checks before streaming.
  *
- * Spec: AGENT.md §6 + §8.
+ * Spec: AGENT.md -6 + -8.
  */
 
 export const documentEntityTypeEnum = z.enum([
@@ -33,7 +33,9 @@ export const documentUploadMetadataSchema = z.object({
   entityId: z.string().uuid().optional(),
   tags: z.array(z.string().trim().min(1).max(60)).max(10).optional(),
 });
-export type DocumentUploadMetadata = z.infer<typeof documentUploadMetadataSchema>;
+export type DocumentUploadMetadata = z.infer<
+  typeof documentUploadMetadataSchema
+>;
 
 /** Fields safe to expose to API clients. Internal `url` (raw Blob URL) stays server-side. */
 export interface DocumentDisplay {
@@ -94,10 +96,7 @@ export function idFromProxyUrl(url: string): string | null {
  */
 export const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
 
-export const ALLOWED_MIME_PREFIXES = [
-  "application/pdf",
-  "image/",
-] as const;
+export const ALLOWED_MIME_PREFIXES = ["application/pdf", "image/"] as const;
 
 export function isAllowedMimeType(mime: string): boolean {
   return ALLOWED_MIME_PREFIXES.some((prefix) => mime.startsWith(prefix));

@@ -1,12 +1,7 @@
 import { z } from "zod";
 import { visaStatusEnum, type VisaStatus } from "@/lib/artists/schema";
 
-const optionalString = z
-  .string()
-  .trim()
-  .max(500)
-  .optional()
-  .or(z.literal(""));
+const optionalString = z.string().trim().max(500).optional().or(z.literal(""));
 
 const optionalEmail = z
   .union([z.literal(""), z.string().trim().email()])
@@ -16,9 +11,7 @@ const optionalUrl = z
   .union([z.literal(""), z.string().trim().url("must be a valid URL")])
   .optional();
 
-const optionalVisaStatus = z
-  .union([z.literal(""), visaStatusEnum])
-  .optional();
+const optionalVisaStatus = z.union([z.literal(""), visaStatusEnum]).optional();
 
 const stringArray = z
   .array(z.string().trim().min(1).max(80))
@@ -52,14 +45,15 @@ export type CrewInput = z.infer<typeof crewInputSchema>;
  * present they still have to satisfy their format constraints. Body must
  * carry at least one field.
  */
-export const crewPatchSchema = crewInputSchema.partial().refine(
-  (v) => Object.keys(v).length > 0,
-  { message: "Body must contain at least one field" }
-);
+export const crewPatchSchema = crewInputSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Body must contain at least one field",
+  });
 
 export type CrewPatch = z.infer<typeof crewPatchSchema>;
 
-/** DB-side payload — empty strings normalised to null. */
+/** DB-side payload - empty strings normalised to null. */
 export interface CrewDbValues {
   name: string;
   role: string;

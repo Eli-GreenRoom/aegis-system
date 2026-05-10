@@ -51,12 +51,12 @@ interface Scope {
  *  - 'week':  anchor between [now, now+7d)
  *  - 'all':   no time filter (everything that could be an issue today)
  *
- * Spec: docs/OPERATIONS-FLOW.md §4 (rule list).
+ * Spec: docs/OPERATIONS-FLOW.md -4 (rule list).
  */
 export async function getOpenIssues(
   editionId: string,
   scope: OpenIssuesScope,
-  now: Date = new Date()
+  now: Date = new Date(),
 ): Promise<OpenIssue[]> {
   const rules = makeScope(scope, now);
 
@@ -81,10 +81,7 @@ export async function getOpenIssues(
 
     // All contracts for this edition - to figure out which sets have
     // an associated contract for their artist.
-    db
-      .select()
-      .from(contracts)
-      .where(eq(contracts.editionId, editionId)),
+    db.select().from(contracts).where(eq(contracts.editionId, editionId)),
 
     // All riders. Riders link to artist, not edition; we'll filter by
     // edition-scoped artists below.
@@ -100,8 +97,8 @@ export async function getOpenIssues(
               eq(flights.editionId, editionId),
               eq(flights.direction, "inbound"),
               gte(flights.scheduledDt, rules.start),
-              lt(flights.scheduledDt, rules.end)
-            )
+              lt(flights.scheduledDt, rules.end),
+            ),
           )
       : db
           .select()
@@ -109,8 +106,8 @@ export async function getOpenIssues(
           .where(
             and(
               eq(flights.editionId, editionId),
-              eq(flights.direction, "inbound")
-            )
+              eq(flights.direction, "inbound"),
+            ),
           ),
 
     // All pickups for this edition - we'll match by linkedFlightId.
@@ -133,8 +130,8 @@ export async function getOpenIssues(
           .where(
             and(
               eq(guestlistEntries.editionId, editionId),
-              eq(guestlistEntries.inviteSent, false)
-            )
+              eq(guestlistEntries.inviteSent, false),
+            ),
           )
       : db
           .select()
@@ -153,10 +150,10 @@ export async function getOpenIssues(
               eq(groundTransportPickups.status, "completed"),
               gte(
                 groundTransportPickups.completedAt,
-                new Date(now.getTime() - 60 * 60 * 1000)
+                new Date(now.getTime() - 60 * 60 * 1000),
               ),
-              lt(groundTransportPickups.completedAt, now)
-            )
+              lt(groundTransportPickups.completedAt, now),
+            ),
           )
       : db
           .select()
@@ -164,16 +161,13 @@ export async function getOpenIssues(
           .where(
             and(
               eq(groundTransportPickups.editionId, editionId),
-              eq(groundTransportPickups.status, "completed")
-            )
+              eq(groundTransportPickups.status, "completed"),
+            ),
           ),
 
     // Hotel bookings still in 'booked' status - cross-reference with
     // completedPickupsRecent below.
-    db
-      .select()
-      .from(hotelBookings)
-      .where(eq(hotelBookings.status, "booked")),
+    db.select().from(hotelBookings).where(eq(hotelBookings.status, "booked")),
   ]);
 
   // Index helpers.
@@ -205,7 +199,7 @@ export async function getOpenIssues(
 
   const issues: OpenIssue[] = [];
 
-  // Rule 1: confirmed set + no contract uploaded → high.
+  // Rule 1: confirmed set + no contract uploaded - high.
   for (const { set, slot } of confirmedSets) {
     if (!inScope(slot.startTime, slot.day, rules, now)) continue;
     const c = contractByArtistId.get(set.artistId);
@@ -223,7 +217,7 @@ export async function getOpenIssues(
     }
   }
 
-  // Rule 2: confirmed set + no rider received → medium.
+  // Rule 2: confirmed set + no rider received - medium.
   for (const { set, slot } of confirmedSets) {
     if (!inScope(slot.startTime, slot.day, rules, now)) continue;
     const list = ridersByArtistId.get(set.artistId) ?? [];
@@ -241,7 +235,7 @@ export async function getOpenIssues(
     }
   }
 
-  // Rule 3: inbound flight in scope + no linked pickup scheduled → high.
+  // Rule 3: inbound flight in scope + no linked pickup scheduled - high.
   for (const f of inboundFlightsInScope) {
     const pickup = pickupsByFlightId.get(f.id);
     if (!pickup) {
@@ -257,7 +251,7 @@ export async function getOpenIssues(
     }
   }
 
-  // Rule 4: confirmed set today/in-scope + payment not paid → high.
+  // Rule 4: confirmed set today/in-scope + payment not paid - high.
   const paymentsByArtistId = new Map<
     string,
     (typeof payments.$inferSelect)[]
@@ -271,7 +265,9 @@ export async function getOpenIssues(
   for (const { set, slot } of confirmedSets) {
     if (!inScope(slot.startTime, slot.day, rules, now)) continue;
     const list = paymentsByArtistId.get(set.artistId) ?? [];
-    const anyUnpaid = list.some((p) => p.status !== "paid" && p.status !== "void");
+    const anyUnpaid = list.some(
+      (p) => p.status !== "paid" && p.status !== "void",
+    );
     const noPayments = list.length === 0;
     if (anyUnpaid || noPayments) {
       issues.push({
@@ -288,9 +284,9 @@ export async function getOpenIssues(
     }
   }
 
-  // Rule 5: hotel booking active in scope + no room block link → medium.
+  // Rule 5: hotel booking active in scope + no room block link - medium.
   const scopedBookings = bookingsActiveToday.filter((b) =>
-    bookingActiveInScope(b, rules, now)
+    bookingActiveInScope(b, rules, now),
   );
   for (const b of scopedBookings) {
     if (b.roomBlockId === null) {
@@ -306,9 +302,9 @@ export async function getOpenIssues(
     }
   }
 
-  // Rule 6: guestlist entry day in scope + invite not sent → low.
+  // Rule 6: guestlist entry day in scope + invite not sent - low.
   const scopedGuests = guestlistTodayPending.filter((g) =>
-    guestlistInScope(g.day, rules, now)
+    guestlistInScope(g.day, rules, now),
   );
   for (const g of scopedGuests) {
     issues.push({
@@ -322,7 +318,7 @@ export async function getOpenIssues(
     });
   }
 
-  // Rule 7: pickup completed 60min ago + linked hotel still 'booked' →
+  // Rule 7: pickup completed 60min ago + linked hotel still 'booked' -
   // medium ("where did they go?"). Match by personKind + personId.
   for (const p of completedPickupsRecent) {
     if (p.routeTo !== "hotel") continue; // only relevant when destination is a hotel
@@ -330,7 +326,7 @@ export async function getOpenIssues(
       (b) =>
         b.personKind === p.personKind &&
         b.personId === p.personId &&
-        bookingActiveOn(b, p.completedAt ?? now)
+        bookingActiveOn(b, p.completedAt ?? now),
     );
     if (stillBooked) {
       issues.push({
@@ -348,7 +344,7 @@ export async function getOpenIssues(
   return sortIssues(issues);
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────
+// -- Helpers -------------------------------------------------------------
 
 function makeScope(scope: OpenIssuesScope, now: Date): Scope | null {
   if (scope === "all") return null;
@@ -374,7 +370,7 @@ function inScope(
   _slotStartTime: string,
   slotDay: string,
   scope: Scope | null,
-  now: Date
+  now: Date,
 ): boolean {
   if (!scope) return true;
   // Map JS day name -> our enum.
@@ -398,7 +394,7 @@ function inScope(
 function anchor(
   slot: typeof slots.$inferSelect,
   scope: Scope | null,
-  now: Date
+  now: Date,
 ): string | null {
   // Best-effort: combine today's date with the slot start time so the
   // sort gets something stable. Only meaningful for 'today' scope; for
@@ -413,7 +409,7 @@ function anchor(
 function bookingActiveInScope(
   b: typeof hotelBookings.$inferSelect,
   scope: Scope | null,
-  now: Date
+  now: Date,
 ): boolean {
   if (!scope) return true;
   // Booking covers any moment in [scope.start, scope.end).
@@ -425,7 +421,7 @@ function bookingActiveInScope(
 
 function bookingActiveOn(
   b: typeof hotelBookings.$inferSelect,
-  at: Date
+  at: Date,
 ): boolean {
   const checkin = new Date(`${b.checkin}T00:00:00.000Z`);
   const checkout = new Date(`${b.checkout}T00:00:00.000Z`);
@@ -435,7 +431,7 @@ function bookingActiveOn(
 function guestlistInScope(
   guestDay: string | null,
   scope: Scope | null,
-  now: Date
+  now: Date,
 ): boolean {
   if (!scope) return true;
   if (!guestDay) return true; // unknown day - flag anyway
@@ -463,4 +459,3 @@ function sortIssues(issues: OpenIssue[]): OpenIssue[] {
     return a.key.localeCompare(b.key);
   });
 }
-

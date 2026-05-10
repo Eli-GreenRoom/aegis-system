@@ -1,8 +1,8 @@
 {
-  "name": "aegis-system",
+  "name": "greenroom-stages",
   "version": "0.1.0",
   "private": true,
-  "description": "Operations backend for Aegis Festival",
+  "description": "GreenRoom Stages — festival & live-event operations. Part of the GreenRoom HQ family.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -15,7 +15,17 @@
     "import:2024": "tsx scripts/import-2024.ts",
     "test": "vitest",
     "test:run": "vitest run",
-    "check": "npm run lint && npm run typecheck && npm run test:run"
+    "check": "npm run lint && npm run typecheck && npm run test:run",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css,yml,yaml}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
@@ -58,6 +68,9 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.4",
+    "prettier": "^3.8.3",
     "tailwindcss": "^4",
     "tsx": "^4.20.0",
     "typescript": "^5",

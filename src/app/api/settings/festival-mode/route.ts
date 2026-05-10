@@ -12,13 +12,14 @@ const inputSchema = z.object({
 
 /**
  * POST /api/settings/festival-mode
- * Body: `{ active: boolean }` — flips the current edition's
+ * Body: `{ active: boolean }` - flips the current edition's
  * `festivalModeActive` flag. When true, the dashboard switches to
  * festival-mode layout regardless of the calendar date.
  */
 export async function POST(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "settings");
   if (denied) return denied;
 
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

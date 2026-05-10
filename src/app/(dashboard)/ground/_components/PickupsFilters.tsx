@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { Suspense, useEffect, useState, useTransition } from "react";
 import type { Route as TypedRoute } from "next";
 
 interface VendorOption {
@@ -9,7 +9,7 @@ interface VendorOption {
   name: string;
 }
 
-export default function PickupsFilters({ vendors }: { vendors: VendorOption[] }) {
+function PickupsFiltersInner({ vendors }: { vendors: VendorOption[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -123,8 +123,22 @@ export default function PickupsFilters({ vendors }: { vendors: VendorOption[] })
       </div>
 
       {pending && (
-        <span className="text-mono text-[10px] text-[--color-fg-subtle] pb-2">loading</span>
+        <span className="text-mono text-[10px] text-[--color-fg-subtle] pb-2">
+          loading
+        </span>
       )}
     </div>
+  );
+}
+
+export default function PickupsFilters({
+  vendors,
+}: {
+  vendors: VendorOption[];
+}) {
+  return (
+    <Suspense>
+      <PickupsFiltersInner vendors={vendors} />
+    </Suspense>
   );
 }
