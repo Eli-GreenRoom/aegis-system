@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+
+# Pre-push sweep - Aegis edition.
+
+echo "-> Non-ASCII byte sweep (.ts files)..."
+if grep -rPln '[^\x00-\x7F]' src --include='*.ts' --exclude-dir=node_modules; then
+  echo "FAIL: Non-ASCII bytes in .ts files - see above. Fix before pushing."
+  exit 1
+fi
+
+echo "-> useSearchParams without Suspense sweep..."
+if grep -rln "useSearchParams" src/app | xargs grep -L "Suspense" 2>/dev/null | grep .; then
+  echo "FAIL: useSearchParams without Suspense - wrap or pre-render fails."
+  exit 1
+fi
+
+echo "-> db:push usage sweep (should never appear)..."
+if grep -rln "db:push" src package.json; then
+  echo "FAIL: db:push reference found - use db:generate + db:migrate."
+  exit 1
+fi
+
+echo "-> Running npm run check..."
+npm run check
