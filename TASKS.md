@@ -23,6 +23,12 @@ _(Pick from Later, or call something out by hand.)_
 
 ## Done
 
+- 2026-05-10 — Fix: stage delete now works for all stages including the 4 seeded
+  defaults. Root cause: `ensureDefaultStages()` was called inside
+  `getCurrentEdition()` on every request, re-inserting deleted stages immediately.
+  Removed the auto-seed call from the hot path. Also fixed optimistic UI update
+  in StagesAdmin (router.refresh() was racing with local state).
+
 - 2026-05-10 — Rebrand Phase C: GreenRoom HQ emerald palette applied to app chrome.
   - `src/styles/tokens.css` rewritten: brand accent changed from Aegis gold
     (`#E5B85A`) to GreenRoom emerald (`#34D399`); bg/surface/text tokens
