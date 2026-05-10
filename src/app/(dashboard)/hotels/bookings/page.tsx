@@ -3,15 +3,8 @@ import type { Route } from "next";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
 import { getCurrentEdition } from "@/lib/edition";
-import {
-  hotelBookingStatusEnum,
-  personKindEnum,
-} from "@/lib/hotels/schema";
-import {
-  listBookings,
-  listHotels,
-  listRoomBlocks,
-} from "@/lib/hotels/repo";
+import { hotelBookingStatusEnum, personKindEnum } from "@/lib/hotels/schema";
+import { listBookings, listHotels, listRoomBlocks } from "@/lib/hotels/repo";
 import { resolvePeople } from "@/lib/people";
 import { formatCents } from "@/lib/utils";
 
@@ -54,7 +47,7 @@ export default async function BookingsPage({ searchParams }: PageProps) {
   ]);
 
   const people = await resolvePeople(
-    bookings.map((b) => ({ kind: b.personKind, id: b.personId }))
+    bookings.map((b) => ({ kind: b.personKind, id: b.personId })),
   );
 
   const hotelsById = new Map(hotels.map((h) => [h.id, h.name]));
@@ -90,13 +83,25 @@ export default async function BookingsPage({ searchParams }: PageProps) {
             <option value="no_show">No show</option>
             <option value="cancelled">Cancelled</option>
           </Filter>
-          <Filter label="Person kind" name="personKind" value={sp.personKind ?? ""}>
+          <Filter
+            label="Person kind"
+            name="personKind"
+            value={sp.personKind ?? ""}
+          >
             <option value="">Any</option>
             <option value="artist">Artist</option>
             <option value="crew">Crew</option>
           </Filter>
-          <DateInput label="Active from" name="activeFrom" value={sp.activeFrom ?? ""} />
-          <DateInput label="Active to" name="activeTo" value={sp.activeTo ?? ""} />
+          <DateInput
+            label="Active from"
+            name="activeFrom"
+            value={sp.activeFrom ?? ""}
+          />
+          <DateInput
+            label="Active to"
+            name="activeTo"
+            value={sp.activeTo ?? ""}
+          />
           <Button type="submit" variant="secondary">
             Apply
           </Button>
@@ -144,9 +149,11 @@ export default async function BookingsPage({ searchParams }: PageProps) {
                         </Link>
                       </td>
                       <td className="px-4 py-2 text-[--color-fg-muted] text-xs">
-                        {bk.roomBlockId
-                          ? (blocksById.get(bk.roomBlockId) ?? "(deleted)")
-                          : <span className="italic">walk-up</span>}
+                        {bk.roomBlockId ? (
+                          (blocksById.get(bk.roomBlockId) ?? "(deleted)")
+                        ) : (
+                          <span className="italic">walk-up</span>
+                        )}
                       </td>
                       <td className="px-4 py-2 text-mono text-xs text-[--color-fg]">
                         {bk.checkin}
@@ -236,17 +243,18 @@ function DateInput({
 const STATUS_CLASSES: Record<string, string> = {
   tentative: "border-[--color-border-strong] text-[--color-fg-muted]",
   booked: "border-brand/40 text-brand",
-  checked_in: "border-[--color-brand-mint]/60 text-mint",
+  checked_in: "border-[--color-brand]/60 text-mint",
   checked_out: "border-[--color-fg-subtle]/40 text-[--color-fg-muted]",
-  no_show: "border-[--color-brand-coral]/40 text-coral",
-  cancelled: "border-[--color-brand-coral]/40 text-coral",
+  no_show: "border-[--color-danger]/40 text-coral",
+  cancelled: "border-[--color-danger]/40 text-coral",
 };
 
 function BookingStatusPill({ status }: { status: string }) {
   return (
     <span
       className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${
-        STATUS_CLASSES[status] ?? "border-[--color-border-strong] text-[--color-fg-muted]"
+        STATUS_CLASSES[status] ??
+        "border-[--color-border-strong] text-[--color-fg-muted]"
       }`}
     >
       {status}

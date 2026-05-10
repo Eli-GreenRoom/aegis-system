@@ -11,15 +11,14 @@ interface PageProps {
 }
 
 const SEV_CLASS: Record<OpenIssue["severity"], string> = {
-  high: "border-l-[--color-brand-coral] text-coral",
+  high: "border-l-[--color-danger] text-coral",
   medium: "border-l-brand text-brand",
   low: "border-l-[--color-fg-subtle] text-[--color-fg-muted]",
 };
 
 export default async function FestivalIssuesPage({ searchParams }: PageProps) {
   const sp = await searchParams;
-  const scope =
-    sp.scope === "week" || sp.scope === "all" ? sp.scope : "today";
+  const scope = sp.scope === "week" || sp.scope === "all" ? sp.scope : "today";
 
   const edition = await getCurrentEdition();
   const issues = await getOpenIssues(edition.id, scope);

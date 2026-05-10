@@ -76,9 +76,11 @@ export default function GuestlistTable({ entries, artistsById }: Props) {
                   <CategoryPill category={g.category} />
                 </td>
                 <td className="px-4 py-2 text-[--color-fg-muted] text-xs">
-                  {g.hostArtistId
-                    ? (artistsById.get(g.hostArtistId) ?? "(deleted)")
-                    : <span className="text-[--color-fg-subtle]">-</span>}
+                  {g.hostArtistId ? (
+                    (artistsById.get(g.hostArtistId) ?? "(deleted)")
+                  ) : (
+                    <span className="text-[--color-fg-subtle]">-</span>
+                  )}
                 </td>
                 <td className="px-4 py-2 text-mono text-xs text-[--color-fg-muted] capitalize">
                   {g.day ?? ""}
@@ -110,8 +112,8 @@ export default function GuestlistTable({ entries, artistsById }: Props) {
                     disabled={busyId === g.id}
                     className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${
                       g.checkedIn
-                        ? "border-[--color-brand-mint]/60 text-mint"
-                        : "border-[--color-border-strong] text-[--color-fg-muted] hover:border-[--color-brand-mint]/40 hover:text-mint"
+                        ? "border-[--color-brand]/60 text-mint"
+                        : "border-[--color-border-strong] text-[--color-fg-muted] hover:border-[--color-brand]/40 hover:text-mint"
                     }`}
                   >
                     {g.checkedIn ? "yes" : "no"}
@@ -144,7 +146,7 @@ const CATEGORY_LABEL: Record<GuestCategory, string> = {
 
 const CATEGORY_CLASSES: Record<GuestCategory, string> = {
   dj_guest: "border-brand/40 text-brand",
-  competition_winner: "border-[--color-brand-mint]/40 text-mint",
+  competition_winner: "border-[--color-brand]/40 text-mint",
   free_list: "border-[--color-fg-subtle]/40 text-[--color-fg-muted]",
   international: "border-[--color-stage-pool]/60 text-[--color-stage-pool]",
   general_admission: "border-[--color-border-strong] text-[--color-fg-muted]",

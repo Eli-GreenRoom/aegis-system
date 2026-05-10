@@ -28,7 +28,9 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const edition = await getCurrentEdition();
 
-  const statusParsed = sp.status ? paymentStatusEnum.safeParse(sp.status) : null;
+  const statusParsed = sp.status
+    ? paymentStatusEnum.safeParse(sp.status)
+    : null;
 
   const [payments, summary, artists, vendors, invoices] = await Promise.all([
     listPayments({
@@ -47,7 +49,7 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
   const artistsById = new Map(artists.map((a) => [a.id, a.name]));
   const vendorsById = new Map(vendors.map((v) => [v.id, v.name]));
   const invoicesById = new Map(
-    invoices.map((i) => [i.id, i.number ?? i.issuerKind])
+    invoices.map((i) => [i.id, i.number ?? i.issuerKind]),
   );
 
   return (
@@ -151,8 +153,12 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
             <table className="w-full text-sm">
               <thead className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] bg-[--color-surface]">
                 <tr>
-                  <th className="text-left px-4 py-2 font-normal">Description</th>
-                  <th className="text-left px-4 py-2 font-normal">Counterparty</th>
+                  <th className="text-left px-4 py-2 font-normal">
+                    Description
+                  </th>
+                  <th className="text-left px-4 py-2 font-normal">
+                    Counterparty
+                  </th>
                   <th className="text-left px-4 py-2 font-normal">Invoice</th>
                   <th className="text-left px-4 py-2 font-normal">Due</th>
                   <th className="text-right px-4 py-2 font-normal">Amount</th>
@@ -162,12 +168,11 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
               </thead>
               <tbody>
                 {payments.map((p) => {
-                  const counterparty =
-                    p.artistId
-                      ? artistsById.get(p.artistId) ?? "(deleted artist)"
-                      : p.vendorId
-                        ? vendorsById.get(p.vendorId) ?? "(deleted vendor)"
-                        : "";
+                  const counterparty = p.artistId
+                    ? (artistsById.get(p.artistId) ?? "(deleted artist)")
+                    : p.vendorId
+                      ? (vendorsById.get(p.vendorId) ?? "(deleted vendor)")
+                      : "";
                   return (
                     <tr
                       key={p.id}
@@ -291,8 +296,8 @@ function Filter({
 const STATUS_CLASSES: Record<PaymentStatus, string> = {
   pending: "border-[--color-border-strong] text-[--color-fg-muted]",
   due: "border-brand/40 text-brand",
-  paid: "border-[--color-brand-mint]/60 text-mint",
-  overdue: "border-[--color-brand-coral]/40 text-coral",
+  paid: "border-[--color-brand]/60 text-mint",
+  overdue: "border-[--color-danger]/40 text-coral",
   void: "border-[--color-fg-subtle]/40 text-[--color-fg-subtle]",
 };
 

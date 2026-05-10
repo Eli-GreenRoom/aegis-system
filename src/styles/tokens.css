@@ -1,78 +1,55 @@
-/* Aegis System — design tokens
- * Aligned to the Aegis brand book (Hammerspace, Feb 2026), but the ops
- * dashboard runs on a *neutral dark* canvas instead of the brand-book
- * indigo. The marketing surfaces own indigo; the back-office stays out
- * of its way at 3am during festival weekend. Brand accents (gold,
- * coral, mint, cream) are kept and do all the colour-carrying.
+/* GreenRoom Stages — design tokens
+ * App chrome uses the GreenRoom HQ palette. Aegis Festival brand colors
+ * are tenant identity only — see src/lib/branding/aegis-festival.ts.
  *
  * Eye-friendly choices:
- *   - Background is `#0e0e10` (near-black with a hair of warmth) — not
- *     pure `#000` because pure black + light text causes more glare and
- *     halation, especially on OLED.
- *   - Text is `#ECECEE` not `#FFFFFF` — pure white at full opacity on
- *     pure black is what tires eyes; ~92 % luminance reads sharper for
- *     longer.
- *   - Borders are *very* low-alpha white (8 / 6 / 18) so they sit just
- *     above the surface without competing with data.
+ *   - Background is `#0A0A0B` (near-black with a hair of warmth)
+ *   - Text is `#FAFAFA` not pure white — reduces halation on OLED
+ *   - Borders are very low-alpha white so they sit above surface without
+ *     competing with data
  *
- * Locked. Don't add or change without updating AGENT.md §3 first.
+ * Locked. Don't add or change without updating AGENT.md §3 and docs/BRAND.md.
  */
 
 @theme {
-  /* ── Brand accents (kept from the brand book) ────────────────────── */
-  /* Cream — used on inverse surfaces (light cards, print, exports). */
-  --color-brand-cream: #faf3ec;
-
-  /* Warm gold — primary accent. */
-  --color-brand: #e5b85a;
-  --color-brand-fg: #0e0e10;                /* near-black on gold */
-
-  /* Coral — tension / urgent / destructive. From "HOWEVER" page. */
-  --color-brand-coral: #e73e54;
-
-  /* Mint — momentum / success. From "OF THIS LAND" poster. */
-  --color-brand-mint: #16d060;
-
-  /* Brand indigo retained for marketing-style surfaces (auth screen
-   * blueprint motif, exports, hero headers if needed). NOT the page bg. */
-  --color-brand-indigo:      #1b0e5c;
-  --color-brand-indigo-deep: #150a48;
+  /* ── Brand accent (GreenRoom HQ emerald) ────────────────────────── */
+  --color-brand: #34d399; /* emerald — primary CTA, success, active state */
+  --color-brand-fg: #0a0a0b; /* near-black text on brand-colored backgrounds */
 
   /* ── Surfaces (neutral dark) ───────────────────────────────────── */
-  --color-bg:              #0e0e10;         /* page background */
-  --color-surface:         #15151a;         /* card surface */
-  --color-surface-raised:  #1f1f25;         /* raised card / popover / hover */
-  --color-surface-overlay: #25252c;         /* modal scrim base */
+  --color-bg: #0a0a0b; /* page background */
+  --color-surface: #111113; /* sidebar, rail */
+  --color-surface-raised: #1a1a1d; /* card, panel, popover */
+  --color-surface-overlay: #222226; /* modal scrim base */
 
   /* ── Text on dark ──────────────────────────────────────────────── */
-  --color-fg:        #ececee;               /* primary, ~92% luma off-white */
-  --color-fg-muted:  #a8a8b0;               /* secondary */
-  --color-fg-subtle: #6e6e78;               /* tertiary, captions */
+  --color-fg: #fafafa; /* primary body text */
+  --color-fg-muted: #a1a1aa; /* secondary labels */
+  --color-fg-subtle: #52525b; /* captions, timestamps */
 
   /* ── Borders ───────────────────────────────────────────────────── */
-  --color-border:        rgba(236, 236, 238, 0.08);
-  --color-border-subtle: rgba(236, 236, 238, 0.06);
-  --color-border-strong: rgba(236, 236, 238, 0.18);
+  --color-border: rgba(250, 250, 250, 0.08);
+  --color-border-subtle: rgba(250, 250, 250, 0.06);
+  --color-border-strong: rgba(250, 250, 250, 0.18);
 
-  /* ── Status (always brand colours, never generic Tailwind hues) ── */
-  --color-success: var(--color-brand-mint);
-  --color-warning: var(--color-brand);       /* gold doubles as warning */
-  --color-danger:  var(--color-brand-coral);
-  --color-info:    #7c9eff;                  /* alt-stage blue, used sparingly */
+  /* ── Status (always named tokens, never generic Tailwind hues) ── */
+  --color-success: var(--color-brand); /* emerald */
+  --color-warn: #fbbf24; /* amber */
+  --color-danger: #f87171; /* red */
+  --color-info: #7c9eff; /* alt-stage blue, used sparingly */
 
   /* ── Stages (used sparingly — only on stage chips/badges) ──────── */
-  --color-stage-main: var(--color-brand);     /* gold */
-  --color-stage-alt:  #7c9eff;                /* blue */
-  --color-stage-pool: #a78bfa;                /* violet — kept on chip only */
-  --color-stage-coll: #f472b6;                /* pink */
+  --color-stage-main: #e5b85a; /* gold — Aegis tenant data, not brand */
+  --color-stage-alt: #7c9eff; /* blue */
+  --color-stage-pool: #a78bfa; /* violet */
+  --color-stage-coll: #f472b6; /* pink */
 
   /* ── Radius ────────────────────────────────────────────────────── */
-  --radius-md: 8px;                           /* only radius used */
+  --radius-md: 8px; /* only radius used */
 
   /* ── Fonts ─────────────────────────────────────────────────────── */
-  /* Geist Sans for body/UI, Geist Mono for numbers/dates/flight numbers,
-   * Newsreader (Google Fonts) for the wordmark + page H1 ONLY. */
-  --font-sans:    var(--font-geist-sans);
-  --font-mono:    var(--font-geist-mono);
+  /* Geist Sans: body/UI. Geist Mono: numbers/dates/IDs. Newsreader: wordmark + H1 only. */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
   --font-display: var(--font-newsreader);
 }

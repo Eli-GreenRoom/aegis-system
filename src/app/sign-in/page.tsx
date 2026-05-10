@@ -40,11 +40,9 @@ export default function SignInPage() {
       <BlueprintCorner />
       <div className="w-full max-w-sm relative">
         <div className="text-mono text-[10px] uppercase tracking-[0.22em] text-brand mb-3">
-          Aegis System
+          GreenRoom Stages
         </div>
-        <h1 className="text-display text-4xl mb-10 leading-[1.05]">
-          Sign in
-        </h1>
+        <h1 className="text-display text-4xl mb-10 leading-[1.05]">Sign in</h1>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
@@ -70,9 +68,7 @@ export default function SignInPage() {
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-coral">{error}</p>
-          )}
+          {error && <p className="text-sm text-coral">{error}</p>}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Signing in" : "Sign in"}
@@ -115,13 +111,7 @@ function BlueprintCorner() {
         strokeWidth="1"
         strokeDasharray="2 4"
       />
-      <circle
-        cx="160"
-        cy="160"
-        r="120"
-        strokeWidth="1"
-        strokeDasharray="2 4"
-      />
+      <circle cx="160" cy="160" r="120" strokeWidth="1" strokeDasharray="2 4" />
     </svg>
   );
 }

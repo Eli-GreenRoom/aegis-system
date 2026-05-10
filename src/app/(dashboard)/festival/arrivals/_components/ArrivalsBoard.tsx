@@ -21,9 +21,9 @@ const STATUS_CLASS: Record<FlightStatus, string> = {
   scheduled: "border-l-[--color-border-strong]",
   boarded: "border-l-brand",
   in_air: "border-l-[--color-stage-alt]",
-  landed: "border-l-[--color-brand-mint]",
-  delayed: "border-l-[--color-brand-coral]",
-  cancelled: "border-l-[--color-brand-coral]",
+  landed: "border-l-[--color-brand]",
+  delayed: "border-l-[--color-danger]",
+  cancelled: "border-l-[--color-danger]",
 };
 
 export default function ArrivalsBoard({ arrivals }: Props) {
@@ -65,7 +65,7 @@ export default function ArrivalsBoard({ arrivals }: Props) {
           return (
             <li
               key={flight.id}
-              className={`flex items-center gap-3 rounded-md border border-[--color-border] border-l-4 ${STATUS_CLASS[flight.status as FlightStatus]} bg-[--color-surface]/40 p-3 ${pickupAlert ? "ring-1 ring-[--color-brand-coral]/40" : ""}`}
+              className={`flex items-center gap-3 rounded-md border border-[--color-border] border-l-4 ${STATUS_CLASS[flight.status as FlightStatus]} bg-[--color-surface]/40 p-3 ${pickupAlert ? "ring-1 ring-[--color-danger]/40" : ""}`}
             >
               <div className="text-mono text-[12px] text-[--color-fg] tabular-nums w-[80px] shrink-0">
                 {flight.scheduledDt

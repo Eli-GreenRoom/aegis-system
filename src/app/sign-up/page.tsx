@@ -24,7 +24,7 @@ export default function SignUpPage() {
       <main className="min-h-screen flex items-center justify-center px-6">
         <div className="w-full max-w-sm">
           <div className="text-mono text-[10px] uppercase tracking-[0.22em] text-brand mb-3">
-            Aegis System
+            GreenRoom Stages
           </div>
           <h1 className="text-display text-4xl mb-6 leading-[1.05]">
             Signup is closed.
@@ -65,7 +65,7 @@ export default function SignUpPage() {
     <main className="min-h-screen flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="text-mono text-[10px] uppercase tracking-[0.22em] text-brand mb-3">
-          Aegis System
+          GreenRoom Stages
         </div>
         <h1 className="text-display text-4xl mb-10 leading-[1.05]">
           Create account

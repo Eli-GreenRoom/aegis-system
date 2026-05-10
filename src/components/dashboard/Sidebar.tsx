@@ -28,24 +28,24 @@ import {
 } from "lucide-react";
 
 const PLANNING_ITEMS = [
-  { label: "Lineup",     href: "/lineup",     icon: CalendarDays },
-  { label: "Artists",    href: "/artists",    icon: Users },
-  { label: "Crew",       href: "/crew",       icon: HardHat },
-  { label: "Flights",    href: "/flights",    icon: Plane },
-  { label: "Hotels",     href: "/hotels",     icon: Hotel },
-  { label: "Ground",     href: "/ground",     icon: Car },
-  { label: "Riders",     href: "/riders",     icon: ScrollText },
-  { label: "Contracts",  href: "/contracts",  icon: FileSignature },
-  { label: "Payments",   href: "/payments",   icon: Wallet },
-  { label: "Guestlist",  href: "/guestlist",  icon: Ticket },
-  { label: "Documents",  href: "/documents",  icon: FolderOpen },
+  { label: "Lineup", href: "/lineup", icon: CalendarDays },
+  { label: "Artists", href: "/artists", icon: Users },
+  { label: "Crew", href: "/crew", icon: HardHat },
+  { label: "Flights", href: "/flights", icon: Plane },
+  { label: "Hotels", href: "/hotels", icon: Hotel },
+  { label: "Ground", href: "/ground", icon: Car },
+  { label: "Riders", href: "/riders", icon: ScrollText },
+  { label: "Contracts", href: "/contracts", icon: FileSignature },
+  { label: "Payments", href: "/payments", icon: Wallet },
+  { label: "Guestlist", href: "/guestlist", icon: Ticket },
+  { label: "Documents", href: "/documents", icon: FolderOpen },
 ] as const;
 
 const FESTIVAL_ITEMS = [
-  { label: "Now",        href: "/festival/now",        icon: Activity },
-  { label: "Pickups",    href: "/festival/pickups",    icon: Car },
-  { label: "Arrivals",   href: "/festival/arrivals",   icon: PlaneLanding },
-  { label: "Issues",     href: "/festival/issues",     icon: AlertTriangle },
+  { label: "Now", href: "/festival/now", icon: Activity },
+  { label: "Pickups", href: "/festival/pickups", icon: Car },
+  { label: "Arrivals", href: "/festival/arrivals", icon: PlaneLanding },
+  { label: "Issues", href: "/festival/issues", icon: AlertTriangle },
   { label: "Roadsheets", href: "/festival/roadsheets", icon: User },
 ] as const;
 
@@ -80,17 +80,17 @@ export default function Sidebar({ userEmail, festivalMode }: Props) {
         className="h-14 flex items-center px-5 border-b border-[--color-border] shrink-0"
       >
         <span className="text-display text-[17px] leading-none text-[--color-fg]">
-          Aegis
+          GreenRoom
         </span>
         <span
           className={`ml-2 text-[9px] font-semibold border rounded-md px-[5px] py-[2px] leading-none uppercase tracking-[0.12em] ${
             festivalMode
-              ? "text-mint border-[--color-brand-mint]/60"
+              ? "text-mint border-[--color-brand]/60"
               : "text-brand border-brand/40"
           }`}
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          {festivalMode ? "Live" : "Ops"}
+          {festivalMode ? "Live" : "Stages"}
         </span>
       </Link>
 
@@ -175,7 +175,10 @@ export default function Sidebar({ userEmail, festivalMode }: Props) {
 
       {/* User + sign out */}
       <div className="shrink-0 px-2 pb-4 pt-3 border-t border-[--color-border] space-y-1">
-        <div className="px-3 py-1 text-[11px] text-[--color-fg-subtle] truncate" title={userEmail}>
+        <div
+          className="px-3 py-1 text-[11px] text-[--color-fg-subtle] truncate"
+          title={userEmail}
+        >
           {userEmail}
         </div>
         <button

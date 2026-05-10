@@ -21,6 +21,29 @@ _(Pick from Later, or call something out by hand.)_
 
 ## Done
 
+- 2026-05-10 — Rebrand Phase C: GreenRoom HQ emerald palette applied to app chrome.
+  - `src/styles/tokens.css` rewritten: brand accent changed from Aegis gold
+    (`#E5B85A`) to GreenRoom emerald (`#34D399`); bg/surface/text tokens
+    updated to match BRAND.md HQ spec; old `--color-brand-mint` /
+    `--color-brand-coral` / `--color-brand-cream` / `--color-brand-indigo`
+    tokens removed.
+  - `src/styles/globals.css`: utility aliases updated (`text-coral` now
+    points at `--color-danger`; `text-mint` at `--color-brand`; added
+    `text-warn` and `text-danger`; removed orphaned `text-cream`/`bg-cream`).
+  - `src/lib/branding/aegis-festival.ts` created: stashes the full Aegis
+    Festival brand palette (indigo, cream, gold, coral, mint, stage colors)
+    for use in export templates only.
+  - Sidebar wordmark changed from "Aegis" + "Ops" badge to "GreenRoom" +
+    "Stages" badge (festival mode badge stays "Live").
+  - "Aegis System" string replaced with "GreenRoom Stages" in: layout.tsx
+    metadata, app/page.tsx, sign-in/page.tsx, sign-up/page.tsx (x2),
+    db/schema.ts comment.
+  - All 13 component files that referenced old Aegis tokens updated via
+    batch script (`--color-brand-mint` -> `--color-brand`,
+    `--color-brand-coral` -> `--color-danger`,
+    `--color-brand-cream` -> `--color-brand-fg`).
+  - 413 tests green. `npm run check` clean.
+
 - 2026-05-05 — Phase 5 MVP: festival-day mode shipped (413 tests).
   - `isFestivalMode` / `autoFestivalMode` helpers in
     `src/lib/festival-mode.ts`. Active on date range OR force-on flag.

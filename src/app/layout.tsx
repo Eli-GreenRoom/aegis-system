@@ -12,8 +12,8 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "Aegis System",
-  description: "Operations backend for Aegis Festival",
+  title: "GreenRoom Stages",
+  description: "Festival operations for Aegis Festival",
 };
 
 export default function RootLayout({
