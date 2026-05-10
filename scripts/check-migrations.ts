@@ -18,7 +18,7 @@ async function main() {
   `;
   console.log(
     "Public tables:",
-    tables.map((r: { table_name: string }) => r.table_name).join(", "),
+    tables.map((r) => (r as { table_name: string }).table_name).join(", "),
   );
 
   process.exit(0);
