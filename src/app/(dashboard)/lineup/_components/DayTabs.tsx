@@ -1,16 +1,16 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useTransition } from "react";
+import { Suspense, useTransition } from "react";
 import type { Route } from "next";
 
 const DAYS = [
-  { value: "friday",   label: "Friday" },
+  { value: "friday", label: "Friday" },
   { value: "saturday", label: "Saturday" },
-  { value: "sunday",   label: "Sunday" },
+  { value: "sunday", label: "Sunday" },
 ] as const;
 
-export default function DayTabs({ active }: { active: string }) {
+function DayTabsInner({ active }: { active: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -46,8 +46,18 @@ export default function DayTabs({ active }: { active: string }) {
         );
       })}
       {pending && (
-        <span className="ml-3 text-mono text-[10px] text-[--color-fg-subtle]">loading</span>
+        <span className="ml-3 text-mono text-[10px] text-[--color-fg-subtle]">
+          loading
+        </span>
       )}
     </div>
+  );
+}
+
+export default function DayTabs(props: { active: string }) {
+  return (
+    <Suspense>
+      <DayTabsInner {...props} />
+    </Suspense>
   );
 }

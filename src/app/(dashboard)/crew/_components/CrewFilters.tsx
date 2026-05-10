@@ -1,14 +1,14 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { Suspense, useEffect, useState, useTransition } from "react";
 import type { Route } from "next";
 
 interface Props {
   roles: string[];
 }
 
-export default function CrewFilters({ roles }: Props) {
+function CrewFiltersInner({ roles }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -66,7 +66,9 @@ export default function CrewFilters({ roles }: Props) {
         >
           <option value="">All</option>
           {roles.map((r) => (
-            <option key={r} value={r}>{r}</option>
+            <option key={r} value={r}>
+              {r}
+            </option>
           ))}
         </select>
       </div>
@@ -87,8 +89,18 @@ export default function CrewFilters({ roles }: Props) {
       </div>
 
       {pending && (
-        <span className="text-mono text-[10px] text-[--color-fg-subtle] pb-2">loading</span>
+        <span className="text-mono text-[10px] text-[--color-fg-subtle] pb-2">
+          loading
+        </span>
       )}
     </div>
+  );
+}
+
+export default function CrewFilters(props: Props) {
+  return (
+    <Suspense>
+      <CrewFiltersInner {...props} />
+    </Suspense>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { Suspense, useEffect, useState, useTransition } from "react";
 import type { Route } from "next";
 
-export default function FlightsFilters() {
+function FlightsFiltersInner() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -83,8 +83,18 @@ export default function FlightsFilters() {
       </div>
 
       {pending && (
-        <span className="text-mono text-[10px] text-[--color-fg-subtle] pb-2">loading</span>
+        <span className="text-mono text-[10px] text-[--color-fg-subtle] pb-2">
+          loading
+        </span>
       )}
     </div>
+  );
+}
+
+export default function FlightsFilters() {
+  return (
+    <Suspense>
+      <FlightsFiltersInner />
+    </Suspense>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { Suspense, useEffect, useState, useTransition } from "react";
 import type { Route } from "next";
 
 interface StageOption {
@@ -14,7 +14,7 @@ interface Props {
   stages: StageOption[];
 }
 
-export default function ArtistsFilters({ agencies, stages }: Props) {
+function ArtistsFiltersInner({ agencies, stages }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -74,7 +74,9 @@ export default function ArtistsFilters({ agencies, stages }: Props) {
         >
           <option value="">All</option>
           {agencies.map((a) => (
-            <option key={a} value={a}>{a}</option>
+            <option key={a} value={a}>
+              {a}
+            </option>
           ))}
         </select>
       </div>
@@ -90,7 +92,9 @@ export default function ArtistsFilters({ agencies, stages }: Props) {
         >
           <option value="">All</option>
           {stages.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
           ))}
         </select>
       </div>
@@ -130,8 +134,18 @@ export default function ArtistsFilters({ agencies, stages }: Props) {
       </div>
 
       {pending && (
-        <span className="text-mono text-[10px] text-[--color-fg-subtle] pb-2">loading</span>
+        <span className="text-mono text-[10px] text-[--color-fg-subtle] pb-2">
+          loading
+        </span>
       )}
     </div>
+  );
+}
+
+export default function ArtistsFilters(props: Props) {
+  return (
+    <Suspense>
+      <ArtistsFiltersInner {...props} />
+    </Suspense>
   );
 }
