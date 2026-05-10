@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +11,6 @@ export default function StagesAdmin({
 }: {
   stages: Stage[];
 }) {
-  const router = useRouter();
   const [stages, setStages] = useState(initialStages);
   const [editing, setEditing] = useState<Stage | null>(null);
   const [adding, setAdding] = useState(false);
@@ -34,7 +32,6 @@ export default function StagesAdmin({
         return;
       }
       setStages((prev) => prev.filter((s) => s.id !== id));
-      router.refresh();
     } catch {
       setError("Network error — couldn't reach server.");
     } finally {
@@ -105,7 +102,6 @@ export default function StagesAdmin({
               prev.map((s) => (s.id === saved.id ? saved : s)),
             );
             setEditing(null);
-            router.refresh();
           }}
         />
       )}
@@ -115,7 +111,6 @@ export default function StagesAdmin({
           onSaved={(saved) => {
             setStages((prev) => [...prev, saved]);
             setAdding(false);
-            router.refresh();
           }}
         />
       )}

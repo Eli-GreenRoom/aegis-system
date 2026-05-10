@@ -33,8 +33,6 @@ async function ensureDefaultStages() {
 }
 
 export async function getCurrentEdition() {
-  await ensureDefaultStages();
-
   const [existing] = await db
     .select()
     .from(festivalEditions)
