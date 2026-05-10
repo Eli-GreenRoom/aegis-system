@@ -6,6 +6,7 @@ export const FIXTURE_GUEST_ID = "13131313-1313-4131-8131-131313131313";
 
 export const fixtureGuest: GuestlistEntry = {
   id: FIXTURE_GUEST_ID,
+  workspaceId: null,
   editionId: FIXTURE_EDITION_ID,
   category: "dj_guest",
   hostArtistId: FIXTURE_ARTIST_ID,

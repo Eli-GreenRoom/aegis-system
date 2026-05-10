@@ -10,6 +10,7 @@ import {
   fixtureSlot,
   fixtureStage,
 } from "../fixtures/lineup";
+import { fakeOwnerSession } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -93,10 +94,7 @@ import {
   DELETE as stageDELETE,
 } from "@/app/api/stages/[id]/route";
 
-import {
-  GET as slotsListGET,
-  POST as slotsPOST,
-} from "@/app/api/slots/route";
+import { GET as slotsListGET, POST as slotsPOST } from "@/app/api/slots/route";
 import {
   GET as slotGET,
   PATCH as slotPATCH,
@@ -104,10 +102,7 @@ import {
 } from "@/app/api/slots/[id]/route";
 import { POST as slotsReorderPOST } from "@/app/api/slots/reorder/route";
 
-import {
-  GET as setsListGET,
-  POST as setsPOST,
-} from "@/app/api/sets/route";
+import { GET as setsListGET, POST as setsPOST } from "@/app/api/sets/route";
 import {
   GET as setGET,
   PATCH as setPATCH,
@@ -120,14 +115,6 @@ const mocks = {
   audit: vi.mocked(audit),
 };
 
-const fakeSession = {
-  user: { id: "u1", email: "booking@aegisfestival.com", name: "Eli" },
-  ownerId: "u1",
-  isOwner: true,
-  role: "owner" as const,
-  permissions: { lineup: true },
-};
-
 function jsonReq(url: string, method: string, body?: unknown): NextRequest {
   return new NextRequest(url, {
     method,
@@ -137,7 +124,7 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
 }
 
 beforeEach(() => {
-  mocks.session.getAppSession.mockResolvedValue(fakeSession);
+  mocks.session.getAppSession.mockResolvedValue(fakeOwnerSession);
   mocks.session.requirePermission.mockReturnValue(null);
   // Default: db.batch returns [[updatedRow], [auditRow]]. Tests that need
   // failure (rollback, partial result) override per-test.
@@ -172,7 +159,7 @@ describe("/api/stages", () => {
         slug: "beach",
         color: "#7C9EFF",
         sortOrder: 4,
-      })
+      }),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createStage).toHaveBeenCalled();
@@ -184,7 +171,7 @@ describe("/api/stages", () => {
       jsonReq("http://test/api/stages", "POST", {
         name: "Main",
         slug: "main",
-      })
+      }),
     );
     expect(res.status).toBe(409);
   });
@@ -194,7 +181,7 @@ describe("/api/stages", () => {
       jsonReq("http://test/api/stages", "POST", {
         name: "X",
         slug: "Has Spaces",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -210,17 +197,16 @@ describe("/api/stages/[id]", () => {
 
   it("GET 404 missing", async () => {
     mocks.repo.getStage.mockResolvedValueOnce(null);
-    const res = await stageGET(
-      jsonReq("http://test/api/stages/x", "GET"),
-      { params: Promise.resolve({ id: "missing" }) }
-    );
+    const res = await stageGET(jsonReq("http://test/api/stages/x", "GET"), {
+      params: Promise.resolve({ id: "missing" }),
+    });
     expect(res.status).toBe(404);
   });
 
   it("PATCH partial only sends provided keys", async () => {
     await stagePATCH(
       jsonReq("http://test/api/stages/x", "PATCH", { name: "Renamed" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateStage).toHaveBeenCalledWith(FIXTURE_STAGE_ID, {
       name: "Renamed",
@@ -230,7 +216,7 @@ describe("/api/stages/[id]", () => {
   it("PATCH 400 empty body", async () => {
     const res = await stagePATCH(
       jsonReq("http://test/api/stages/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -242,7 +228,7 @@ describe("/api/stages/[id]", () => {
     });
     const res = await stagePATCH(
       jsonReq("http://test/api/stages/x", "PATCH", { slug: "taken" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(409);
   });
@@ -250,7 +236,7 @@ describe("/api/stages/[id]", () => {
   it("DELETE removes", async () => {
     const res = await stageDELETE(
       jsonReq("http://test/api/stages/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
     expect(mocks.repo.deleteStage).toHaveBeenCalled();
@@ -260,7 +246,7 @@ describe("/api/stages/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await stageDELETE(
       jsonReq("http://test/api/stages/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(401);
   });
@@ -294,7 +280,7 @@ describe("/api/slots", () => {
         day: "friday",
         startTime: "22:00",
         endTime: "23:30",
-      })
+      }),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createSlot).toHaveBeenCalled();
@@ -307,7 +293,7 @@ describe("/api/slots", () => {
         day: "friday",
         startTime: "10pm",
         endTime: "11pm",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -319,7 +305,7 @@ describe("/api/slots", () => {
         day: "friday",
         startTime: "22:00",
         endTime: "22:00",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -331,7 +317,7 @@ describe("/api/slots/[id]", () => {
   it("PATCH partial", async () => {
     await slotPATCH(
       jsonReq("http://test/api/slots/x", "PATCH", { startTime: "21:00" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateSlot).toHaveBeenCalledWith(FIXTURE_SLOT_ID, {
       startTime: "21:00",
@@ -341,7 +327,7 @@ describe("/api/slots/[id]", () => {
   it("PATCH 400 empty", async () => {
     const res = await slotPATCH(
       jsonReq("http://test/api/slots/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -352,7 +338,7 @@ describe("/api/slots/[id]", () => {
         startTime: "22:00",
         endTime: "22:00",
       }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -360,17 +346,16 @@ describe("/api/slots/[id]", () => {
   it("DELETE removes", async () => {
     const res = await slotDELETE(
       jsonReq("http://test/api/slots/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
 
   it("GET 404 missing", async () => {
     mocks.repo.getSlot.mockResolvedValueOnce(null);
-    const res = await slotGET(
-      jsonReq("http://test/api/slots/x", "GET"),
-      { params: Promise.resolve({ id: "missing" }) }
-    );
+    const res = await slotGET(jsonReq("http://test/api/slots/x", "GET"), {
+      params: Promise.resolve({ id: "missing" }),
+    });
     expect(res.status).toBe(404);
   });
 });
@@ -385,7 +370,7 @@ describe("/api/sets", () => {
 
   it("GET by slotId", async () => {
     const res = await setsListGET(
-      jsonReq(`http://test/api/sets?slotId=${FIXTURE_SLOT_ID}`, "GET")
+      jsonReq(`http://test/api/sets?slotId=${FIXTURE_SLOT_ID}`, "GET"),
     );
     expect(res.status).toBe(200);
     expect(mocks.repo.listSetsForSlot).toHaveBeenCalledWith(FIXTURE_SLOT_ID);
@@ -393,10 +378,12 @@ describe("/api/sets", () => {
 
   it("GET by artistId", async () => {
     const res = await setsListGET(
-      jsonReq(`http://test/api/sets?artistId=${FIXTURE_ARTIST_ID}`, "GET")
+      jsonReq(`http://test/api/sets?artistId=${FIXTURE_ARTIST_ID}`, "GET"),
     );
     expect(res.status).toBe(200);
-    expect(mocks.repo.listSetsForArtist).toHaveBeenCalledWith(FIXTURE_ARTIST_ID);
+    expect(mocks.repo.listSetsForArtist).toHaveBeenCalledWith(
+      FIXTURE_ARTIST_ID,
+    );
   });
 
   it("POST creates with default status=option", async () => {
@@ -404,11 +391,11 @@ describe("/api/sets", () => {
       jsonReq("http://test/api/sets", "POST", {
         slotId: FIXTURE_SLOT_ID,
         artistId: FIXTURE_ARTIST_ID,
-      })
+      }),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createSet).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "option" })
+      expect.objectContaining({ status: "option" }),
     );
   });
 
@@ -418,7 +405,7 @@ describe("/api/sets", () => {
         slotId: FIXTURE_SLOT_ID,
         artistId: FIXTURE_ARTIST_ID,
         status: "wat",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -428,7 +415,7 @@ describe("/api/sets", () => {
       jsonReq("http://test/api/sets", "POST", {
         slotId: "not-a-uuid",
         artistId: FIXTURE_ARTIST_ID,
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -440,7 +427,7 @@ describe("/api/sets/[id]", () => {
   it("PATCH status change goes via db.batch and records the transition", async () => {
     const res = await setPATCH(
       jsonReq("http://test/api/sets/x", "PATCH", { status: "confirmed" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
     expect(batchImpl).toHaveBeenCalledTimes(1);
@@ -453,7 +440,7 @@ describe("/api/sets/[id]", () => {
         actorId: "u1",
         entity: { type: "set", id: FIXTURE_SET_ID },
         diff: { field: "status", from: "option", to: "confirmed" },
-      }
+      },
     );
     // The transition path skips the awaited updateSet helper.
     expect(mocks.repo.updateSet).not.toHaveBeenCalled();
@@ -465,7 +452,7 @@ describe("/api/sets/[id]", () => {
       mocks.audit.recordTransition.mockClear();
       await setPATCH(
         jsonReq("http://test/api/sets/x", "PATCH", { status }),
-        ctx
+        ctx,
       );
       expect(mocks.repo.buildUpdateSet).toHaveBeenCalledWith(FIXTURE_SET_ID, {
         status,
@@ -474,7 +461,7 @@ describe("/api/sets/[id]", () => {
         expect.anything(),
         expect.objectContaining({
           diff: { field: "status", from: "option", to: status },
-        })
+        }),
       );
     }
   });
@@ -482,7 +469,7 @@ describe("/api/sets/[id]", () => {
   it("PATCH with no status change skips audit and uses updateSet directly", async () => {
     await setPATCH(
       jsonReq("http://test/api/sets/x", "PATCH", { announceBatch: "Batch 1" }),
-      ctx
+      ctx,
     );
     expect(batchImpl).not.toHaveBeenCalled();
     expect(mocks.audit.recordTransition).not.toHaveBeenCalled();
@@ -496,15 +483,15 @@ describe("/api/sets/[id]", () => {
     await expect(
       setPATCH(
         jsonReq("http://test/api/sets/x", "PATCH", { status: "confirmed" }),
-        ctx
-      )
+        ctx,
+      ),
     ).rejects.toThrow("constraint violation");
   });
 
   it("PATCH normalises empty announceBatch to null", async () => {
     await setPATCH(
       jsonReq("http://test/api/sets/x", "PATCH", { announceBatch: "" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateSet).toHaveBeenCalledWith(FIXTURE_SET_ID, {
       announceBatch: null,
@@ -514,7 +501,7 @@ describe("/api/sets/[id]", () => {
   it("PATCH 400 empty body", async () => {
     const res = await setPATCH(
       jsonReq("http://test/api/sets/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -522,7 +509,7 @@ describe("/api/sets/[id]", () => {
   it("DELETE removes", async () => {
     const res = await setDELETE(
       jsonReq("http://test/api/sets/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -545,14 +532,14 @@ describe("POST /api/slots/reorder", () => {
 
   it("calls reorderSlots with current edition + body", async () => {
     const res = await slotsReorderPOST(
-      jsonReq("http://test/api/slots/reorder", "POST", validBody)
+      jsonReq("http://test/api/slots/reorder", "POST", validBody),
     );
     expect(res.status).toBe(200);
     expect(mocks.repo.reorderSlots).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
       FIXTURE_STAGE_ID,
       "friday",
-      validBody.slotIds
+      validBody.slotIds,
     );
   });
 
@@ -561,7 +548,7 @@ describe("POST /api/slots/reorder", () => {
       jsonReq("http://test/api/slots/reorder", "POST", {
         ...validBody,
         slotIds: [],
-      })
+      }),
     );
     expect(res.status).toBe(400);
     expect(mocks.repo.reorderSlots).not.toHaveBeenCalled();
@@ -572,7 +559,7 @@ describe("POST /api/slots/reorder", () => {
       jsonReq("http://test/api/slots/reorder", "POST", {
         ...validBody,
         day: "monday",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -582,7 +569,7 @@ describe("POST /api/slots/reorder", () => {
       jsonReq("http://test/api/slots/reorder", "POST", {
         ...validBody,
         stageId: "not-a-uuid",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -590,7 +577,7 @@ describe("POST /api/slots/reorder", () => {
   it("400 when repo signals stage/day mismatch", async () => {
     mocks.repo.reorderSlots.mockResolvedValueOnce(null);
     const res = await slotsReorderPOST(
-      jsonReq("http://test/api/slots/reorder", "POST", validBody)
+      jsonReq("http://test/api/slots/reorder", "POST", validBody),
     );
     expect(res.status).toBe(400);
   });
@@ -598,7 +585,7 @@ describe("POST /api/slots/reorder", () => {
   it("401 unauth", async () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await slotsReorderPOST(
-      jsonReq("http://test/api/slots/reorder", "POST", validBody)
+      jsonReq("http://test/api/slots/reorder", "POST", validBody),
     );
     expect(res.status).toBe(401);
   });

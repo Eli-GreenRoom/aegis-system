@@ -5,6 +5,7 @@ import {
   FIXTURE_EDITION_ID,
   fixtureArtist,
 } from "../fixtures/artist";
+import { fakeOwnerSession } from "../fixtures/session";
 
 // ── Mocks ────────────────────────────────────────────────────────────────
 
@@ -58,14 +59,6 @@ const mocks = {
   repo: vi.mocked(repo),
 };
 
-const fakeSession = {
-  user: { id: "u1", email: "booking@aegisfestival.com", name: "Eli" },
-  ownerId: "u1",
-  isOwner: true,
-  role: "owner" as const,
-  permissions: { artists: true },
-};
-
 const validInput = {
   name: "Hiroko",
   slug: "hiroko",
@@ -82,7 +75,7 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
 }
 
 beforeEach(() => {
-  mocks.session.getAppSession.mockResolvedValue(fakeSession);
+  mocks.session.getAppSession.mockResolvedValue(fakeOwnerSession);
   mocks.session.requirePermission.mockReturnValue(null);
 });
 
@@ -109,8 +102,8 @@ describe("GET /api/artists", () => {
     await listGET(
       jsonReq(
         "http://test/api/artists?search=hir&agency=WME&archived=archived",
-        "GET"
-      )
+        "GET",
+      ),
     );
     expect(mocks.repo.listArtists).toHaveBeenCalledWith({
       editionId: FIXTURE_EDITION_ID,
@@ -126,23 +119,23 @@ describe("GET /api/artists", () => {
     await listGET(
       jsonReq(
         "http://test/api/artists?stageId=44444444-4444-4444-8444-444444444444&setStatus=confirmed",
-        "GET"
-      )
+        "GET",
+      ),
     );
     expect(mocks.repo.listArtists).toHaveBeenCalledWith(
       expect.objectContaining({
         stageId: "44444444-4444-4444-8444-444444444444",
         setStatus: "confirmed",
-      })
+      }),
     );
   });
 
   it("ignores invalid setStatus silently", async () => {
     await listGET(
-      jsonReq("http://test/api/artists?setStatus=teleported", "GET")
+      jsonReq("http://test/api/artists?setStatus=teleported", "GET"),
     );
     expect(mocks.repo.listArtists).toHaveBeenCalledWith(
-      expect.objectContaining({ setStatus: undefined })
+      expect.objectContaining({ setStatus: undefined }),
     );
   });
 
@@ -154,7 +147,7 @@ describe("GET /api/artists", () => {
 
   it("rejects when permission is denied", async () => {
     mocks.session.requirePermission.mockReturnValueOnce(
-      Response.json({ error: "Forbidden" }, { status: 403 })
+      Response.json({ error: "Forbidden" }, { status: 403 }),
     );
     const res = await listGET(jsonReq("http://test/api/artists", "GET"));
     expect(res.status).toBe(403);
@@ -164,21 +157,21 @@ describe("GET /api/artists", () => {
 describe("POST /api/artists", () => {
   it("creates with valid input", async () => {
     const res = await createPOST(
-      jsonReq("http://test/api/artists", "POST", validInput)
+      jsonReq("http://test/api/artists", "POST", validInput),
     );
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.artist.slug).toBe("hiroko");
     expect(mocks.repo.createArtist).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
-      expect.objectContaining({ slug: "hiroko", name: "Hiroko" })
+      expect.objectContaining({ slug: "hiroko", name: "Hiroko" }),
     );
   });
 
   it("rejects unauthenticated", async () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await createPOST(
-      jsonReq("http://test/api/artists", "POST", validInput)
+      jsonReq("http://test/api/artists", "POST", validInput),
     );
     expect(res.status).toBe(401);
   });
@@ -188,7 +181,7 @@ describe("POST /api/artists", () => {
       jsonReq("http://test/api/artists", "POST", {
         ...validInput,
         slug: "Has Spaces",
-      })
+      }),
     );
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -198,7 +191,7 @@ describe("POST /api/artists", () => {
 
   it("rejects empty name", async () => {
     const res = await createPOST(
-      jsonReq("http://test/api/artists", "POST", { ...validInput, name: "" })
+      jsonReq("http://test/api/artists", "POST", { ...validInput, name: "" }),
     );
     expect(res.status).toBe(400);
   });
@@ -206,7 +199,7 @@ describe("POST /api/artists", () => {
   it("returns 409 on duplicate slug", async () => {
     mocks.repo.getArtistBySlug.mockResolvedValueOnce(fixtureArtist);
     const res = await createPOST(
-      jsonReq("http://test/api/artists", "POST", validInput)
+      jsonReq("http://test/api/artists", "POST", validInput),
     );
     expect(res.status).toBe(409);
   });
@@ -228,7 +221,7 @@ describe("POST /api/artists", () => {
         slug: "hiroko-presskit",
         pressKitUrl: "https://drive.google.com/abc",
         passportFileUrl: "https://example.com/passport.pdf",
-      })
+      }),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createArtist).toHaveBeenCalledWith(
@@ -236,7 +229,7 @@ describe("POST /api/artists", () => {
       expect.objectContaining({
         pressKitUrl: "https://drive.google.com/abc",
         passportFileUrl: "https://example.com/passport.pdf",
-      })
+      }),
     );
   });
 
@@ -245,7 +238,7 @@ describe("POST /api/artists", () => {
       jsonReq("http://test/api/artists", "POST", {
         ...validInput,
         pressKitUrl: "not a url",
-      })
+      }),
     );
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -258,12 +251,12 @@ describe("POST /api/artists", () => {
         ...validInput,
         slug: "hiroko-visa",
         visaStatus: "approved",
-      })
+      }),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createArtist).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
-      expect.objectContaining({ visaStatus: "approved" })
+      expect.objectContaining({ visaStatus: "approved" }),
     );
   });
 
@@ -272,7 +265,7 @@ describe("POST /api/artists", () => {
       jsonReq("http://test/api/artists", "POST", {
         ...validInput,
         visaStatus: "maybe",
-      })
+      }),
     );
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -286,7 +279,7 @@ describe("GET /api/artists/[id]", () => {
   it("returns the artist", async () => {
     const res = await oneGET(
       jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "GET"),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -297,7 +290,7 @@ describe("GET /api/artists/[id]", () => {
     mocks.repo.getArtist.mockResolvedValueOnce(null);
     const res = await oneGET(
       jsonReq("http://test/api/artists/missing", "GET"),
-      { params: Promise.resolve({ id: "missing" }) }
+      { params: Promise.resolve({ id: "missing" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -306,7 +299,7 @@ describe("GET /api/artists/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await oneGET(
       jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "GET"),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(res.status).toBe(401);
   });
@@ -315,12 +308,11 @@ describe("GET /api/artists/[id]", () => {
 describe("PATCH /api/artists/[id]", () => {
   it("updates with valid input", async () => {
     const res = await onePATCH(
-      jsonReq(
-        `http://test/api/artists/${FIXTURE_ARTIST_ID}`,
-        "PATCH",
-        { ...validInput, name: "Hiroko (renamed)" }
-      ),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "PATCH", {
+        ...validInput,
+        name: "Hiroko (renamed)",
+      }),
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(res.status).toBe(200);
     expect(mocks.repo.updateArtist).toHaveBeenCalled();
@@ -336,7 +328,7 @@ describe("PATCH /api/artists/[id]", () => {
         ...validInput,
         slug: "taken-slug",
       }),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(res.status).toBe(409);
   });
@@ -345,7 +337,7 @@ describe("PATCH /api/artists/[id]", () => {
     mocks.repo.getArtist.mockResolvedValueOnce(null);
     const res = await onePATCH(
       jsonReq("http://test/api/artists/missing", "PATCH", validInput),
-      { params: Promise.resolve({ id: "missing" }) }
+      { params: Promise.resolve({ id: "missing" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -356,7 +348,7 @@ describe("PATCH /api/artists/[id]", () => {
         ...validInput,
         slug: "Bad Slug",
       }),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(res.status).toBe(400);
   });
@@ -364,8 +356,12 @@ describe("PATCH /api/artists/[id]", () => {
   it("rejects unauthenticated", async () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await onePATCH(
-      jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "PATCH", validInput),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      jsonReq(
+        `http://test/api/artists/${FIXTURE_ARTIST_ID}`,
+        "PATCH",
+        validInput,
+      ),
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(res.status).toBe(401);
   });
@@ -375,7 +371,7 @@ describe("PATCH /api/artists/[id]", () => {
       jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "PATCH", {
         name: "Just a rename",
       }),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(mocks.repo.updateArtist).toHaveBeenCalledWith(FIXTURE_ARTIST_ID, {
       name: "Just a rename",
@@ -387,7 +383,7 @@ describe("PATCH /api/artists/[id]", () => {
       jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "PATCH", {
         agency: "New Agency",
       }),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(mocks.repo.getArtistBySlug).not.toHaveBeenCalled();
     expect(mocks.repo.updateArtist).toHaveBeenCalledWith(FIXTURE_ARTIST_ID, {
@@ -398,7 +394,7 @@ describe("PATCH /api/artists/[id]", () => {
   it("rejects an empty body", async () => {
     const res = await onePATCH(
       jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "PATCH", {}),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(res.status).toBe(400);
     expect(mocks.repo.updateArtist).not.toHaveBeenCalled();
@@ -409,7 +405,7 @@ describe("PATCH /api/artists/[id]", () => {
       jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "PATCH", {
         agency: "",
       }),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(mocks.repo.updateArtist).toHaveBeenCalledWith(FIXTURE_ARTIST_ID, {
       agency: null,
@@ -422,7 +418,7 @@ describe("PATCH /api/artists/[id]", () => {
         pressKitUrl: "https://drive.google.com/x",
         passportFileUrl: "",
       }),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(mocks.repo.updateArtist).toHaveBeenCalledWith(FIXTURE_ARTIST_ID, {
       pressKitUrl: "https://drive.google.com/x",
@@ -435,7 +431,7 @@ describe("PATCH /api/artists/[id]", () => {
       jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "PATCH", {
         visaStatus: "pending",
       }),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(mocks.repo.updateArtist).toHaveBeenCalledWith(FIXTURE_ARTIST_ID, {
       visaStatus: "pending",
@@ -447,7 +443,7 @@ describe("PATCH /api/artists/[id]", () => {
       jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "PATCH", {
         visaStatus: "",
       }),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(mocks.repo.updateArtist).toHaveBeenCalledWith(FIXTURE_ARTIST_ID, {
       visaStatus: null,
@@ -459,7 +455,7 @@ describe("PATCH /api/artists/[id]", () => {
       jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "PATCH", {
         visaStatus: "almost",
       }),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(res.status).toBe(400);
     expect(mocks.repo.updateArtist).not.toHaveBeenCalled();
@@ -470,7 +466,7 @@ describe("DELETE /api/artists/[id]", () => {
   it("archives by default", async () => {
     const res = await oneDELETE(
       jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "DELETE"),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(res.status).toBe(200);
     expect(mocks.repo.archiveArtist).toHaveBeenCalledWith(FIXTURE_ARTIST_ID);
@@ -480,9 +476,9 @@ describe("DELETE /api/artists/[id]", () => {
     const res = await oneDELETE(
       jsonReq(
         `http://test/api/artists/${FIXTURE_ARTIST_ID}?action=unarchive`,
-        "DELETE"
+        "DELETE",
       ),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(res.status).toBe(200);
     expect(mocks.repo.unarchiveArtist).toHaveBeenCalledWith(FIXTURE_ARTIST_ID);
@@ -492,7 +488,7 @@ describe("DELETE /api/artists/[id]", () => {
     mocks.repo.archiveArtist.mockResolvedValueOnce(null);
     const res = await oneDELETE(
       jsonReq("http://test/api/artists/missing", "DELETE"),
-      { params: Promise.resolve({ id: "missing" }) }
+      { params: Promise.resolve({ id: "missing" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -501,7 +497,7 @@ describe("DELETE /api/artists/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await oneDELETE(
       jsonReq(`http://test/api/artists/${FIXTURE_ARTIST_ID}`, "DELETE"),
-      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_ARTIST_ID }) },
     );
     expect(res.status).toBe(401);
   });

@@ -29,6 +29,20 @@
       "when": 1777997313836,
       "tag": "0004_phase_2_5a_operations",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778100000000,
+      "tag": "0005_phase_0a_workspaces_nullable",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778100000001,
+      "tag": "0006_phase_0b_workspaceid_notnull",
+      "breakpoints": true
     }
   ]
 }

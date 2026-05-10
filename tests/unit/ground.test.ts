@@ -8,6 +8,7 @@ import {
   fixturePickup,
   fixtureVendor,
 } from "../fixtures/ground";
+import { fakeOwnerSession } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -60,7 +61,10 @@ vi.mock("@/lib/ground/repo", () => ({
     id: FIXTURE_PICKUP_ID,
   })),
   updatePickup: vi.fn(async (_id, input) => ({ ...fixturePickup, ...input })),
-  buildUpdatePickup: vi.fn((_id, input) => ({ __updateBuilder: "pickup", input })),
+  buildUpdatePickup: vi.fn((_id, input) => ({
+    __updateBuilder: "pickup",
+    input,
+  })),
   deletePickup: vi.fn(async () => fixturePickup),
 }));
 
@@ -92,14 +96,6 @@ const mocks = {
   audit: vi.mocked(audit),
 };
 
-const fakeSession = {
-  user: { id: "u1", email: "booking@aegisfestival.com", name: "Eli" },
-  ownerId: "u1",
-  isOwner: true,
-  role: "owner" as const,
-  permissions: { ground: true },
-};
-
 function jsonReq(url: string, method: string, body?: unknown): NextRequest {
   return new NextRequest(url, {
     method,
@@ -109,7 +105,7 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
 }
 
 beforeEach(() => {
-  mocks.session.getAppSession.mockResolvedValue(fakeSession);
+  mocks.session.getAppSession.mockResolvedValue(fakeOwnerSession);
   mocks.session.requirePermission.mockReturnValue(null);
   batchImpl.mockReset();
   batchImpl.mockImplementation(async (queries: unknown[]) => {
@@ -140,7 +136,7 @@ describe("/api/vendors", () => {
       jsonReq("http://test/api/vendors", "POST", {
         name: "LuxCars",
         service: "Car service",
-      })
+      }),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createVendor).toHaveBeenCalled();
@@ -148,7 +144,7 @@ describe("/api/vendors", () => {
 
   it("POST 400 missing service", async () => {
     const res = await vendorsPOST(
-      jsonReq("http://test/api/vendors", "POST", { name: "X" })
+      jsonReq("http://test/api/vendors", "POST", { name: "X" }),
     );
     expect(res.status).toBe(400);
   });
@@ -159,7 +155,7 @@ describe("/api/vendors", () => {
         name: "X",
         service: "Taxi",
         contactEmail: "not-an-email",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -169,23 +165,25 @@ describe("/api/vendors/[id]", () => {
   const ctx = { params: Promise.resolve({ id: FIXTURE_VENDOR_ID }) };
 
   it("GET returns vendor", async () => {
-    const res = await vendorGET(jsonReq("http://test/api/vendors/x", "GET"), ctx);
+    const res = await vendorGET(
+      jsonReq("http://test/api/vendors/x", "GET"),
+      ctx,
+    );
     expect(res.status).toBe(200);
   });
 
   it("GET 404 missing", async () => {
     mocks.repo.getVendor.mockResolvedValueOnce(null);
-    const res = await vendorGET(
-      jsonReq("http://test/api/vendors/x", "GET"),
-      { params: Promise.resolve({ id: "missing" }) }
-    );
+    const res = await vendorGET(jsonReq("http://test/api/vendors/x", "GET"), {
+      params: Promise.resolve({ id: "missing" }),
+    });
     expect(res.status).toBe(404);
   });
 
   it("PATCH partial only sends provided keys", async () => {
     await vendorPATCH(
       jsonReq("http://test/api/vendors/x", "PATCH", { name: "Renamed" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateVendor).toHaveBeenCalledWith(FIXTURE_VENDOR_ID, {
       name: "Renamed",
@@ -195,7 +193,7 @@ describe("/api/vendors/[id]", () => {
   it("PATCH 400 empty body", async () => {
     const res = await vendorPATCH(
       jsonReq("http://test/api/vendors/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -203,7 +201,7 @@ describe("/api/vendors/[id]", () => {
   it("PATCH normalises empty contactPhone to null", async () => {
     await vendorPATCH(
       jsonReq("http://test/api/vendors/x", "PATCH", { contactPhone: "" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateVendor).toHaveBeenCalledWith(FIXTURE_VENDOR_ID, {
       contactPhone: null,
@@ -213,7 +211,7 @@ describe("/api/vendors/[id]", () => {
   it("DELETE removes", async () => {
     const res = await vendorDELETE(
       jsonReq("http://test/api/vendors/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -226,8 +224,8 @@ describe("/api/pickups", () => {
     await pickupsListGET(
       jsonReq(
         `http://test/api/pickups?status=scheduled&routeFrom=airport&routeTo=hotel&vendorId=${FIXTURE_VENDOR_ID}`,
-        "GET"
-      )
+        "GET",
+      ),
     );
     expect(mocks.repo.listPickups).toHaveBeenCalledWith({
       editionId: FIXTURE_EDITION_ID,
@@ -243,10 +241,10 @@ describe("/api/pickups", () => {
 
   it("GET ignores invalid status", async () => {
     await pickupsListGET(
-      jsonReq("http://test/api/pickups?status=bogus", "GET")
+      jsonReq("http://test/api/pickups?status=bogus", "GET"),
     );
     expect(mocks.repo.listPickups).toHaveBeenCalledWith(
-      expect.objectContaining({ status: undefined })
+      expect.objectContaining({ status: undefined }),
     );
   });
 
@@ -258,7 +256,7 @@ describe("/api/pickups", () => {
         routeFrom: "airport",
         routeTo: "hotel",
         pickupDt: "2026-08-13T15:00:00Z",
-      })
+      }),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createPickup).toHaveBeenCalled();
@@ -272,7 +270,7 @@ describe("/api/pickups", () => {
         routeFrom: "moon",
         routeTo: "hotel",
         pickupDt: "2026-08-13T15:00:00Z",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -285,7 +283,7 @@ describe("/api/pickups", () => {
         routeFrom: "airport",
         routeTo: "hotel",
         pickupDt: "not-a-date",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -297,13 +295,13 @@ describe("/api/pickups/[id]", () => {
   it("PATCH status change goes via db.batch and records the transition", async () => {
     const res = await pickupPATCH(
       jsonReq("http://test/api/pickups/x", "PATCH", { status: "completed" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
     expect(batchImpl).toHaveBeenCalledTimes(1);
     expect(mocks.repo.buildUpdatePickup).toHaveBeenCalledWith(
       FIXTURE_PICKUP_ID,
-      { status: "completed" }
+      { status: "completed" },
     );
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
@@ -311,7 +309,7 @@ describe("/api/pickups/[id]", () => {
         actorId: "u1",
         entity: { type: "pickup", id: FIXTURE_PICKUP_ID },
         diff: { field: "status", from: "scheduled", to: "completed" },
-      }
+      },
     );
     expect(mocks.repo.updatePickup).not.toHaveBeenCalled();
   });
@@ -319,24 +317,24 @@ describe("/api/pickups/[id]", () => {
   it("PATCH accepts in_transit status with audit", async () => {
     await pickupPATCH(
       jsonReq("http://test/api/pickups/x", "PATCH", { status: "in_transit" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.buildUpdatePickup).toHaveBeenCalledWith(
       FIXTURE_PICKUP_ID,
-      { status: "in_transit" }
+      { status: "in_transit" },
     );
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
         diff: { field: "status", from: "scheduled", to: "in_transit" },
-      })
+      }),
     );
   });
 
   it("PATCH non-status field uses updatePickup directly", async () => {
     await pickupPATCH(
       jsonReq("http://test/api/pickups/x", "PATCH", { driverName: "Sami" }),
-      ctx
+      ctx,
     );
     expect(batchImpl).not.toHaveBeenCalled();
     expect(mocks.audit.recordTransition).not.toHaveBeenCalled();
@@ -350,15 +348,15 @@ describe("/api/pickups/[id]", () => {
     await expect(
       pickupPATCH(
         jsonReq("http://test/api/pickups/x", "PATCH", { status: "completed" }),
-        ctx
-      )
+        ctx,
+      ),
     ).rejects.toThrow("constraint violation");
   });
 
   it("PATCH 400 empty body", async () => {
     const res = await pickupPATCH(
       jsonReq("http://test/api/pickups/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -366,7 +364,7 @@ describe("/api/pickups/[id]", () => {
   it("PATCH clears vendorId with empty string", async () => {
     await pickupPATCH(
       jsonReq("http://test/api/pickups/x", "PATCH", { vendorId: "" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updatePickup).toHaveBeenCalledWith(FIXTURE_PICKUP_ID, {
       vendorId: null,
@@ -378,28 +376,27 @@ describe("/api/pickups/[id]", () => {
       jsonReq("http://test/api/pickups/x", "PATCH", {
         pickupDt: "2026-08-14T10:00:00Z",
       }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updatePickup).toHaveBeenCalledWith(
       FIXTURE_PICKUP_ID,
-      expect.objectContaining({ pickupDt: expect.any(Date) })
+      expect.objectContaining({ pickupDt: expect.any(Date) }),
     );
   });
 
   it("DELETE removes", async () => {
     const res = await pickupDELETE(
       jsonReq("http://test/api/pickups/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
 
   it("GET 404 missing", async () => {
     mocks.repo.getPickup.mockResolvedValueOnce(null);
-    const res = await pickupGET(
-      jsonReq("http://test/api/pickups/x", "GET"),
-      { params: Promise.resolve({ id: "missing" }) }
-    );
+    const res = await pickupGET(jsonReq("http://test/api/pickups/x", "GET"), {
+      params: Promise.resolve({ id: "missing" }),
+    });
     expect(res.status).toBe(404);
   });
 
@@ -407,7 +404,7 @@ describe("/api/pickups/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await pickupGET(
       jsonReq("http://test/api/pickups/x", "GET"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(401);
   });

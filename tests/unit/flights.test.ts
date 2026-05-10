@@ -6,6 +6,7 @@ import {
   FIXTURE_FLIGHT_ID,
   fixtureFlight,
 } from "../fixtures/flight";
+import { fakeOwnerSession } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -48,7 +49,10 @@ vi.mock("@/lib/flights/repo", () => ({
     id: FIXTURE_FLIGHT_ID,
   })),
   updateFlight: vi.fn(async (_id, input) => ({ ...fixtureFlight, ...input })),
-  buildUpdateFlight: vi.fn((_id, input) => ({ __updateBuilder: "flight", input })),
+  buildUpdateFlight: vi.fn((_id, input) => ({
+    __updateBuilder: "flight",
+    input,
+  })),
   deleteFlight: vi.fn(async () => fixtureFlight),
 }));
 
@@ -66,14 +70,6 @@ const mocks = {
   session: vi.mocked(session),
   repo: vi.mocked(repo),
   audit: vi.mocked(audit),
-};
-
-const fakeSession = {
-  user: { id: "u1", email: "booking@aegisfestival.com", name: "Eli" },
-  ownerId: "u1",
-  isOwner: true,
-  role: "owner" as const,
-  permissions: { flights: true },
 };
 
 const validInput = {
@@ -94,7 +90,7 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
 }
 
 beforeEach(() => {
-  mocks.session.getAppSession.mockResolvedValue(fakeSession);
+  mocks.session.getAppSession.mockResolvedValue(fakeOwnerSession);
   mocks.session.requirePermission.mockReturnValue(null);
   batchImpl.mockReset();
   batchImpl.mockImplementation(async (queries: unknown[]) => {
@@ -116,8 +112,8 @@ describe("GET /api/flights", () => {
     await listGET(
       jsonReq(
         `http://test/api/flights?direction=inbound&status=scheduled&personKind=artist&personId=${FIXTURE_ARTIST_ID}&search=ME202`,
-        "GET"
-      )
+        "GET",
+      ),
     );
     expect(mocks.repo.listFlights).toHaveBeenCalledWith({
       editionId: FIXTURE_EDITION_ID,
@@ -131,7 +127,10 @@ describe("GET /api/flights", () => {
 
   it("ignores invalid direction/status", async () => {
     await listGET(
-      jsonReq("http://test/api/flights?direction=sideways&status=teleported", "GET")
+      jsonReq(
+        "http://test/api/flights?direction=sideways&status=teleported",
+        "GET",
+      ),
     );
     expect(mocks.repo.listFlights).toHaveBeenCalledWith({
       editionId: FIXTURE_EDITION_ID,
@@ -153,7 +152,7 @@ describe("GET /api/flights", () => {
 describe("POST /api/flights", () => {
   it("creates with valid input", async () => {
     const res = await createPOST(
-      jsonReq("http://test/api/flights", "POST", validInput)
+      jsonReq("http://test/api/flights", "POST", validInput),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createFlight).toHaveBeenCalled();
@@ -164,7 +163,7 @@ describe("POST /api/flights", () => {
       jsonReq("http://test/api/flights", "POST", {
         ...validInput,
         personId: undefined,
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -174,7 +173,7 @@ describe("POST /api/flights", () => {
       jsonReq("http://test/api/flights", "POST", {
         ...validInput,
         direction: "sideways",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -184,7 +183,7 @@ describe("POST /api/flights", () => {
       jsonReq("http://test/api/flights", "POST", {
         ...validInput,
         ticketUrl: "not a url",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -194,7 +193,7 @@ describe("POST /api/flights", () => {
       jsonReq("http://test/api/flights", "POST", {
         ...validInput,
         scheduledDt: "not a date",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -215,12 +214,12 @@ describe("POST /api/flights", () => {
         ...validInput,
         status: "delayed",
         delayMinutes: 45,
-      })
+      }),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createFlight).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
-      expect.objectContaining({ status: "delayed", delayMinutes: 45 })
+      expect.objectContaining({ status: "delayed", delayMinutes: 45 }),
     );
   });
 
@@ -229,7 +228,7 @@ describe("POST /api/flights", () => {
       jsonReq("http://test/api/flights", "POST", {
         ...validInput,
         delayMinutes: -10,
-      })
+      }),
     );
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -237,12 +236,10 @@ describe("POST /api/flights", () => {
   });
 
   it("defaults delayMinutes to null when omitted on create", async () => {
-    await createPOST(
-      jsonReq("http://test/api/flights", "POST", validInput)
-    );
+    await createPOST(jsonReq("http://test/api/flights", "POST", validInput));
     expect(mocks.repo.createFlight).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
-      expect.objectContaining({ delayMinutes: null })
+      expect.objectContaining({ delayMinutes: null }),
     );
   });
 });
@@ -259,7 +256,7 @@ describe("/api/flights/[id]", () => {
     mocks.repo.getFlight.mockResolvedValueOnce(null);
     const res = await oneGET(
       jsonReq("http://test/api/flights/missing", "GET"),
-      { params: Promise.resolve({ id: "missing" }) }
+      { params: Promise.resolve({ id: "missing" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -267,13 +264,13 @@ describe("/api/flights/[id]", () => {
   it("PATCH status change goes via db.batch and records the transition", async () => {
     const res = await onePATCH(
       jsonReq("http://test/api/flights/x", "PATCH", { status: "landed" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
     expect(batchImpl).toHaveBeenCalledTimes(1);
     expect(mocks.repo.buildUpdateFlight).toHaveBeenCalledWith(
       FIXTURE_FLIGHT_ID,
-      { status: "landed" }
+      { status: "landed" },
     );
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
@@ -281,7 +278,7 @@ describe("/api/flights/[id]", () => {
         actorId: "u1",
         entity: { type: "flight", id: FIXTURE_FLIGHT_ID },
         diff: { field: "status", from: "scheduled", to: "landed" },
-      }
+      },
     );
     expect(mocks.repo.updateFlight).not.toHaveBeenCalled();
   });
@@ -289,7 +286,7 @@ describe("/api/flights/[id]", () => {
   it("PATCH non-status field uses updateFlight directly", async () => {
     await onePATCH(
       jsonReq("http://test/api/flights/x", "PATCH", { airline: "MEA" }),
-      ctx
+      ctx,
     );
     expect(batchImpl).not.toHaveBeenCalled();
     expect(mocks.audit.recordTransition).not.toHaveBeenCalled();
@@ -303,15 +300,15 @@ describe("/api/flights/[id]", () => {
     await expect(
       onePATCH(
         jsonReq("http://test/api/flights/x", "PATCH", { status: "landed" }),
-        ctx
-      )
+        ctx,
+      ),
     ).rejects.toThrow("constraint violation");
   });
 
   it("PATCH normalises empty pnr to null", async () => {
     await onePATCH(
       jsonReq("http://test/api/flights/x", "PATCH", { pnr: "" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateFlight).toHaveBeenCalledWith(FIXTURE_FLIGHT_ID, {
       pnr: null,
@@ -321,7 +318,7 @@ describe("/api/flights/[id]", () => {
   it("PATCH normalises empty datetime to null", async () => {
     await onePATCH(
       jsonReq("http://test/api/flights/x", "PATCH", { actualDt: "" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateFlight).toHaveBeenCalledWith(FIXTURE_FLIGHT_ID, {
       actualDt: null,
@@ -331,7 +328,7 @@ describe("/api/flights/[id]", () => {
   it("PATCH 400 empty body", async () => {
     const res = await onePATCH(
       jsonReq("http://test/api/flights/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -339,7 +336,7 @@ describe("/api/flights/[id]", () => {
   it("PATCH sets delayMinutes", async () => {
     await onePATCH(
       jsonReq("http://test/api/flights/x", "PATCH", { delayMinutes: 30 }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateFlight).toHaveBeenCalledWith(FIXTURE_FLIGHT_ID, {
       delayMinutes: 30,
@@ -349,7 +346,7 @@ describe("/api/flights/[id]", () => {
   it("PATCH clears delayMinutes when explicitly null", async () => {
     await onePATCH(
       jsonReq("http://test/api/flights/x", "PATCH", { delayMinutes: null }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateFlight).toHaveBeenCalledWith(FIXTURE_FLIGHT_ID, {
       delayMinutes: null,
@@ -359,7 +356,7 @@ describe("/api/flights/[id]", () => {
   it("DELETE removes", async () => {
     const res = await oneDELETE(
       jsonReq("http://test/api/flights/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -368,7 +365,7 @@ describe("/api/flights/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await oneDELETE(
       jsonReq("http://test/api/flights/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(401);
   });

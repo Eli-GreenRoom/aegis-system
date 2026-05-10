@@ -5,7 +5,7 @@ import { documents } from "@/db/schema";
 export type Document = typeof documents.$inferSelect;
 
 export interface CreateDocumentInput {
-  ownerId: string;
+  workspaceId: string;
   entityType: string;
   entityId: string | null;
   filename: string;
@@ -18,17 +18,17 @@ export interface CreateDocumentInput {
 }
 
 export interface ListDocumentsParams {
-  ownerId: string;
+  workspaceId: string;
   entityType?: string;
   entityId?: string;
 }
 
 export async function listDocuments({
-  ownerId,
+  workspaceId,
   entityType,
   entityId,
 }: ListDocumentsParams): Promise<Document[]> {
-  const filters = [eq(documents.ownerId, ownerId)];
+  const filters = [eq(documents.workspaceId, workspaceId)];
   if (entityType) filters.push(eq(documents.entityType, entityType));
   if (entityId) filters.push(eq(documents.entityId, entityId));
 
@@ -49,7 +49,7 @@ export async function getDocument(id: string): Promise<Document | null> {
 }
 
 export async function createDocument(
-  input: CreateDocumentInput
+  input: CreateDocumentInput,
 ): Promise<Document> {
   const [row] = await db.insert(documents).values(input).returning();
   return row;

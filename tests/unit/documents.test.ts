@@ -3,9 +3,9 @@ import { NextRequest } from "next/server";
 import {
   FIXTURE_ARTIST_ID,
   FIXTURE_DOC_ID,
-  FIXTURE_OWNER_ID,
   fixtureDocument,
 } from "../fixtures/documents";
+import { fakeOwnerSession, FIXTURE_WORKSPACE_ID } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -61,16 +61,8 @@ const mocks = {
   blob: vi.mocked(blob),
 };
 
-const fakeSession = {
-  user: { id: "u1", email: "booking@aegisfestival.com", name: "Eli" },
-  ownerId: FIXTURE_OWNER_ID,
-  isOwner: true,
-  role: "owner" as const,
-  permissions: { artists: true, payments: true, contracts: true },
-};
-
 beforeEach(() => {
-  mocks.session.getAppSession.mockResolvedValue(fakeSession);
+  mocks.session.getAppSession.mockResolvedValue(fakeOwnerSession);
   mocks.blob.uploadToBlob.mockClear();
   mocks.blob.deleteFromBlob.mockClear();
   mocks.repo.createDocument.mockClear();
@@ -80,7 +72,7 @@ beforeEach(() => {
 function multipartReq(
   url: string,
   fields: Record<string, string>,
-  file?: { name: string; type: string; bytes: Uint8Array | string }
+  file?: { name: string; type: string; bytes: Uint8Array | string },
 ): NextRequest {
   const form = new FormData();
   for (const [k, v] of Object.entries(fields)) form.append(k, v);
@@ -88,7 +80,9 @@ function multipartReq(
     // Cast to BlobPart - Uint8Array's typed buffer can be SharedArrayBuffer
     // in TS lib.dom but at runtime it's always ArrayBuffer for our cases.
     const part: BlobPart =
-      typeof file.bytes === "string" ? file.bytes : (file.bytes as unknown as BlobPart);
+      typeof file.bytes === "string"
+        ? file.bytes
+        : (file.bytes as unknown as BlobPart);
     const blob = new Blob([part], { type: file.type });
     form.append("file", new File([blob], file.name, { type: file.type }));
   }
@@ -100,7 +94,7 @@ function multipartReq(
 describe("GET /api/documents", () => {
   it("returns the calling owner's documents", async () => {
     const res = await listGET(
-      new NextRequest("http://test/api/documents", { method: "GET" })
+      new NextRequest("http://test/api/documents", { method: "GET" }),
     );
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -109,7 +103,7 @@ describe("GET /api/documents", () => {
     // Raw blob URL is NOT exposed in the listing.
     expect(body.documents[0]).not.toHaveProperty("url");
     expect(mocks.repo.listDocuments).toHaveBeenCalledWith({
-      ownerId: FIXTURE_OWNER_ID,
+      workspaceId: FIXTURE_WORKSPACE_ID,
       entityType: undefined,
       entityId: undefined,
     });
@@ -119,11 +113,11 @@ describe("GET /api/documents", () => {
     await listGET(
       new NextRequest(
         `http://test/api/documents?entityType=artist&entityId=${FIXTURE_ARTIST_ID}`,
-        { method: "GET" }
-      )
+        { method: "GET" },
+      ),
     );
     expect(mocks.repo.listDocuments).toHaveBeenCalledWith({
-      ownerId: FIXTURE_OWNER_ID,
+      workspaceId: FIXTURE_WORKSPACE_ID,
       entityType: "artist",
       entityId: FIXTURE_ARTIST_ID,
     });
@@ -133,17 +127,17 @@ describe("GET /api/documents", () => {
     await listGET(
       new NextRequest("http://test/api/documents?entityType=teleported", {
         method: "GET",
-      })
+      }),
     );
     expect(mocks.repo.listDocuments).toHaveBeenCalledWith(
-      expect.objectContaining({ entityType: undefined })
+      expect.objectContaining({ entityType: undefined }),
     );
   });
 
   it("401 unauth", async () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await listGET(
-      new NextRequest("http://test/api/documents", { method: "GET" })
+      new NextRequest("http://test/api/documents", { method: "GET" }),
     );
     expect(res.status).toBe(401);
   });
@@ -159,18 +153,18 @@ describe("POST /api/documents", () => {
       multipartReq(
         "http://test/api/documents",
         { entityType: "artist", entityId: FIXTURE_ARTIST_ID, tags: "passport" },
-        { name: "passport.pdf", type: "application/pdf", bytes: PDF_BYTES }
-      )
+        { name: "passport.pdf", type: "application/pdf", bytes: PDF_BYTES },
+      ),
     );
     expect(res.status).toBe(201);
     expect(mocks.blob.uploadToBlob).toHaveBeenCalledWith(
-      `${FIXTURE_OWNER_ID}/artist/passport.pdf`,
+      `${FIXTURE_WORKSPACE_ID}/artist/passport.pdf`,
       expect.any(ArrayBuffer),
-      "application/pdf"
+      "application/pdf",
     );
     expect(mocks.repo.createDocument).toHaveBeenCalledWith(
       expect.objectContaining({
-        ownerId: FIXTURE_OWNER_ID,
+        workspaceId: FIXTURE_WORKSPACE_ID,
         entityType: "artist",
         entityId: FIXTURE_ARTIST_ID,
         filename: "passport.pdf",
@@ -178,7 +172,7 @@ describe("POST /api/documents", () => {
         sizeBytes: PDF_BYTES.byteLength,
         tags: ["passport"],
         uploadedBy: "u1",
-      })
+      }),
     );
     const body = await res.json();
     expect(body.document.proxyUrl).toBe(`/api/documents/${FIXTURE_DOC_ID}`);
@@ -193,18 +187,20 @@ describe("POST /api/documents", () => {
           name: "../../etc/passwd",
           type: "application/pdf",
           bytes: PDF_BYTES,
-        }
-      )
+        },
+      ),
     );
     const blobCall = mocks.blob.uploadToBlob.mock.calls.at(-1);
-    expect(blobCall?.[0]).toBe(`${FIXTURE_OWNER_ID}/artist/.._.._etc_passwd`);
+    expect(blobCall?.[0]).toBe(
+      `${FIXTURE_WORKSPACE_ID}/artist/.._.._etc_passwd`,
+    );
     const repoCall = mocks.repo.createDocument.mock.calls.at(-1);
     expect(repoCall?.[0].filename).toBe(".._.._etc_passwd");
   });
 
   it("400 missing file", async () => {
     const res = await createPOST(
-      multipartReq("http://test/api/documents", { entityType: "artist" })
+      multipartReq("http://test/api/documents", { entityType: "artist" }),
     );
     expect(res.status).toBe(400);
   });
@@ -214,8 +210,8 @@ describe("POST /api/documents", () => {
       multipartReq(
         "http://test/api/documents",
         {},
-        { name: "x.pdf", type: "application/pdf", bytes: PDF_BYTES }
-      )
+        { name: "x.pdf", type: "application/pdf", bytes: PDF_BYTES },
+      ),
     );
     expect(res.status).toBe(400);
   });
@@ -225,8 +221,8 @@ describe("POST /api/documents", () => {
       multipartReq(
         "http://test/api/documents",
         { entityType: "teleported" },
-        { name: "x.pdf", type: "application/pdf", bytes: PDF_BYTES }
-      )
+        { name: "x.pdf", type: "application/pdf", bytes: PDF_BYTES },
+      ),
     );
     expect(res.status).toBe(400);
   });
@@ -237,7 +233,7 @@ describe("POST /api/documents", () => {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: '{"entityType":"artist"}',
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -247,8 +243,8 @@ describe("POST /api/documents", () => {
       multipartReq(
         "http://test/api/documents",
         { entityType: "artist" },
-        { name: "x.exe", type: "application/x-msdownload", bytes: PDF_BYTES }
-      )
+        { name: "x.exe", type: "application/x-msdownload", bytes: PDF_BYTES },
+      ),
     );
     expect(res.status).toBe(415);
   });
@@ -258,8 +254,8 @@ describe("POST /api/documents", () => {
       multipartReq(
         "http://test/api/documents",
         { entityType: "artist" },
-        { name: "x.pdf", type: "application/pdf", bytes: new Uint8Array(0) }
-      )
+        { name: "x.pdf", type: "application/pdf", bytes: new Uint8Array(0) },
+      ),
     );
     expect(res.status).toBe(400);
   });
@@ -270,8 +266,8 @@ describe("POST /api/documents", () => {
       multipartReq(
         "http://test/api/documents",
         { entityType: "artist" },
-        { name: "x.pdf", type: "application/pdf", bytes: PDF_BYTES }
-      )
+        { name: "x.pdf", type: "application/pdf", bytes: PDF_BYTES },
+      ),
     );
     expect(res.status).toBe(502);
     expect(mocks.repo.createDocument).not.toHaveBeenCalled();
@@ -286,8 +282,8 @@ describe("POST /api/documents", () => {
           name: "receipt.jpg",
           type: "image/jpeg",
           bytes: new Uint8Array([0xff, 0xd8, 0xff]),
-        }
-      )
+        },
+      ),
     );
     expect(res.status).toBe(201);
   });
@@ -298,8 +294,8 @@ describe("POST /api/documents", () => {
       multipartReq(
         "http://test/api/documents",
         { entityType: "artist" },
-        { name: "x.pdf", type: "application/pdf", bytes: PDF_BYTES }
-      )
+        { name: "x.pdf", type: "application/pdf", bytes: PDF_BYTES },
+      ),
     );
     expect(res.status).toBe(401);
   });
@@ -309,8 +305,8 @@ describe("POST /api/documents", () => {
       multipartReq(
         "http://test/api/documents",
         { entityType: "artist", tags: "passport, visa, scanned" },
-        { name: "x.pdf", type: "application/pdf", bytes: PDF_BYTES }
-      )
+        { name: "x.pdf", type: "application/pdf", bytes: PDF_BYTES },
+      ),
     );
     const call = mocks.repo.createDocument.mock.calls.at(-1);
     expect(call?.[0].tags).toEqual(["passport", "visa", "scanned"]);
@@ -325,7 +321,7 @@ describe("GET /api/documents/[id]", () => {
   it("streams the file with correct content-type + disposition", async () => {
     const res = await oneGET(
       new NextRequest("http://test/api/documents/x", { method: "GET" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("application/pdf");
@@ -338,7 +334,7 @@ describe("GET /api/documents/[id]", () => {
     mocks.repo.getDocument.mockResolvedValueOnce(null);
     const res = await oneGET(
       new NextRequest("http://test/api/documents/missing", { method: "GET" }),
-      { params: Promise.resolve({ id: "missing" }) }
+      { params: Promise.resolve({ id: "missing" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -346,11 +342,11 @@ describe("GET /api/documents/[id]", () => {
   it("404 (not 403) when doc belongs to a different owner", async () => {
     mocks.repo.getDocument.mockResolvedValueOnce({
       ...fixtureDocument,
-      ownerId: "different-owner",
+      workspaceId: "different-workspace",
     });
     const res = await oneGET(
       new NextRequest("http://test/api/documents/x", { method: "GET" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(404);
     expect(mocks.blob.getBlobStream).not.toHaveBeenCalled();
@@ -360,7 +356,7 @@ describe("GET /api/documents/[id]", () => {
     mocks.blob.getBlobStream.mockResolvedValueOnce(null);
     const res = await oneGET(
       new NextRequest("http://test/api/documents/x", { method: "GET" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(502);
   });
@@ -369,7 +365,7 @@ describe("GET /api/documents/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await oneGET(
       new NextRequest("http://test/api/documents/x", { method: "GET" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(401);
   });
@@ -383,7 +379,7 @@ describe("DELETE /api/documents/[id]", () => {
   it("deletes blob then row", async () => {
     const res = await oneDELETE(
       new NextRequest("http://test/api/documents/x", { method: "DELETE" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
     expect(mocks.blob.deleteFromBlob).toHaveBeenCalledWith(fixtureDocument.url);
@@ -398,7 +394,7 @@ describe("DELETE /api/documents/[id]", () => {
     mocks.blob.deleteFromBlob.mockRejectedValueOnce(new Error("blob 500"));
     const res = await oneDELETE(
       new NextRequest("http://test/api/documents/x", { method: "DELETE" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(502);
     expect(mocks.repo.deleteDocument).not.toHaveBeenCalled();
@@ -407,8 +403,10 @@ describe("DELETE /api/documents/[id]", () => {
   it("404 when doc missing", async () => {
     mocks.repo.getDocument.mockResolvedValueOnce(null);
     const res = await oneDELETE(
-      new NextRequest("http://test/api/documents/missing", { method: "DELETE" }),
-      { params: Promise.resolve({ id: "missing" }) }
+      new NextRequest("http://test/api/documents/missing", {
+        method: "DELETE",
+      }),
+      { params: Promise.resolve({ id: "missing" }) },
     );
     expect(res.status).toBe(404);
     expect(mocks.blob.deleteFromBlob).not.toHaveBeenCalled();
@@ -417,11 +415,11 @@ describe("DELETE /api/documents/[id]", () => {
   it("404 across tenants", async () => {
     mocks.repo.getDocument.mockResolvedValueOnce({
       ...fixtureDocument,
-      ownerId: "different-owner",
+      workspaceId: "different-workspace",
     });
     const res = await oneDELETE(
       new NextRequest("http://test/api/documents/x", { method: "DELETE" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(404);
     expect(mocks.blob.deleteFromBlob).not.toHaveBeenCalled();
@@ -431,7 +429,7 @@ describe("DELETE /api/documents/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await oneDELETE(
       new NextRequest("http://test/api/documents/x", { method: "DELETE" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(401);
   });

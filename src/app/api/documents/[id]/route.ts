@@ -1,9 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAppSession } from "@/lib/session";
-import {
-  deleteDocument,
-  getDocument,
-} from "@/lib/documents/repo";
+import { deleteDocument, getDocument } from "@/lib/documents/repo";
 import { deleteFromBlob, getBlobStream } from "@/lib/documents/blob";
 
 interface Ctx {
@@ -13,16 +10,17 @@ interface Ctx {
 /**
  * GET /api/documents/[id]
  * Auth-checks, then streams the file back. Multi-tenant boundary: a
- * document's ownerId must match the session ownerId. Anything else is
+ * document's workspaceId must match the session workspaceId. Anything else is
  * a 404 (not 403 - we don't leak existence across tenants).
  */
 export async function GET(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await ctx.params;
   const doc = await getDocument(id);
-  if (!doc || doc.ownerId !== session.ownerId) {
+  if (!doc || doc.workspaceId !== session.workspaceId) {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -38,11 +36,11 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
   const blobType = blob.headers.get("content-type");
   headers.set(
     "content-type",
-    blobType ?? doc.mimeType ?? "application/octet-stream"
+    blobType ?? doc.mimeType ?? "application/octet-stream",
   );
   headers.set(
     "content-disposition",
-    `inline; filename="${doc.filename.replace(/"/g, "")}"`
+    `inline; filename="${doc.filename.replace(/"/g, "")}"`,
   );
   // Don't let intermediaries cache. Documents are private.
   headers.set("cache-control", "private, max-age=0, no-store");
@@ -59,11 +57,12 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
  */
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await ctx.params;
   const doc = await getDocument(id);
-  if (!doc || doc.ownerId !== session.ownerId) {
+  if (!doc || doc.workspaceId !== session.workspaceId) {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -76,7 +75,7 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
     const message = err instanceof Error ? err.message : "Blob delete failed";
     return Response.json(
       { error: `Couldn't delete blob: ${message}` },
-      { status: 502 }
+      { status: 502 },
     );
   }
 

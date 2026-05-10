@@ -30,7 +30,8 @@ function sanitiseFilename(raw: string): string {
  */
 export async function GET(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(req.url);
   const entityTypeRaw = url.searchParams.get("entityType") ?? undefined;
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
   const entityId = url.searchParams.get("entityId") ?? undefined;
 
   const rows = await listDocuments({
-    ownerId: session.ownerId,
+    workspaceId: session.workspaceId,
     entityType: entityTypeParsed?.success ? entityTypeParsed.data : undefined,
     entityId,
   });
@@ -58,13 +59,14 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const ct = req.headers.get("content-type") ?? "";
   if (!ct.includes("multipart/form-data")) {
     return Response.json(
       { error: "Expected multipart/form-data" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -85,13 +87,13 @@ export async function POST(req: NextRequest) {
   if (file.size > MAX_FILE_SIZE_BYTES) {
     return Response.json(
       { error: `File too large (max ${MAX_FILE_SIZE_BYTES} bytes)` },
-      { status: 413 }
+      { status: 413 },
     );
   }
   if (file.type && !isAllowedMimeType(file.type)) {
     return Response.json(
       { error: `Unsupported file type: ${file.type}` },
-      { status: 415 }
+      { status: 415 },
     );
   }
 
@@ -112,13 +114,13 @@ export async function POST(req: NextRequest) {
   if (!metaParsed.success) {
     return Response.json(
       { error: "Validation failed", issues: metaParsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
   const meta = metaParsed.data;
 
   const safeName = sanitiseFilename(file.name);
-  const pathname = `${session.ownerId}/${meta.entityType}/${safeName}`;
+  const pathname = `${session.workspaceId}/${meta.entityType}/${safeName}`;
 
   let blob;
   try {
@@ -127,12 +129,12 @@ export async function POST(req: NextRequest) {
     const message = err instanceof Error ? err.message : "Upload failed";
     return Response.json(
       { error: `Blob upload failed: ${message}` },
-      { status: 502 }
+      { status: 502 },
     );
   }
 
   const created = await createDocument({
-    ownerId: session.ownerId,
+    workspaceId: session.workspaceId,
     entityType: meta.entityType,
     entityId: meta.entityId ?? null,
     filename: safeName,

@@ -10,6 +10,7 @@ import {
   fixtureHotel,
   fixtureRoomBlock,
 } from "../fixtures/hotels";
+import { fakeOwnerSession } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -46,7 +47,11 @@ vi.mock("@/lib/hotels/repo", () => ({
   // hotels
   listHotels: vi.fn(async () => [fixtureHotel]),
   getHotel: vi.fn(async () => fixtureHotel),
-  createHotel: vi.fn(async (input) => ({ ...fixtureHotel, ...input, id: FIXTURE_HOTEL_ID })),
+  createHotel: vi.fn(async (input) => ({
+    ...fixtureHotel,
+    ...input,
+    id: FIXTURE_HOTEL_ID,
+  })),
   updateHotel: vi.fn(async (_id, input) => ({ ...fixtureHotel, ...input })),
   deleteHotel: vi.fn(async () => fixtureHotel),
   // room blocks
@@ -87,7 +92,10 @@ import * as session from "@/lib/session";
 import * as repo from "@/lib/hotels/repo";
 import * as audit from "@/lib/audit";
 
-import { GET as hotelsListGET, POST as hotelsPOST } from "@/app/api/hotels/route";
+import {
+  GET as hotelsListGET,
+  POST as hotelsPOST,
+} from "@/app/api/hotels/route";
 import {
   GET as hotelGET,
   PATCH as hotelPATCH,
@@ -120,14 +128,6 @@ const mocks = {
   audit: vi.mocked(audit),
 };
 
-const fakeSession = {
-  user: { id: "u1", email: "booking@aegisfestival.com", name: "Eli" },
-  ownerId: "u1",
-  isOwner: true,
-  role: "owner" as const,
-  permissions: { hotels: true },
-};
-
 function jsonReq(url: string, method: string, body?: unknown): NextRequest {
   return new NextRequest(url, {
     method,
@@ -137,7 +137,7 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
 }
 
 beforeEach(() => {
-  mocks.session.getAppSession.mockResolvedValue(fakeSession);
+  mocks.session.getAppSession.mockResolvedValue(fakeOwnerSession);
   mocks.session.requirePermission.mockReturnValue(null);
   batchImpl.mockReset();
   batchImpl.mockImplementation(async (queries: unknown[]) => {
@@ -171,7 +171,7 @@ describe("/api/hotels", () => {
 
   it("GET 403 when permission denied", async () => {
     mocks.session.requirePermission.mockReturnValueOnce(
-      Response.json({ error: "Forbidden" }, { status: 403 })
+      Response.json({ error: "Forbidden" }, { status: 403 }),
     );
     const res = await hotelsListGET(jsonReq("http://test/api/hotels", "GET"));
     expect(res.status).toBe(403);
@@ -182,11 +182,11 @@ describe("/api/hotels", () => {
       jsonReq("http://test/api/hotels", "POST", {
         name: "Aqua Resort",
         location: "Batroun",
-      })
+      }),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createHotel).toHaveBeenCalledWith(
-      expect.objectContaining({ name: "Aqua Resort", location: "Batroun" })
+      expect.objectContaining({ name: "Aqua Resort", location: "Batroun" }),
     );
   });
 
@@ -196,16 +196,16 @@ describe("/api/hotels", () => {
         name: "Aqua Resort",
         location: "",
         contactEmail: "",
-      })
+      }),
     );
     expect(mocks.repo.createHotel).toHaveBeenCalledWith(
-      expect.objectContaining({ location: null, contactEmail: null })
+      expect.objectContaining({ location: null, contactEmail: null }),
     );
   });
 
   it("POST 400 missing name", async () => {
     const res = await hotelsPOST(
-      jsonReq("http://test/api/hotels", "POST", { location: "Batroun" })
+      jsonReq("http://test/api/hotels", "POST", { location: "Batroun" }),
     );
     expect(res.status).toBe(400);
   });
@@ -215,7 +215,7 @@ describe("/api/hotels", () => {
       jsonReq("http://test/api/hotels", "POST", {
         name: "X",
         contactEmail: "not-email",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -243,7 +243,7 @@ describe("/api/hotels/[id]", () => {
     mocks.repo.getHotel.mockResolvedValueOnce(null);
     const res = await hotelGET(
       jsonReq("http://test/api/hotels/missing", "GET"),
-      { params: Promise.resolve({ id: "missing" }) }
+      { params: Promise.resolve({ id: "missing" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -251,7 +251,7 @@ describe("/api/hotels/[id]", () => {
   it("PATCH updates the hotel", async () => {
     await hotelPATCH(
       jsonReq("http://test/api/hotels/x", "PATCH", { name: "Renamed" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateHotel).toHaveBeenCalledWith(FIXTURE_HOTEL_ID, {
       name: "Renamed",
@@ -261,7 +261,7 @@ describe("/api/hotels/[id]", () => {
   it("PATCH 400 empty body", async () => {
     const res = await hotelPATCH(
       jsonReq("http://test/api/hotels/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -269,7 +269,7 @@ describe("/api/hotels/[id]", () => {
   it("PATCH normalises empty optional to null", async () => {
     await hotelPATCH(
       jsonReq("http://test/api/hotels/x", "PATCH", { contactPhone: "" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateHotel).toHaveBeenCalledWith(FIXTURE_HOTEL_ID, {
       contactPhone: null,
@@ -279,7 +279,7 @@ describe("/api/hotels/[id]", () => {
   it("DELETE removes", async () => {
     const res = await hotelDELETE(
       jsonReq("http://test/api/hotels/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -288,7 +288,7 @@ describe("/api/hotels/[id]", () => {
     mocks.repo.deleteHotel.mockResolvedValueOnce(null);
     const res = await hotelDELETE(
       jsonReq("http://test/api/hotels/missing", "DELETE"),
-      { params: Promise.resolve({ id: "missing" }) }
+      { params: Promise.resolve({ id: "missing" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -297,7 +297,7 @@ describe("/api/hotels/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await hotelDELETE(
       jsonReq("http://test/api/hotels/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(401);
   });
@@ -308,7 +308,7 @@ describe("/api/hotels/[id]", () => {
 describe("/api/room-blocks", () => {
   it("GET returns blocks for the current edition", async () => {
     const res = await blocksListGET(
-      jsonReq("http://test/api/room-blocks", "GET")
+      jsonReq("http://test/api/room-blocks", "GET"),
     );
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -321,7 +321,7 @@ describe("/api/room-blocks", () => {
 
   it("GET threads hotelId filter", async () => {
     await blocksListGET(
-      jsonReq(`http://test/api/room-blocks?hotelId=${FIXTURE_HOTEL_ID}`, "GET")
+      jsonReq(`http://test/api/room-blocks?hotelId=${FIXTURE_HOTEL_ID}`, "GET"),
     );
     expect(mocks.repo.listRoomBlocks).toHaveBeenCalledWith({
       editionId: FIXTURE_EDITION_ID,
@@ -337,7 +337,7 @@ describe("/api/room-blocks", () => {
         roomType: "Standard double",
         nights: 3,
         roomsReserved: 5,
-      })
+      }),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createRoomBlock).toHaveBeenCalledWith(
@@ -348,7 +348,7 @@ describe("/api/room-blocks", () => {
         roomType: "Standard double",
         nights: 3,
         roomsReserved: 5,
-      })
+      }),
     );
   });
 
@@ -356,7 +356,7 @@ describe("/api/room-blocks", () => {
     const res = await blocksPOST(
       jsonReq("http://test/api/room-blocks", "POST", {
         hotelId: FIXTURE_HOTEL_ID,
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -366,7 +366,7 @@ describe("/api/room-blocks", () => {
       jsonReq("http://test/api/room-blocks", "POST", {
         hotelId: "not-uuid",
         roomType: "Single",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -377,7 +377,7 @@ describe("/api/room-blocks", () => {
         hotelId: FIXTURE_HOTEL_ID,
         roomType: "Single",
         roomsReserved: -1,
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -385,7 +385,7 @@ describe("/api/room-blocks", () => {
   it("GET 401 unauth", async () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await blocksListGET(
-      jsonReq("http://test/api/room-blocks", "GET")
+      jsonReq("http://test/api/room-blocks", "GET"),
     );
     expect(res.status).toBe(401);
   });
@@ -397,7 +397,7 @@ describe("/api/room-blocks/[id]", () => {
   it("GET returns the block", async () => {
     const res = await blockGET(
       jsonReq("http://test/api/room-blocks/x", "GET"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -408,31 +408,31 @@ describe("/api/room-blocks/[id]", () => {
   it("GET ?capacity=1 includes capacity", async () => {
     const res = await blockGET(
       jsonReq("http://test/api/room-blocks/x?capacity=1", "GET"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.capacity).toEqual({ reserved: 10, peakAssigned: 3, free: 7 });
     expect(mocks.repo.getBlockCapacity).toHaveBeenCalledWith(
-      FIXTURE_ROOM_BLOCK_ID
+      FIXTURE_ROOM_BLOCK_ID,
     );
   });
 
   it("PATCH partial only sends provided keys", async () => {
     await blockPATCH(
       jsonReq("http://test/api/room-blocks/x", "PATCH", { roomsReserved: 12 }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateRoomBlock).toHaveBeenCalledWith(
       FIXTURE_ROOM_BLOCK_ID,
-      { roomsReserved: 12 }
+      { roomsReserved: 12 },
     );
   });
 
   it("PATCH 400 empty body", async () => {
     const res = await blockPATCH(
       jsonReq("http://test/api/room-blocks/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -440,18 +440,18 @@ describe("/api/room-blocks/[id]", () => {
   it("PATCH normalises empty label to null", async () => {
     await blockPATCH(
       jsonReq("http://test/api/room-blocks/x", "PATCH", { label: "" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateRoomBlock).toHaveBeenCalledWith(
       FIXTURE_ROOM_BLOCK_ID,
-      { label: null }
+      { label: null },
     );
   });
 
   it("DELETE removes", async () => {
     const res = await blockDELETE(
       jsonReq("http://test/api/room-blocks/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -461,20 +461,18 @@ describe("/api/room-blocks/[id]", () => {
 
 describe("/api/hotel-bookings", () => {
   it("GET defaults to current-edition scope", async () => {
-    await bookingsListGET(
-      jsonReq("http://test/api/hotel-bookings", "GET")
-    );
+    await bookingsListGET(jsonReq("http://test/api/hotel-bookings", "GET"));
     expect(mocks.repo.listBookings).toHaveBeenCalledWith(
-      expect.objectContaining({ editionId: FIXTURE_EDITION_ID })
+      expect.objectContaining({ editionId: FIXTURE_EDITION_ID }),
     );
   });
 
   it("GET ?scope=all skips edition scope", async () => {
     await bookingsListGET(
-      jsonReq("http://test/api/hotel-bookings?scope=all", "GET")
+      jsonReq("http://test/api/hotel-bookings?scope=all", "GET"),
     );
     expect(mocks.repo.listBookings).toHaveBeenCalledWith(
-      expect.objectContaining({ editionId: undefined })
+      expect.objectContaining({ editionId: undefined }),
     );
   });
 
@@ -482,8 +480,8 @@ describe("/api/hotel-bookings", () => {
     await bookingsListGET(
       jsonReq(
         `http://test/api/hotel-bookings?roomBlockId=${FIXTURE_ROOM_BLOCK_ID}&personKind=artist&personId=${FIXTURE_ARTIST_ID}&status=booked&activeFrom=2026-08-13&activeTo=2026-08-16`,
-        "GET"
-      )
+        "GET",
+      ),
     );
     expect(mocks.repo.listBookings).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -493,7 +491,7 @@ describe("/api/hotel-bookings", () => {
         status: "booked",
         activeFrom: "2026-08-13",
         activeTo: "2026-08-16",
-      })
+      }),
     );
   });
 
@@ -501,11 +499,11 @@ describe("/api/hotel-bookings", () => {
     await bookingsListGET(
       jsonReq(
         "http://test/api/hotel-bookings?status=teleported&personKind=alien&scope=all",
-        "GET"
-      )
+        "GET",
+      ),
     );
     expect(mocks.repo.listBookings).toHaveBeenCalledWith(
-      expect.objectContaining({ status: undefined, personKind: undefined })
+      expect.objectContaining({ status: undefined, personKind: undefined }),
     );
   });
 
@@ -520,7 +518,7 @@ describe("/api/hotel-bookings", () => {
 
   it("POST creates with valid input", async () => {
     const res = await bookingsPOST(
-      jsonReq("http://test/api/hotel-bookings", "POST", validBooking)
+      jsonReq("http://test/api/hotel-bookings", "POST", validBooking),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createBooking).toHaveBeenCalledWith(
@@ -530,7 +528,7 @@ describe("/api/hotel-bookings", () => {
         checkin: "2026-08-13",
         checkout: "2026-08-16",
         status: "booked",
-      })
+      }),
     );
   });
 
@@ -540,7 +538,7 @@ describe("/api/hotel-bookings", () => {
         ...validBooking,
         checkin: "2026-08-16",
         checkout: "2026-08-13",
-      })
+      }),
     );
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -553,7 +551,7 @@ describe("/api/hotel-bookings", () => {
         ...validBooking,
         checkin: "2026-08-13",
         checkout: "2026-08-13",
-      })
+      }),
     );
     expect(res.status).toBe(201);
   });
@@ -563,7 +561,7 @@ describe("/api/hotel-bookings", () => {
       jsonReq("http://test/api/hotel-bookings", "POST", {
         ...validBooking,
         checkin: "Aug 13",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -573,11 +571,11 @@ describe("/api/hotel-bookings", () => {
       jsonReq("http://test/api/hotel-bookings", "POST", {
         ...validBooking,
         roomBlockId: "",
-      })
+      }),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createBooking).toHaveBeenCalledWith(
-      expect.objectContaining({ roomBlockId: null })
+      expect.objectContaining({ roomBlockId: null }),
     );
   });
 
@@ -585,7 +583,7 @@ describe("/api/hotel-bookings", () => {
     const { personId: _drop, ...rest } = validBooking;
     void _drop;
     const res = await bookingsPOST(
-      jsonReq("http://test/api/hotel-bookings", "POST", rest)
+      jsonReq("http://test/api/hotel-bookings", "POST", rest),
     );
     expect(res.status).toBe(400);
   });
@@ -597,7 +595,7 @@ describe("/api/hotel-bookings/[id]", () => {
   it("GET returns the booking", async () => {
     const res = await bookingGET(
       jsonReq("http://test/api/hotel-bookings/x", "GET"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -606,7 +604,7 @@ describe("/api/hotel-bookings/[id]", () => {
     mocks.repo.getBooking.mockResolvedValueOnce(null);
     const res = await bookingGET(
       jsonReq("http://test/api/hotel-bookings/missing", "GET"),
-      { params: Promise.resolve({ id: "missing" }) }
+      { params: Promise.resolve({ id: "missing" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -616,7 +614,7 @@ describe("/api/hotel-bookings/[id]", () => {
       jsonReq("http://test/api/hotel-bookings/x", "PATCH", {
         bookingNumber: "BSM-002",
       }),
-      ctx
+      ctx,
     );
     expect(batchImpl).not.toHaveBeenCalled();
     expect(mocks.audit.recordTransition).not.toHaveBeenCalled();
@@ -630,13 +628,13 @@ describe("/api/hotel-bookings/[id]", () => {
       jsonReq("http://test/api/hotel-bookings/x", "PATCH", {
         status: "checked_in",
       }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
     expect(batchImpl).toHaveBeenCalledTimes(1);
     expect(mocks.repo.buildUpdateBooking).toHaveBeenCalledWith(
       FIXTURE_BOOKING_ID,
-      { status: "checked_in" }
+      { status: "checked_in" },
     );
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
@@ -644,7 +642,7 @@ describe("/api/hotel-bookings/[id]", () => {
         actorId: "u1",
         entity: { type: "hotel_booking", id: FIXTURE_BOOKING_ID },
         diff: { field: "status", from: "booked", to: "checked_in" },
-      }
+      },
     );
     expect(mocks.repo.updateBooking).not.toHaveBeenCalled();
   });
@@ -654,13 +652,13 @@ describe("/api/hotel-bookings/[id]", () => {
       jsonReq("http://test/api/hotel-bookings/x", "PATCH", {
         status: "no_show",
       }),
-      ctx
+      ctx,
     );
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
         diff: { field: "status", from: "booked", to: "no_show" },
-      })
+      }),
     );
   });
 
@@ -671,8 +669,8 @@ describe("/api/hotel-bookings/[id]", () => {
         jsonReq("http://test/api/hotel-bookings/x", "PATCH", {
           status: "checked_in",
         }),
-        ctx
-      )
+        ctx,
+      ),
     ).rejects.toThrow("constraint violation");
   });
 
@@ -682,7 +680,7 @@ describe("/api/hotel-bookings/[id]", () => {
         checkin: "2026-08-16",
         checkout: "2026-08-13",
       }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -690,7 +688,7 @@ describe("/api/hotel-bookings/[id]", () => {
   it("PATCH 400 empty body", async () => {
     const res = await bookingPATCH(
       jsonReq("http://test/api/hotel-bookings/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -698,7 +696,7 @@ describe("/api/hotel-bookings/[id]", () => {
   it("DELETE removes", async () => {
     const res = await bookingDELETE(
       jsonReq("http://test/api/hotel-bookings/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -707,7 +705,7 @@ describe("/api/hotel-bookings/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await bookingDELETE(
       jsonReq("http://test/api/hotel-bookings/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(401);
   });

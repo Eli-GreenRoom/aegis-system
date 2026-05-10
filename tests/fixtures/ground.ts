@@ -7,6 +7,7 @@ export const FIXTURE_PICKUP_ID = "99999999-9999-4999-8999-999999999999";
 
 export const fixtureVendor: Vendor = {
   id: FIXTURE_VENDOR_ID,
+  workspaceId: null,
   name: "Byblos Taxi",
   service: "Taxi",
   contactName: null,
@@ -18,6 +19,7 @@ export const fixtureVendor: Vendor = {
 
 export const fixturePickup: Pickup = {
   id: FIXTURE_PICKUP_ID,
+  workspaceId: null,
   editionId: FIXTURE_EDITION_ID,
   personKind: "artist",
   personId: FIXTURE_ARTIST_ID,

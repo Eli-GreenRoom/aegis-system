@@ -1,14 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { fixtureFlight, FIXTURE_FLIGHT_ID } from "../fixtures/flight";
-import {
-  fixturePickup,
-  FIXTURE_PICKUP_ID,
-} from "../fixtures/ground";
-import {
-  fixtureBooking,
-  FIXTURE_BOOKING_ID,
-} from "../fixtures/hotels";
+import { fixturePickup, FIXTURE_PICKUP_ID } from "../fixtures/ground";
+import { fixtureBooking, FIXTURE_BOOKING_ID } from "../fixtures/hotels";
+import { fakeOwnerSession } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -60,20 +55,12 @@ const mocks = {
   audit: vi.mocked(audit),
 };
 
-const fakeSession = {
-  user: { id: "u1", email: "booking@aegisfestival.com", name: "Eli" },
-  ownerId: "u1",
-  isOwner: true,
-  role: "owner" as const,
-  permissions: { flights: true, ground: true, hotels: true },
-};
-
 function postReq(url: string): NextRequest {
   return new NextRequest(url, { method: "POST" });
 }
 
 beforeEach(() => {
-  mocks.session.getAppSession.mockResolvedValue(fakeSession);
+  mocks.session.getAppSession.mockResolvedValue(fakeOwnerSession);
   mocks.session.requirePermission.mockReturnValue(null);
   batchImpl.mockReset();
   batchImpl.mockResolvedValue([[fixtureFlight], [{}]]);
@@ -94,13 +81,13 @@ describe("POST /api/flights/[id]/advance", () => {
     expect(res.status).toBe(200);
     expect(mocks.flights.buildUpdateFlight).toHaveBeenCalledWith(
       FIXTURE_FLIGHT_ID,
-      { status: "boarded" }
+      { status: "boarded" },
     );
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
         diff: { field: "status", from: "scheduled", to: "boarded" },
-      })
+      }),
     );
   });
 
@@ -175,7 +162,7 @@ describe("POST /api/pickups/[id]/advance", () => {
     const call = mocks.ground.buildUpdatePickup.mock.calls.at(-1);
     expect(call?.[1]).toMatchObject({ status: "dispatched" });
     expect((call?.[1] as { dispatchedAt?: Date }).dispatchedAt).toBeInstanceOf(
-      Date
+      Date,
     );
   });
 
@@ -190,7 +177,7 @@ describe("POST /api/pickups/[id]/advance", () => {
     const call = mocks.ground.buildUpdatePickup.mock.calls.at(-1);
     expect(call?.[1]).toMatchObject({ status: "in_transit" });
     expect((call?.[1] as { inTransitAt?: Date }).inTransitAt).toBeInstanceOf(
-      Date
+      Date,
     );
   });
 
@@ -204,7 +191,7 @@ describe("POST /api/pickups/[id]/advance", () => {
     const call = mocks.ground.buildUpdatePickup.mock.calls.at(-1);
     expect(call?.[1]).toMatchObject({ status: "completed" });
     expect((call?.[1] as { completedAt?: Date }).completedAt).toBeInstanceOf(
-      Date
+      Date,
     );
   });
 
@@ -240,7 +227,7 @@ describe("POST /api/hotel-bookings/[id]/advance", () => {
     const call = mocks.hotels.buildUpdateBooking.mock.calls.at(-1);
     expect(call?.[1]).toMatchObject({ status: "checked_in" });
     expect((call?.[1] as { checkedInAt?: Date }).checkedInAt).toBeInstanceOf(
-      Date
+      Date,
     );
   });
 
@@ -255,7 +242,7 @@ describe("POST /api/hotel-bookings/[id]/advance", () => {
     const call = mocks.hotels.buildUpdateBooking.mock.calls.at(-1);
     expect(call?.[1]).toMatchObject({ status: "checked_out" });
     expect((call?.[1] as { checkedOutAt?: Date }).checkedOutAt).toBeInstanceOf(
-      Date
+      Date,
     );
   });
 

@@ -5,6 +5,7 @@ import {
   FIXTURE_EDITION_ID,
   fixtureCrew,
 } from "../fixtures/crew";
+import { fakeOwnerSession } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -38,7 +39,10 @@ vi.mock("@/lib/crew/repo", () => ({
     ...fixtureCrew,
     archivedAt: new Date(),
   })),
-  unarchiveCrewMember: vi.fn(async () => ({ ...fixtureCrew, archivedAt: null })),
+  unarchiveCrewMember: vi.fn(async () => ({
+    ...fixtureCrew,
+    archivedAt: null,
+  })),
 }));
 
 import * as session from "@/lib/session";
@@ -53,14 +57,6 @@ import {
 const mocks = {
   session: vi.mocked(session),
   repo: vi.mocked(repo),
-};
-
-const fakeSession = {
-  user: { id: "u1", email: "booking@aegisfestival.com", name: "Eli" },
-  ownerId: "u1",
-  isOwner: true,
-  role: "owner" as const,
-  permissions: { crew: true },
 };
 
 const validInput = {
@@ -79,7 +75,7 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
 }
 
 beforeEach(() => {
-  mocks.session.getAppSession.mockResolvedValue(fakeSession);
+  mocks.session.getAppSession.mockResolvedValue(fakeOwnerSession);
   mocks.session.requirePermission.mockReturnValue(null);
 });
 
@@ -104,8 +100,8 @@ describe("GET /api/crew", () => {
     await listGET(
       jsonReq(
         "http://test/api/crew?search=mira&role=Tour%20manager&archived=archived",
-        "GET"
-      )
+        "GET",
+      ),
     );
     expect(mocks.repo.listCrew).toHaveBeenCalledWith({
       editionId: FIXTURE_EDITION_ID,
@@ -123,7 +119,7 @@ describe("GET /api/crew", () => {
 
   it("rejects when permission is denied", async () => {
     mocks.session.requirePermission.mockReturnValueOnce(
-      Response.json({ error: "Forbidden" }, { status: 403 })
+      Response.json({ error: "Forbidden" }, { status: 403 }),
     );
     const res = await listGET(jsonReq("http://test/api/crew", "GET"));
     expect(res.status).toBe(403);
@@ -133,35 +129,35 @@ describe("GET /api/crew", () => {
 describe("POST /api/crew", () => {
   it("creates with valid input", async () => {
     const res = await createPOST(
-      jsonReq("http://test/api/crew", "POST", validInput)
+      jsonReq("http://test/api/crew", "POST", validInput),
     );
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.crew.name).toBe("Mira");
     expect(mocks.repo.createCrewMember).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
-      expect.objectContaining({ name: "Mira", role: "Tour manager" })
+      expect.objectContaining({ name: "Mira", role: "Tour manager" }),
     );
   });
 
   it("rejects unauthenticated", async () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await createPOST(
-      jsonReq("http://test/api/crew", "POST", validInput)
+      jsonReq("http://test/api/crew", "POST", validInput),
     );
     expect(res.status).toBe(401);
   });
 
   it("rejects empty name", async () => {
     const res = await createPOST(
-      jsonReq("http://test/api/crew", "POST", { ...validInput, name: "" })
+      jsonReq("http://test/api/crew", "POST", { ...validInput, name: "" }),
     );
     expect(res.status).toBe(400);
   });
 
   it("rejects empty role", async () => {
     const res = await createPOST(
-      jsonReq("http://test/api/crew", "POST", { ...validInput, role: "" })
+      jsonReq("http://test/api/crew", "POST", { ...validInput, role: "" }),
     );
     expect(res.status).toBe(400);
   });
@@ -184,7 +180,7 @@ describe("POST /api/crew", () => {
         visaStatus: "approved",
         pressKitUrl: "https://drive.google.com/crew",
         passportFileUrl: "https://example.com/p.pdf",
-      })
+      }),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createCrewMember).toHaveBeenCalledWith(
@@ -194,7 +190,7 @@ describe("POST /api/crew", () => {
         visaStatus: "approved",
         pressKitUrl: "https://drive.google.com/crew",
         passportFileUrl: "https://example.com/p.pdf",
-      })
+      }),
     );
   });
 
@@ -203,7 +199,7 @@ describe("POST /api/crew", () => {
       jsonReq("http://test/api/crew", "POST", {
         ...validInput,
         passportFileUrl: "not a url",
-      })
+      }),
     );
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -215,7 +211,7 @@ describe("POST /api/crew", () => {
       jsonReq("http://test/api/crew", "POST", {
         ...validInput,
         visaStatus: "maybe",
-      })
+      }),
     );
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -229,7 +225,7 @@ describe("GET /api/crew/[id]", () => {
   it("returns the crew member", async () => {
     const res = await oneGET(
       jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "GET"),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -238,10 +234,9 @@ describe("GET /api/crew/[id]", () => {
 
   it("returns 404 when not found", async () => {
     mocks.repo.getCrewMember.mockResolvedValueOnce(null);
-    const res = await oneGET(
-      jsonReq("http://test/api/crew/missing", "GET"),
-      { params: Promise.resolve({ id: "missing" }) }
-    );
+    const res = await oneGET(jsonReq("http://test/api/crew/missing", "GET"), {
+      params: Promise.resolve({ id: "missing" }),
+    });
     expect(res.status).toBe(404);
   });
 
@@ -249,7 +244,7 @@ describe("GET /api/crew/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await oneGET(
       jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "GET"),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(res.status).toBe(401);
   });
@@ -258,12 +253,10 @@ describe("GET /api/crew/[id]", () => {
 describe("PATCH /api/crew/[id]", () => {
   it("updates with valid input", async () => {
     const res = await onePATCH(
-      jsonReq(
-        `http://test/api/crew/${FIXTURE_CREW_ID}`,
-        "PATCH",
-        { name: "Sami (renamed)" }
-      ),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "PATCH", {
+        name: "Sami (renamed)",
+      }),
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(res.status).toBe(200);
     expect(mocks.repo.updateCrewMember).toHaveBeenCalledWith(FIXTURE_CREW_ID, {
@@ -275,7 +268,7 @@ describe("PATCH /api/crew/[id]", () => {
     mocks.repo.getCrewMember.mockResolvedValueOnce(null);
     const res = await onePATCH(
       jsonReq("http://test/api/crew/missing", "PATCH", { name: "X" }),
-      { params: Promise.resolve({ id: "missing" }) }
+      { params: Promise.resolve({ id: "missing" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -283,7 +276,7 @@ describe("PATCH /api/crew/[id]", () => {
   it("rejects empty body", async () => {
     const res = await onePATCH(
       jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "PATCH", {}),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(res.status).toBe(400);
     expect(mocks.repo.updateCrewMember).not.toHaveBeenCalled();
@@ -291,8 +284,10 @@ describe("PATCH /api/crew/[id]", () => {
 
   it("normalises empty string in optional field to null", async () => {
     await onePATCH(
-      jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "PATCH", { phone: "" }),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "PATCH", {
+        phone: "",
+      }),
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(mocks.repo.updateCrewMember).toHaveBeenCalledWith(FIXTURE_CREW_ID, {
       phone: null,
@@ -302,7 +297,7 @@ describe("PATCH /api/crew/[id]", () => {
   it("normalises empty array in days to null", async () => {
     await onePATCH(
       jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "PATCH", { days: [] }),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(mocks.repo.updateCrewMember).toHaveBeenCalledWith(FIXTURE_CREW_ID, {
       days: null,
@@ -312,7 +307,7 @@ describe("PATCH /api/crew/[id]", () => {
   it("rejects validation failure", async () => {
     const res = await onePATCH(
       jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "PATCH", { role: "" }),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(res.status).toBe(400);
   });
@@ -320,8 +315,10 @@ describe("PATCH /api/crew/[id]", () => {
   it("rejects unauthenticated", async () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await onePATCH(
-      jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "PATCH", { name: "X" }),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "PATCH", {
+        name: "X",
+      }),
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(res.status).toBe(401);
   });
@@ -332,7 +329,7 @@ describe("PATCH /api/crew/[id]", () => {
         nationality: "DE",
         pressKitUrl: "",
       }),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(mocks.repo.updateCrewMember).toHaveBeenCalledWith(FIXTURE_CREW_ID, {
       nationality: "DE",
@@ -345,7 +342,7 @@ describe("PATCH /api/crew/[id]", () => {
       jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "PATCH", {
         visaStatus: "pending",
       }),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(mocks.repo.updateCrewMember).toHaveBeenCalledWith(FIXTURE_CREW_ID, {
       visaStatus: "pending",
@@ -357,7 +354,7 @@ describe("PATCH /api/crew/[id]", () => {
       jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "PATCH", {
         visaStatus: "",
       }),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(mocks.repo.updateCrewMember).toHaveBeenCalledWith(FIXTURE_CREW_ID, {
       visaStatus: null,
@@ -369,7 +366,7 @@ describe("DELETE /api/crew/[id]", () => {
   it("archives by default", async () => {
     const res = await oneDELETE(
       jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "DELETE"),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(res.status).toBe(200);
     expect(mocks.repo.archiveCrewMember).toHaveBeenCalledWith(FIXTURE_CREW_ID);
@@ -379,19 +376,21 @@ describe("DELETE /api/crew/[id]", () => {
     const res = await oneDELETE(
       jsonReq(
         `http://test/api/crew/${FIXTURE_CREW_ID}?action=unarchive`,
-        "DELETE"
+        "DELETE",
       ),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(res.status).toBe(200);
-    expect(mocks.repo.unarchiveCrewMember).toHaveBeenCalledWith(FIXTURE_CREW_ID);
+    expect(mocks.repo.unarchiveCrewMember).toHaveBeenCalledWith(
+      FIXTURE_CREW_ID,
+    );
   });
 
   it("returns 404 when missing", async () => {
     mocks.repo.archiveCrewMember.mockResolvedValueOnce(null);
     const res = await oneDELETE(
       jsonReq("http://test/api/crew/missing", "DELETE"),
-      { params: Promise.resolve({ id: "missing" }) }
+      { params: Promise.resolve({ id: "missing" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -400,7 +399,7 @@ describe("DELETE /api/crew/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await oneDELETE(
       jsonReq(`http://test/api/crew/${FIXTURE_CREW_ID}`, "DELETE"),
-      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) }
+      { params: Promise.resolve({ id: FIXTURE_CREW_ID }) },
     );
     expect(res.status).toBe(401);
   });

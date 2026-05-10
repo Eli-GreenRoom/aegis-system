@@ -6,6 +6,7 @@ import {
   FIXTURE_EDITION_ID,
   fixtureContract,
 } from "../fixtures/contracts";
+import { fakeOwnerSession } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -74,14 +75,6 @@ const mocks = {
   audit: vi.mocked(audit),
 };
 
-const fakeSession = {
-  user: { id: "u1", email: "booking@aegisfestival.com", name: "Eli" },
-  ownerId: "u1",
-  isOwner: true,
-  role: "owner" as const,
-  permissions: { contracts: true },
-};
-
 function jsonReq(url: string, method: string, body?: unknown): NextRequest {
   return new NextRequest(url, {
     method,
@@ -91,7 +84,7 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
 }
 
 beforeEach(() => {
-  mocks.session.getAppSession.mockResolvedValue(fakeSession);
+  mocks.session.getAppSession.mockResolvedValue(fakeOwnerSession);
   mocks.session.requirePermission.mockReturnValue(null);
   batchImpl.mockReset();
   batchImpl.mockImplementation(async (queries: unknown[]) => {
@@ -113,8 +106,8 @@ describe("/api/contracts", () => {
     await listGET(
       jsonReq(
         `http://test/api/contracts?artistId=${FIXTURE_ARTIST_ID}&status=signed`,
-        "GET"
-      )
+        "GET",
+      ),
     );
     expect(mocks.repo.listContracts).toHaveBeenCalledWith({
       editionId: FIXTURE_EDITION_ID,
@@ -133,18 +126,18 @@ describe("/api/contracts", () => {
 
   it("POST creates with valid input + default status=draft", async () => {
     const res = await createPOST(
-      jsonReq("http://test/api/contracts", "POST", validInput)
+      jsonReq("http://test/api/contracts", "POST", validInput),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createContract).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
-      expect.objectContaining({ artistId: FIXTURE_ARTIST_ID, status: "draft" })
+      expect.objectContaining({ artistId: FIXTURE_ARTIST_ID, status: "draft" }),
     );
   });
 
   it("POST 400 missing artistId", async () => {
     const res = await createPOST(
-      jsonReq("http://test/api/contracts", "POST", {})
+      jsonReq("http://test/api/contracts", "POST", {}),
     );
     expect(res.status).toBe(400);
   });
@@ -154,7 +147,7 @@ describe("/api/contracts", () => {
       jsonReq("http://test/api/contracts", "POST", {
         ...validInput,
         status: "almost",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -164,7 +157,7 @@ describe("/api/contracts", () => {
       jsonReq("http://test/api/contracts", "POST", {
         ...validInput,
         fileUrl: "not a url",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -174,7 +167,10 @@ describe("/api/contracts/[id]", () => {
   const ctx = { params: Promise.resolve({ id: FIXTURE_CONTRACT_ID }) };
 
   it("GET returns the contract", async () => {
-    const res = await oneGET(jsonReq("http://test/api/contracts/x", "GET"), ctx);
+    const res = await oneGET(
+      jsonReq("http://test/api/contracts/x", "GET"),
+      ctx,
+    );
     expect(res.status).toBe(200);
   });
 
@@ -182,7 +178,7 @@ describe("/api/contracts/[id]", () => {
     mocks.repo.getContract.mockResolvedValueOnce(null);
     const res = await oneGET(
       jsonReq("http://test/api/contracts/missing", "GET"),
-      { params: Promise.resolve({ id: "missing" }) }
+      { params: Promise.resolve({ id: "missing" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -190,25 +186,28 @@ describe("/api/contracts/[id]", () => {
   it("PATCH non-status field uses updateContract directly", async () => {
     await onePATCH(
       jsonReq("http://test/api/contracts/x", "PATCH", { notes: "Negotiating" }),
-      ctx
+      ctx,
     );
     expect(batchImpl).not.toHaveBeenCalled();
     expect(mocks.audit.recordTransition).not.toHaveBeenCalled();
-    expect(mocks.repo.updateContract).toHaveBeenCalledWith(FIXTURE_CONTRACT_ID, {
-      notes: "Negotiating",
-    });
+    expect(mocks.repo.updateContract).toHaveBeenCalledWith(
+      FIXTURE_CONTRACT_ID,
+      {
+        notes: "Negotiating",
+      },
+    );
   });
 
   it("PATCH status to sent records audit and stamps sentAt", async () => {
     const res = await onePATCH(
       jsonReq("http://test/api/contracts/x", "PATCH", { status: "sent" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
     expect(batchImpl).toHaveBeenCalledTimes(1);
     expect(mocks.repo.buildUpdateContract).toHaveBeenCalledWith(
       FIXTURE_CONTRACT_ID,
-      expect.objectContaining({ status: "sent", sentAt: expect.any(Date) })
+      expect.objectContaining({ status: "sent", sentAt: expect.any(Date) }),
     );
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
@@ -216,7 +215,7 @@ describe("/api/contracts/[id]", () => {
         actorId: "u1",
         entity: { type: "contract", id: FIXTURE_CONTRACT_ID },
         diff: { field: "status", from: "draft", to: "sent" },
-      }
+      },
     );
   });
 
@@ -228,14 +227,14 @@ describe("/api/contracts/[id]", () => {
     });
     await onePATCH(
       jsonReq("http://test/api/contracts/x", "PATCH", { status: "signed" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.buildUpdateContract).toHaveBeenCalledWith(
       FIXTURE_CONTRACT_ID,
       expect.objectContaining({
         status: "signed",
         signedAt: expect.any(Date),
-      })
+      }),
     );
   });
 
@@ -246,7 +245,7 @@ describe("/api/contracts/[id]", () => {
         status: "sent",
         sentAt: explicit,
       }),
-      ctx
+      ctx,
     );
     const call = mocks.repo.buildUpdateContract.mock.calls.at(-1);
     const passed = call?.[1] as { sentAt: Date };
@@ -260,7 +259,7 @@ describe("/api/contracts/[id]", () => {
     });
     await onePATCH(
       jsonReq("http://test/api/contracts/x", "PATCH", { status: "sent" }),
-      ctx
+      ctx,
     );
     const call = mocks.repo.buildUpdateContract.mock.calls.at(-1);
     const passed = call?.[1] as { status: string; sentAt?: Date };
@@ -273,15 +272,15 @@ describe("/api/contracts/[id]", () => {
     await expect(
       onePATCH(
         jsonReq("http://test/api/contracts/x", "PATCH", { status: "sent" }),
-        ctx
-      )
+        ctx,
+      ),
     ).rejects.toThrow("constraint violation");
   });
 
   it("PATCH 400 empty body", async () => {
     const res = await onePATCH(
       jsonReq("http://test/api/contracts/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -289,7 +288,7 @@ describe("/api/contracts/[id]", () => {
   it("DELETE removes", async () => {
     const res = await oneDELETE(
       jsonReq("http://test/api/contracts/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -298,7 +297,7 @@ describe("/api/contracts/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await oneDELETE(
       jsonReq("http://test/api/contracts/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(401);
   });

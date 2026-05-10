@@ -1,8 +1,8 @@
 /**
- * GreenRoom Stages - Drizzle schema (initial)
+ * GreenRoom Stages - Drizzle schema
  *
- * Phase 1 deliverable: enough tables to run the dashboard shell + seed an
- * owner. Phase 2+ adds the rest from docs/DATA-MODEL.md.
+ * Phase 0: Added workspaces table, rewrote teamMembers (4-role model +
+ * festivalScope), added workspaceId to all tenant tables.
  *
  * Source-of-truth spec: docs/DATA-MODEL.md
  */
@@ -18,13 +18,15 @@ import {
   date,
   boolean,
   jsonb,
+  unique,
 } from "drizzle-orm/pg-core";
 
 // -- Enums -----------------------------------------------------------------
 
 export const teamRoleEnum = pgEnum("team_role", [
   "owner",
-  "coordinator",
+  "admin",
+  "member",
   "viewer",
 ]);
 
@@ -121,6 +123,18 @@ export const guestCategoryEnum = pgEnum("guest_category", [
   "general_admission",
 ]);
 
+// -- Workspaces ------------------------------------------------------------
+
+export const workspaces = pgTable("workspaces", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  ownerUserId: text("owner_user_id").notNull(),
+  logoUrl: text("logo_url"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  archivedAt: timestamp("archived_at"),
+});
+
 // -- Identity --------------------------------------------------------------
 
 /**
@@ -129,21 +143,29 @@ export const guestCategoryEnum = pgEnum("guest_category", [
  * We don't redeclare them here.
  */
 
-export const teamMembers = pgTable("team_members", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  ownerId: text("owner_id").notNull(),
-  userId: text("user_id"),
-  email: text("email").notNull(),
-  name: text("name"),
-  role: teamRoleEnum("role").notNull(),
-  status: teamMemberStatusEnum("status").notNull().default("pending"),
-  permissions: jsonb("permissions").notNull().default({}),
-  inviteToken: text("invite_token").unique(),
-  invitedAt: timestamp("invited_at").notNull().defaultNow(),
-  acceptedAt: timestamp("accepted_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const teamMembers = pgTable(
+  "team_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    userId: text("user_id"),
+    email: text("email").notNull(),
+    name: text("name"),
+    role: teamRoleEnum("role").notNull(),
+    status: teamMemberStatusEnum("status").notNull().default("pending"),
+    permissions: jsonb("permissions").notNull().default({}),
+    // null = all festivals in workspace; string[] of festival UUIDs = scoped.
+    festivalScope: jsonb("festival_scope"),
+    inviteToken: text("invite_token").unique(),
+    invitedAt: timestamp("invited_at").notNull().defaultNow(),
+    acceptedAt: timestamp("accepted_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [unique().on(t.workspaceId, t.email)],
+);
 
 // -- Festival editions / lineup --------------------------------------------
 
@@ -184,6 +206,7 @@ export const slots = pgTable("slots", {
 
 export const artists = pgTable("artists", {
   id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id").references(() => workspaces.id),
   editionId: uuid("edition_id")
     .notNull()
     .references(() => festivalEditions.id, { onDelete: "cascade" }),
@@ -201,13 +224,7 @@ export const artists = pgTable("artists", {
   local: boolean("local").notNull().default(false),
   comments: text("comments"),
   visaStatus: visaStatusEnum("visa_status"),
-  // Optional. External URL (Dropbox / Drive / artist site) OR a Vercel Blob
-  // proxy URL after upload. Treated as an opaque URL by the app.
   pressKitUrl: text("press_kit_url"),
-  // Optional. Private Vercel Blob proxy URL - uploads go through the
-  // documents API with `entityType='artist'` + `tags=['passport']` so the
-  // file has an audit trail; this column denormalises the latest URL for
-  // quick display on the artist record.
   passportFileUrl: text("passport_file_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   archivedAt: timestamp("archived_at"),
@@ -216,11 +233,10 @@ export const artists = pgTable("artists", {
 /**
  * Crew = travelling production (tour managers, media crew - photographers,
  * videographers, social, FOH engineers). NOT stage hands / volunteers.
- * They get hotels + flights + ground like artists do, hence the same
- * `editionId` scoping and `archivedAt` soft-delete pattern.
  */
 export const crew = pgTable("crew", {
   id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id").references(() => workspaces.id),
   editionId: uuid("edition_id")
     .notNull()
     .references(() => festivalEditions.id, { onDelete: "cascade" }),
@@ -233,8 +249,6 @@ export const crew = pgTable("crew", {
   comments: text("comments"),
   visaStatus: visaStatusEnum("visa_status"),
   pressKitUrl: text("press_kit_url"),
-  // Mirrors artists.passportFileUrl - private Vercel Blob proxy URL via the
-  // documents API (entityType='crew', tags=['passport']).
   passportFileUrl: text("passport_file_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   archivedAt: timestamp("archived_at"),
@@ -261,6 +275,7 @@ export const sets = pgTable("sets", {
 
 export const flights = pgTable("flights", {
   id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id").references(() => workspaces.id),
   editionId: uuid("edition_id")
     .notNull()
     .references(() => festivalEditions.id),
@@ -283,8 +298,10 @@ export const flights = pgTable("flights", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Workspace-scoped: vendors are reused across festivals within a workspace.
 export const vendors = pgTable("vendors", {
   id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id").references(() => workspaces.id),
   name: text("name").notNull(),
   service: text("service").notNull(),
   contactName: text("contact_name"),
@@ -296,6 +313,7 @@ export const vendors = pgTable("vendors", {
 
 export const groundTransportPickups = pgTable("ground_transport_pickups", {
   id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id").references(() => workspaces.id),
   editionId: uuid("edition_id")
     .notNull()
     .references(() => festivalEditions.id),
@@ -314,9 +332,6 @@ export const groundTransportPickups = pgTable("ground_transport_pickups", {
   costAmountCents: integer("cost_amount_cents"),
   costCurrency: varchar("cost_currency", { length: 3 }),
   status: pickupStatusEnum("status").notNull().default("scheduled"),
-  // Click time on each forward transition (festival-day one-tap UX). Null
-  // until the pickup advances past `scheduled`. Server captures now() - never
-  // trust user-typed values from a phone in a field.
   dispatchedAt: timestamp("dispatched_at", { withTimezone: true }),
   inTransitAt: timestamp("in_transit_at", { withTimezone: true }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
@@ -326,8 +341,10 @@ export const groundTransportPickups = pgTable("ground_transport_pickups", {
 
 // -- Hotels ----------------------------------------------------------------
 
+// Workspace-scoped: hotels are reused across festivals within a workspace.
 export const hotels = pgTable("hotels", {
   id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id").references(() => workspaces.id),
   name: text("name").notNull(),
   location: text("location"),
   address: text("address"),
@@ -345,8 +362,6 @@ export const hotelRoomBlocks = pgTable("hotel_room_blocks", {
   hotelId: uuid("hotel_id")
     .notNull()
     .references(() => hotels.id),
-  // Operator-friendly name like "Artists - Deluxe" or "Crew - Standard" so
-  // separate blocks for crew are distinguishable in the UI.
   label: text("label"),
   roomType: text("room_type").notNull(),
   nights: integer("nights"),
@@ -358,6 +373,8 @@ export const hotelRoomBlocks = pgTable("hotel_room_blocks", {
 
 export const hotelBookings = pgTable("hotel_bookings", {
   id: uuid("id").primaryKey().defaultRandom(),
+  // Direct workspace scope: no editionId on this table.
+  workspaceId: uuid("workspace_id").references(() => workspaces.id),
   roomBlockId: uuid("room_block_id").references(() => hotelRoomBlocks.id),
   personKind: personKindEnum("person_kind").notNull(),
   personId: uuid("person_id").notNull(),
@@ -371,8 +388,6 @@ export const hotelBookings = pgTable("hotel_bookings", {
   creditsAmountCents: integer("credits_amount_cents"),
   creditsCurrency: varchar("credits_currency", { length: 3 }),
   status: hotelBookingStatusEnum("status").notNull().default("booked"),
-  // Click time on the festival-day transitions. Null until the guest checks
-  // in / out; same trust-the-server-clock pattern as pickup timestamps.
   checkedInAt: timestamp("checked_in_at", { withTimezone: true }),
   checkedOutAt: timestamp("checked_out_at", { withTimezone: true }),
   confirmationUrl: text("confirmation_url"),
@@ -384,6 +399,7 @@ export const hotelBookings = pgTable("hotel_bookings", {
 
 export const invoices = pgTable("invoices", {
   id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id").references(() => workspaces.id),
   editionId: uuid("edition_id")
     .notNull()
     .references(() => festivalEditions.id),
@@ -402,6 +418,7 @@ export const invoices = pgTable("invoices", {
 
 export const payments = pgTable("payments", {
   id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id").references(() => workspaces.id),
   editionId: uuid("edition_id")
     .notNull()
     .references(() => festivalEditions.id),
@@ -454,7 +471,8 @@ export const riders = pgTable("riders", {
 
 export const documents = pgTable("documents", {
   id: uuid("id").primaryKey().defaultRandom(),
-  ownerId: text("owner_id").notNull(),
+  // Phase 0: renamed from ownerId (text user-id) to workspaceId (uuid FK).
+  workspaceId: uuid("workspace_id").references(() => workspaces.id),
   entityType: text("entity_type").notNull(),
   entityId: uuid("entity_id"),
   filename: text("filename").notNull(),
@@ -470,6 +488,7 @@ export const documents = pgTable("documents", {
 
 export const guestlistEntries = pgTable("guestlist_entries", {
   id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id").references(() => workspaces.id),
   editionId: uuid("edition_id")
     .notNull()
     .references(() => festivalEditions.id),
@@ -489,6 +508,7 @@ export const guestlistEntries = pgTable("guestlist_entries", {
 
 export const auditEvents = pgTable("audit_events", {
   id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id").references(() => workspaces.id),
   actorId: text("actor_id").notNull(),
   action: text("action").notNull(),
   entityType: text("entity_type").notNull(),

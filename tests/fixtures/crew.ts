@@ -5,6 +5,7 @@ export const FIXTURE_CREW_ID = "33333333-3333-3333-3333-333333333333";
 
 export const fixtureCrew: CrewMember = {
   id: FIXTURE_CREW_ID,
+  workspaceId: null,
   editionId: FIXTURE_EDITION_ID,
   name: "Mira",
   role: "Tour manager",

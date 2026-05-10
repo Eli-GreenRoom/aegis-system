@@ -8,6 +8,7 @@ export const FIXTURE_BOOKING_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 
 export const fixtureHotel: Hotel = {
   id: FIXTURE_HOTEL_ID,
+  workspaceId: null,
   name: "Byblos Sur Mer",
   location: "Byblos",
   address: "Old Souks, Byblos",
@@ -32,6 +33,7 @@ export const fixtureRoomBlock: RoomBlock = {
 
 export const fixtureBooking: Booking = {
   id: FIXTURE_BOOKING_ID,
+  workspaceId: null,
   roomBlockId: FIXTURE_ROOM_BLOCK_ID,
   personKind: "artist",
   personId: FIXTURE_ARTIST_ID,

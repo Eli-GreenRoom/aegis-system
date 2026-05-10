@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import { fakeOwnerSession } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -26,14 +27,6 @@ const mocks = {
   flight: vi.mocked(flightParser),
 };
 
-const fakeSession = {
-  user: { id: "u1", email: "booking@aegisfestival.com", name: "Eli" },
-  ownerId: "u1",
-  isOwner: true,
-  role: "owner" as const,
-  permissions: { payments: true, flights: true },
-};
-
 function jsonReq(url: string, body: unknown): NextRequest {
   return new NextRequest(url, {
     method: "POST",
@@ -43,7 +36,7 @@ function jsonReq(url: string, body: unknown): NextRequest {
 }
 
 beforeEach(() => {
-  mocks.session.getAppSession.mockResolvedValue(fakeSession);
+  mocks.session.getAppSession.mockResolvedValue(fakeOwnerSession);
   mocks.session.requirePermission.mockReturnValue(null);
 });
 
@@ -64,7 +57,7 @@ describe("POST /api/ai/parse-invoice", () => {
     const res = await parseInvoicePOST(
       jsonReq("http://test/api/ai/parse-invoice", {
         text: "a long enough invoice text body to pass the guard",
-      })
+      }),
     );
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -73,7 +66,7 @@ describe("POST /api/ai/parse-invoice", () => {
 
   it("400 when text too short", async () => {
     const res = await parseInvoicePOST(
-      jsonReq("http://test/api/ai/parse-invoice", { text: "short" })
+      jsonReq("http://test/api/ai/parse-invoice", { text: "short" }),
     );
     expect(res.status).toBe(400);
     expect(mocks.invoice.parseInvoiceText).not.toHaveBeenCalled();
@@ -81,7 +74,7 @@ describe("POST /api/ai/parse-invoice", () => {
 
   it("400 missing text", async () => {
     const res = await parseInvoicePOST(
-      jsonReq("http://test/api/ai/parse-invoice", {})
+      jsonReq("http://test/api/ai/parse-invoice", {}),
     );
     expect(res.status).toBe(400);
   });
@@ -98,12 +91,12 @@ describe("POST /api/ai/parse-invoice", () => {
 
   it("502 when parser throws", async () => {
     mocks.invoice.parseInvoiceText.mockRejectedValueOnce(
-      new Error("Anthropic 500")
+      new Error("Anthropic 500"),
     );
     const res = await parseInvoicePOST(
       jsonReq("http://test/api/ai/parse-invoice", {
         text: "long enough text to pass the guard",
-      })
+      }),
     );
     expect(res.status).toBe(502);
     const body = await res.json();
@@ -115,19 +108,19 @@ describe("POST /api/ai/parse-invoice", () => {
     const res = await parseInvoicePOST(
       jsonReq("http://test/api/ai/parse-invoice", {
         text: "long enough text to pass the guard",
-      })
+      }),
     );
     expect(res.status).toBe(401);
   });
 
   it("403 when payments permission denied", async () => {
     mocks.session.requirePermission.mockReturnValueOnce(
-      Response.json({ error: "Forbidden" }, { status: 403 })
+      Response.json({ error: "Forbidden" }, { status: 403 }),
     );
     const res = await parseInvoicePOST(
       jsonReq("http://test/api/ai/parse-invoice", {
         text: "long enough text to pass the guard",
-      })
+      }),
     );
     expect(res.status).toBe(403);
   });
@@ -151,7 +144,7 @@ describe("POST /api/ai/parse-flight", () => {
     const res = await parseFlightPOST(
       jsonReq("http://test/api/ai/parse-flight", {
         text: "a long enough flight confirmation body to pass the guard",
-      })
+      }),
     );
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -160,19 +153,19 @@ describe("POST /api/ai/parse-flight", () => {
 
   it("400 short text", async () => {
     const res = await parseFlightPOST(
-      jsonReq("http://test/api/ai/parse-flight", { text: "x" })
+      jsonReq("http://test/api/ai/parse-flight", { text: "x" }),
     );
     expect(res.status).toBe(400);
   });
 
   it("502 when parser throws", async () => {
     mocks.flight.parseFlightText.mockRejectedValueOnce(
-      new Error("model output failed validation: ...")
+      new Error("model output failed validation: ..."),
     );
     const res = await parseFlightPOST(
       jsonReq("http://test/api/ai/parse-flight", {
         text: "long enough text to pass the guard",
-      })
+      }),
     );
     expect(res.status).toBe(502);
   });
@@ -182,19 +175,19 @@ describe("POST /api/ai/parse-flight", () => {
     const res = await parseFlightPOST(
       jsonReq("http://test/api/ai/parse-flight", {
         text: "long enough text to pass the guard",
-      })
+      }),
     );
     expect(res.status).toBe(401);
   });
 
   it("403 when flights permission denied", async () => {
     mocks.session.requirePermission.mockReturnValueOnce(
-      Response.json({ error: "Forbidden" }, { status: 403 })
+      Response.json({ error: "Forbidden" }, { status: 403 }),
     );
     const res = await parseFlightPOST(
       jsonReq("http://test/api/ai/parse-flight", {
         text: "long enough text to pass the guard",
-      })
+      }),
     );
     expect(res.status).toBe(403);
   });

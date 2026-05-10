@@ -6,6 +6,7 @@ import {
   FIXTURE_GUEST_ID,
   fixtureGuest,
 } from "../fixtures/guestlist";
+import { fakeOwnerSession } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -60,14 +61,6 @@ const mocks = {
   repo: vi.mocked(repo),
 };
 
-const fakeSession = {
-  user: { id: "u1", email: "booking@aegisfestival.com", name: "Eli" },
-  ownerId: "u1",
-  isOwner: true,
-  role: "owner" as const,
-  permissions: { guestlist: true },
-};
-
 function jsonReq(url: string, method: string, body?: unknown): NextRequest {
   return new NextRequest(url, {
     method,
@@ -77,7 +70,7 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
 }
 
 beforeEach(() => {
-  mocks.session.getAppSession.mockResolvedValue(fakeSession);
+  mocks.session.getAppSession.mockResolvedValue(fakeOwnerSession);
   mocks.session.requirePermission.mockReturnValue(null);
 });
 
@@ -93,8 +86,8 @@ describe("/api/guestlist", () => {
     await listGET(
       jsonReq(
         `http://test/api/guestlist?search=yuki&category=dj_guest&hostArtistId=${FIXTURE_ARTIST_ID}&day=saturday&inviteSent=true&checkedIn=false`,
-        "GET"
-      )
+        "GET",
+      ),
     );
     expect(mocks.repo.listGuestlist).toHaveBeenCalledWith({
       editionId: FIXTURE_EDITION_ID,
@@ -109,10 +102,10 @@ describe("/api/guestlist", () => {
 
   it("GET ignores invalid category", async () => {
     await listGET(
-      jsonReq("http://test/api/guestlist?category=teleported", "GET")
+      jsonReq("http://test/api/guestlist?category=teleported", "GET"),
     );
     expect(mocks.repo.listGuestlist).toHaveBeenCalledWith(
-      expect.objectContaining({ category: undefined })
+      expect.objectContaining({ category: undefined }),
     );
   });
 
@@ -130,7 +123,7 @@ describe("/api/guestlist", () => {
 
   it("POST creates with valid input", async () => {
     const res = await createPOST(
-      jsonReq("http://test/api/guestlist", "POST", validInput)
+      jsonReq("http://test/api/guestlist", "POST", validInput),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createGuestlistEntry).toHaveBeenCalledWith(
@@ -141,13 +134,13 @@ describe("/api/guestlist", () => {
         day: "saturday",
         inviteSent: false,
         checkedIn: false,
-      })
+      }),
     );
   });
 
   it("POST 400 missing category", async () => {
     const res = await createPOST(
-      jsonReq("http://test/api/guestlist", "POST", { name: "Yuki" })
+      jsonReq("http://test/api/guestlist", "POST", { name: "Yuki" }),
     );
     expect(res.status).toBe(400);
   });
@@ -157,7 +150,7 @@ describe("/api/guestlist", () => {
       jsonReq("http://test/api/guestlist", "POST", {
         ...validInput,
         category: "vip",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -167,7 +160,7 @@ describe("/api/guestlist", () => {
       jsonReq("http://test/api/guestlist", "POST", {
         ...validInput,
         day: "monday",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -177,7 +170,7 @@ describe("/api/guestlist", () => {
       jsonReq("http://test/api/guestlist", "POST", {
         ...validInput,
         email: "not-email",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -187,11 +180,11 @@ describe("/api/guestlist", () => {
       jsonReq("http://test/api/guestlist", "POST", {
         ...validInput,
         hostArtistId: "",
-      })
+      }),
     );
     expect(mocks.repo.createGuestlistEntry).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
-      expect.objectContaining({ hostArtistId: null })
+      expect.objectContaining({ hostArtistId: null }),
     );
   });
 });
@@ -202,7 +195,7 @@ describe("/api/guestlist/[id]", () => {
   it("GET returns the entry", async () => {
     const res = await oneGET(
       jsonReq("http://test/api/guestlist/x", "GET"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -210,40 +203,40 @@ describe("/api/guestlist/[id]", () => {
   it("PATCH inviteSent flag only", async () => {
     await onePATCH(
       jsonReq("http://test/api/guestlist/x", "PATCH", { inviteSent: true }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateGuestlistEntry).toHaveBeenCalledWith(
       FIXTURE_GUEST_ID,
-      { inviteSent: true }
+      { inviteSent: true },
     );
   });
 
   it("PATCH checkedIn flag only", async () => {
     await onePATCH(
       jsonReq("http://test/api/guestlist/x", "PATCH", { checkedIn: true }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateGuestlistEntry).toHaveBeenCalledWith(
       FIXTURE_GUEST_ID,
-      { checkedIn: true }
+      { checkedIn: true },
     );
   });
 
   it("PATCH normalises empty hostArtistId to null", async () => {
     await onePATCH(
       jsonReq("http://test/api/guestlist/x", "PATCH", { hostArtistId: "" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateGuestlistEntry).toHaveBeenCalledWith(
       FIXTURE_GUEST_ID,
-      { hostArtistId: null }
+      { hostArtistId: null },
     );
   });
 
   it("PATCH 400 empty body", async () => {
     const res = await onePATCH(
       jsonReq("http://test/api/guestlist/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -251,7 +244,7 @@ describe("/api/guestlist/[id]", () => {
   it("DELETE removes", async () => {
     const res = await oneDELETE(
       jsonReq("http://test/api/guestlist/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -260,7 +253,7 @@ describe("/api/guestlist/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await oneDELETE(
       jsonReq("http://test/api/guestlist/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(401);
   });

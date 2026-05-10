@@ -6,6 +6,7 @@ import {
   FIXTURE_RIDER_ID,
   fixtureRider,
 } from "../fixtures/riders";
+import { fakeOwnerSession } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -57,14 +58,6 @@ const mocks = {
   repo: vi.mocked(repo),
 };
 
-const fakeSession = {
-  user: { id: "u1", email: "booking@aegisfestival.com", name: "Eli" },
-  ownerId: "u1",
-  isOwner: true,
-  role: "owner" as const,
-  permissions: { riders: true },
-};
-
 function jsonReq(url: string, method: string, body?: unknown): NextRequest {
   return new NextRequest(url, {
     method,
@@ -74,7 +67,7 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
 }
 
 beforeEach(() => {
-  mocks.session.getAppSession.mockResolvedValue(fakeSession);
+  mocks.session.getAppSession.mockResolvedValue(fakeOwnerSession);
   mocks.session.requirePermission.mockReturnValue(null);
 });
 
@@ -90,8 +83,8 @@ describe("/api/riders", () => {
     await listGET(
       jsonReq(
         `http://test/api/riders?artistId=${FIXTURE_ARTIST_ID}&kind=technical&confirmed=true`,
-        "GET"
-      )
+        "GET",
+      ),
     );
     expect(mocks.repo.listRiders).toHaveBeenCalledWith({
       editionId: FIXTURE_EDITION_ID,
@@ -104,7 +97,7 @@ describe("/api/riders", () => {
   it("GET ignores invalid kind", async () => {
     await listGET(jsonReq("http://test/api/riders?kind=weird", "GET"));
     expect(mocks.repo.listRiders).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: undefined })
+      expect.objectContaining({ kind: undefined }),
     );
   });
 
@@ -116,7 +109,7 @@ describe("/api/riders", () => {
 
   it("GET 403 when permission denied", async () => {
     mocks.session.requirePermission.mockReturnValueOnce(
-      Response.json({ error: "Forbidden" }, { status: 403 })
+      Response.json({ error: "Forbidden" }, { status: 403 }),
     );
     const res = await listGET(jsonReq("http://test/api/riders", "GET"));
     expect(res.status).toBe(403);
@@ -129,7 +122,7 @@ describe("/api/riders", () => {
 
   it("POST creates with valid input", async () => {
     const res = await createPOST(
-      jsonReq("http://test/api/riders", "POST", validInput)
+      jsonReq("http://test/api/riders", "POST", validInput),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createRider).toHaveBeenCalledWith(
@@ -137,13 +130,13 @@ describe("/api/riders", () => {
         artistId: FIXTURE_ARTIST_ID,
         kind: "hospitality",
         confirmed: false,
-      })
+      }),
     );
   });
 
   it("POST 400 missing artistId", async () => {
     const res = await createPOST(
-      jsonReq("http://test/api/riders", "POST", { kind: "hospitality" })
+      jsonReq("http://test/api/riders", "POST", { kind: "hospitality" }),
     );
     expect(res.status).toBe(400);
   });
@@ -153,7 +146,7 @@ describe("/api/riders", () => {
       jsonReq("http://test/api/riders", "POST", {
         artistId: FIXTURE_ARTIST_ID,
         kind: "drinks",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -163,7 +156,7 @@ describe("/api/riders", () => {
       jsonReq("http://test/api/riders", "POST", {
         ...validInput,
         fileUrl: "not a url",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -189,17 +182,16 @@ describe("/api/riders/[id]", () => {
 
   it("GET 404 missing", async () => {
     mocks.repo.getRider.mockResolvedValueOnce(null);
-    const res = await oneGET(
-      jsonReq("http://test/api/riders/missing", "GET"),
-      { params: Promise.resolve({ id: "missing" }) }
-    );
+    const res = await oneGET(jsonReq("http://test/api/riders/missing", "GET"), {
+      params: Promise.resolve({ id: "missing" }),
+    });
     expect(res.status).toBe(404);
   });
 
   it("PATCH partial only sends provided keys", async () => {
     await onePATCH(
       jsonReq("http://test/api/riders/x", "PATCH", { confirmed: true }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateRider).toHaveBeenCalledWith(FIXTURE_RIDER_ID, {
       confirmed: true,
@@ -209,7 +201,7 @@ describe("/api/riders/[id]", () => {
   it("PATCH normalises empty fileUrl to null", async () => {
     await onePATCH(
       jsonReq("http://test/api/riders/x", "PATCH", { fileUrl: "" }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.updateRider).toHaveBeenCalledWith(FIXTURE_RIDER_ID, {
       fileUrl: null,
@@ -219,7 +211,7 @@ describe("/api/riders/[id]", () => {
   it("PATCH 400 empty body", async () => {
     const res = await onePATCH(
       jsonReq("http://test/api/riders/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -227,7 +219,7 @@ describe("/api/riders/[id]", () => {
   it("DELETE removes", async () => {
     const res = await oneDELETE(
       jsonReq("http://test/api/riders/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -236,7 +228,7 @@ describe("/api/riders/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await oneDELETE(
       jsonReq("http://test/api/riders/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(401);
   });

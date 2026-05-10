@@ -20,7 +20,9 @@ async function main() {
   console.log("Running migrations...");
   await migrate(db, { migrationsFolder: "./drizzle" });
   console.log("Done.");
-  process.exit(0);
+  // Use exitCode instead of process.exit() to avoid libuv handle assertion
+  // on Node 23/Windows when neon's async handles are still open.
+  process.exitCode = 0;
 }
 
 main().catch((err) => {

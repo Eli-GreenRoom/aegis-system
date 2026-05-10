@@ -6,6 +6,7 @@ export const FIXTURE_FLIGHT_ID = "77777777-7777-4777-8777-777777777777";
 
 export const fixtureFlight: Flight = {
   id: FIXTURE_FLIGHT_ID,
+  workspaceId: null,
   editionId: FIXTURE_EDITION_ID,
   personKind: "artist",
   personId: FIXTURE_ARTIST_ID,

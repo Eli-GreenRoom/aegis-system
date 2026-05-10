@@ -9,6 +9,7 @@ import {
   fixtureInvoice,
   fixturePayment,
 } from "../fixtures/payments";
+import { fakeOwnerSession } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -104,14 +105,6 @@ const mocks = {
   audit: vi.mocked(audit),
 };
 
-const fakeSession = {
-  user: { id: "u1", email: "booking@aegisfestival.com", name: "Eli" },
-  ownerId: "u1",
-  isOwner: true,
-  role: "owner" as const,
-  permissions: { payments: true },
-};
-
 function jsonReq(url: string, method: string, body?: unknown): NextRequest {
   return new NextRequest(url, {
     method,
@@ -121,7 +114,7 @@ function jsonReq(url: string, method: string, body?: unknown): NextRequest {
 }
 
 beforeEach(() => {
-  mocks.session.getAppSession.mockResolvedValue(fakeSession);
+  mocks.session.getAppSession.mockResolvedValue(fakeOwnerSession);
   mocks.session.requirePermission.mockReturnValue(null);
   batchImpl.mockReset();
   // Default: invoice transitions return [[invoice], [audit]]; payment
@@ -138,7 +131,9 @@ beforeEach(() => {
 
 describe("/api/invoices", () => {
   it("GET returns the list", async () => {
-    const res = await invoicesListGET(jsonReq("http://test/api/invoices", "GET"));
+    const res = await invoicesListGET(
+      jsonReq("http://test/api/invoices", "GET"),
+    );
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.invoices).toHaveLength(1);
@@ -148,8 +143,8 @@ describe("/api/invoices", () => {
     await invoicesListGET(
       jsonReq(
         "http://test/api/invoices?search=hiroko&status=received&issuerKind=agency",
-        "GET"
-      )
+        "GET",
+      ),
     );
     expect(mocks.repo.listInvoices).toHaveBeenCalledWith({
       editionId: FIXTURE_EDITION_ID,
@@ -162,17 +157,17 @@ describe("/api/invoices", () => {
   it("GET 401 unauth", async () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await invoicesListGET(
-      jsonReq("http://test/api/invoices", "GET")
+      jsonReq("http://test/api/invoices", "GET"),
     );
     expect(res.status).toBe(401);
   });
 
   it("GET 403 when permission denied", async () => {
     mocks.session.requirePermission.mockReturnValueOnce(
-      Response.json({ error: "Forbidden" }, { status: 403 })
+      Response.json({ error: "Forbidden" }, { status: 403 }),
     );
     const res = await invoicesListGET(
-      jsonReq("http://test/api/invoices", "GET")
+      jsonReq("http://test/api/invoices", "GET"),
     );
     expect(res.status).toBe(403);
   });
@@ -185,7 +180,7 @@ describe("/api/invoices", () => {
 
   it("POST creates with valid input", async () => {
     const res = await invoicesPOST(
-      jsonReq("http://test/api/invoices", "POST", validInvoice)
+      jsonReq("http://test/api/invoices", "POST", validInvoice),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createInvoice).toHaveBeenCalledWith(
@@ -195,17 +190,17 @@ describe("/api/invoices", () => {
         amountCents: 250000,
         currency: "USD",
         status: "received",
-      })
+      }),
     );
   });
 
   it("POST defaults status to 'received'", async () => {
     await invoicesPOST(
-      jsonReq("http://test/api/invoices", "POST", validInvoice)
+      jsonReq("http://test/api/invoices", "POST", validInvoice),
     );
     expect(mocks.repo.createInvoice).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
-      expect.objectContaining({ status: "received" })
+      expect.objectContaining({ status: "received" }),
     );
   });
 
@@ -216,7 +211,7 @@ describe("/api/invoices", () => {
         number: "",
         fileUrl: "",
         comments: "",
-      })
+      }),
     );
     expect(mocks.repo.createInvoice).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
@@ -224,7 +219,7 @@ describe("/api/invoices", () => {
         number: null,
         fileUrl: null,
         comments: null,
-      })
+      }),
     );
   });
 
@@ -232,14 +227,14 @@ describe("/api/invoices", () => {
     const { issuerKind: _drop, ...rest } = validInvoice;
     void _drop;
     const res = await invoicesPOST(
-      jsonReq("http://test/api/invoices", "POST", rest)
+      jsonReq("http://test/api/invoices", "POST", rest),
     );
     expect(res.status).toBe(400);
   });
 
   it("POST 400 missing amount/currency", async () => {
     const res = await invoicesPOST(
-      jsonReq("http://test/api/invoices", "POST", { issuerKind: "agency" })
+      jsonReq("http://test/api/invoices", "POST", { issuerKind: "agency" }),
     );
     expect(res.status).toBe(400);
   });
@@ -249,7 +244,7 @@ describe("/api/invoices", () => {
       jsonReq("http://test/api/invoices", "POST", {
         ...validInvoice,
         currency: "GBP",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -259,7 +254,7 @@ describe("/api/invoices", () => {
       jsonReq("http://test/api/invoices", "POST", {
         ...validInvoice,
         amountCents: -1,
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -269,7 +264,7 @@ describe("/api/invoices", () => {
       jsonReq("http://test/api/invoices", "POST", {
         ...validInvoice,
         fileUrl: "not a url",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -291,7 +286,7 @@ describe("/api/invoices/[id]", () => {
   it("GET returns the invoice", async () => {
     const res = await invoiceGET(
       jsonReq("http://test/api/invoices/x", "GET"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -300,7 +295,7 @@ describe("/api/invoices/[id]", () => {
     mocks.repo.getInvoice.mockResolvedValueOnce(null);
     const res = await invoiceGET(
       jsonReq("http://test/api/invoices/missing", "GET"),
-      { params: Promise.resolve({ id: "missing" }) }
+      { params: Promise.resolve({ id: "missing" }) },
     );
     expect(res.status).toBe(404);
   });
@@ -308,7 +303,7 @@ describe("/api/invoices/[id]", () => {
   it("PATCH non-status field uses updateInvoice directly", async () => {
     await invoicePATCH(
       jsonReq("http://test/api/invoices/x", "PATCH", { number: "INV-002" }),
-      ctx
+      ctx,
     );
     expect(batchImpl).not.toHaveBeenCalled();
     expect(mocks.audit.recordTransition).not.toHaveBeenCalled();
@@ -321,13 +316,13 @@ describe("/api/invoices/[id]", () => {
     batchImpl.mockImplementationOnce(async () => [[fixtureInvoice], [{}]]);
     const res = await invoicePATCH(
       jsonReq("http://test/api/invoices/x", "PATCH", { status: "approved" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
     expect(batchImpl).toHaveBeenCalledTimes(1);
     expect(mocks.repo.buildUpdateInvoice).toHaveBeenCalledWith(
       FIXTURE_INVOICE_ID,
-      { status: "approved" }
+      { status: "approved" },
     );
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
@@ -335,7 +330,7 @@ describe("/api/invoices/[id]", () => {
         actorId: "u1",
         entity: { type: "invoice", id: FIXTURE_INVOICE_ID },
         diff: { field: "status", from: "received", to: "approved" },
-      }
+      },
     );
     expect(mocks.repo.updateInvoice).not.toHaveBeenCalled();
   });
@@ -345,15 +340,15 @@ describe("/api/invoices/[id]", () => {
     await expect(
       invoicePATCH(
         jsonReq("http://test/api/invoices/x", "PATCH", { status: "approved" }),
-        ctx
-      )
+        ctx,
+      ),
     ).rejects.toThrow("constraint violation");
   });
 
   it("PATCH 400 empty body", async () => {
     const res = await invoicePATCH(
       jsonReq("http://test/api/invoices/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -361,7 +356,7 @@ describe("/api/invoices/[id]", () => {
   it("DELETE removes", async () => {
     const res = await invoiceDELETE(
       jsonReq("http://test/api/invoices/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -372,7 +367,7 @@ describe("/api/invoices/[id]", () => {
 describe("/api/payments", () => {
   it("GET returns the list", async () => {
     const res = await paymentsListGET(
-      jsonReq("http://test/api/payments", "GET")
+      jsonReq("http://test/api/payments", "GET"),
     );
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -383,8 +378,8 @@ describe("/api/payments", () => {
     await paymentsListGET(
       jsonReq(
         `http://test/api/payments?search=hiroko&status=paid&artistId=${FIXTURE_ARTIST_ID}&vendorId=${FIXTURE_VENDOR_ID}&invoiceId=${FIXTURE_INVOICE_ID}`,
-        "GET"
-      )
+        "GET",
+      ),
     );
     expect(mocks.repo.listPayments).toHaveBeenCalledWith({
       editionId: FIXTURE_EDITION_ID,
@@ -398,10 +393,10 @@ describe("/api/payments", () => {
 
   it("GET silently ignores invalid status", async () => {
     await paymentsListGET(
-      jsonReq("http://test/api/payments?status=teleported", "GET")
+      jsonReq("http://test/api/payments?status=teleported", "GET"),
     );
     expect(mocks.repo.listPayments).toHaveBeenCalledWith(
-      expect.objectContaining({ status: undefined })
+      expect.objectContaining({ status: undefined }),
     );
   });
 
@@ -414,7 +409,7 @@ describe("/api/payments", () => {
 
   it("POST creates with valid input", async () => {
     const res = await paymentsPOST(
-      jsonReq("http://test/api/payments", "POST", validPayment)
+      jsonReq("http://test/api/payments", "POST", validPayment),
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createPayment).toHaveBeenCalledWith(
@@ -425,17 +420,17 @@ describe("/api/payments", () => {
         currency: "USD",
         artistId: FIXTURE_ARTIST_ID,
         status: "pending",
-      })
+      }),
     );
   });
 
   it("POST defaults status to pending", async () => {
     await paymentsPOST(
-      jsonReq("http://test/api/payments", "POST", validPayment)
+      jsonReq("http://test/api/payments", "POST", validPayment),
     );
     expect(mocks.repo.createPayment).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
-      expect.objectContaining({ status: "pending" })
+      expect.objectContaining({ status: "pending" }),
     );
   });
 
@@ -443,7 +438,7 @@ describe("/api/payments", () => {
     const { description: _drop, ...rest } = validPayment;
     void _drop;
     const res = await paymentsPOST(
-      jsonReq("http://test/api/payments", "POST", rest)
+      jsonReq("http://test/api/payments", "POST", rest),
     );
     expect(res.status).toBe(400);
   });
@@ -453,7 +448,7 @@ describe("/api/payments", () => {
       jsonReq("http://test/api/payments", "POST", {
         ...validPayment,
         status: "almost",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -463,7 +458,7 @@ describe("/api/payments", () => {
       jsonReq("http://test/api/payments", "POST", {
         ...validPayment,
         popUrl: "not a url",
-      })
+      }),
     );
     expect(res.status).toBe(400);
   });
@@ -475,7 +470,7 @@ describe("/api/payments", () => {
         artistId: "",
         vendorId: "",
         invoiceId: "",
-      })
+      }),
     );
     expect(mocks.repo.createPayment).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
@@ -483,7 +478,7 @@ describe("/api/payments", () => {
         artistId: null,
         vendorId: null,
         invoiceId: null,
-      })
+      }),
     );
   });
 });
@@ -494,7 +489,7 @@ describe("/api/payments/[id]", () => {
   it("GET returns the payment", async () => {
     const res = await paymentGET(
       jsonReq("http://test/api/payments/x", "GET"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -502,7 +497,7 @@ describe("/api/payments/[id]", () => {
   it("PATCH non-status field uses updatePayment directly", async () => {
     await paymentPATCH(
       jsonReq("http://test/api/payments/x", "PATCH", { description: "Final" }),
-      ctx
+      ctx,
     );
     expect(batchImpl).not.toHaveBeenCalled();
     expect(mocks.audit.recordTransition).not.toHaveBeenCalled();
@@ -514,7 +509,7 @@ describe("/api/payments/[id]", () => {
   it("PATCH status change to paid records audit and stamps paidAt", async () => {
     const res = await paymentPATCH(
       jsonReq("http://test/api/payments/x", "PATCH", { status: "paid" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
     expect(batchImpl).toHaveBeenCalledTimes(1);
@@ -524,7 +519,7 @@ describe("/api/payments/[id]", () => {
       expect.objectContaining({
         status: "paid",
         paidAt: expect.any(Date),
-      })
+      }),
     );
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
@@ -532,7 +527,7 @@ describe("/api/payments/[id]", () => {
         actorId: "u1",
         entity: { type: "payment", id: FIXTURE_PAYMENT_ID },
         diff: { field: "status", from: "pending", to: "paid" },
-      }
+      },
     );
   });
 
@@ -543,11 +538,11 @@ describe("/api/payments/[id]", () => {
         status: "paid",
         paidAt: explicit,
       }),
-      ctx
+      ctx,
     );
     expect(mocks.repo.buildUpdatePayment).toHaveBeenCalledWith(
       FIXTURE_PAYMENT_ID,
-      expect.objectContaining({ status: "paid" })
+      expect.objectContaining({ status: "paid" }),
     );
     // The auto-stamp should NOT overwrite — the patch already had paidAt.
     const call = mocks.repo.buildUpdatePayment.mock.calls.at(-1);
@@ -558,7 +553,7 @@ describe("/api/payments/[id]", () => {
   it("PATCH transitioning to overdue does NOT auto-stamp paidAt", async () => {
     await paymentPATCH(
       jsonReq("http://test/api/payments/x", "PATCH", { status: "overdue" }),
-      ctx
+      ctx,
     );
     const call = mocks.repo.buildUpdatePayment.mock.calls.at(-1);
     const passed = call?.[1] as { status: string; paidAt?: Date | null };
@@ -569,7 +564,7 @@ describe("/api/payments/[id]", () => {
   it("PATCH 400 invalid status", async () => {
     const res = await paymentPATCH(
       jsonReq("http://test/api/payments/x", "PATCH", { status: "almost" }),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -579,15 +574,15 @@ describe("/api/payments/[id]", () => {
     await expect(
       paymentPATCH(
         jsonReq("http://test/api/payments/x", "PATCH", { status: "paid" }),
-        ctx
-      )
+        ctx,
+      ),
     ).rejects.toThrow("constraint violation");
   });
 
   it("PATCH 400 empty body", async () => {
     const res = await paymentPATCH(
       jsonReq("http://test/api/payments/x", "PATCH", {}),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(400);
   });
@@ -595,7 +590,7 @@ describe("/api/payments/[id]", () => {
   it("DELETE removes", async () => {
     const res = await paymentDELETE(
       jsonReq("http://test/api/payments/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(200);
   });
@@ -604,7 +599,7 @@ describe("/api/payments/[id]", () => {
     mocks.session.getAppSession.mockResolvedValueOnce(null);
     const res = await paymentDELETE(
       jsonReq("http://test/api/payments/x", "DELETE"),
-      ctx
+      ctx,
     );
     expect(res.status).toBe(401);
   });
