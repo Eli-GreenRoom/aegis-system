@@ -17,7 +17,18 @@ import { loadEnvConfig } from "@next/env";
 import { eq, isNull, sql } from "drizzle-orm";
 import * as schema from "./schema";
 import type { PgTable } from "drizzle-orm/pg-core";
-import { DEFAULT_STAGE_SEEDS } from "@/lib/festivals";
+
+const DEFAULT_STAGE_SEEDS = [
+  { name: "Main Stage", slug: "main", color: "#E5B85A", sortOrder: 0 },
+  {
+    name: "Alternative Stage",
+    slug: "alternative",
+    color: "#7C9EFF",
+    sortOrder: 1,
+  },
+  { name: "Select Pool", slug: "select-pool", color: "#A78BFA", sortOrder: 2 },
+  { name: "Collectives", slug: "collectives", color: "#F472B6", sortOrder: 3 },
+] as const;
 
 loadEnvConfig(process.cwd());
 
