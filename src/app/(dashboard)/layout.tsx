@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import type { Route } from "next";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
 import { isFestivalMode } from "@/lib/festival-mode";
@@ -11,9 +12,12 @@ export default async function DashboardLayout({
 }) {
   const session = await getAppSession();
   if (!session) redirect("/sign-in");
+  if (!session.workspaceId) redirect("/onboarding/workspace" as Route);
 
   const festival = await getActiveFestival(session);
-  const festivalMode = festival ? isFestivalMode(festival) : false;
+  if (!festival) redirect("/onboarding/festival" as Route);
+
+  const festivalMode = isFestivalMode(festival);
 
   return (
     <div className="flex h-screen overflow-hidden">

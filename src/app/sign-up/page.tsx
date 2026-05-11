@@ -57,7 +57,7 @@ export default function SignUpPage() {
       return;
     }
 
-    router.push("/lineup");
+    router.push("/onboarding/workspace" as Route);
     router.refresh();
   }
 
