@@ -7,11 +7,9 @@
 
 ## Now
 
-- [ ] **Phase 2 (GREENROOM_STAGES_PLAN.md) — Onboarding + festival creation**
-      Sign-up -> workspace -> festival -> dashboard flow. New festival creation form,
-      festival switcher in topbar, workspace settings page. DoD: a fresh sign-up
-      lands on a wizard that creates workspace + first festival before reaching
-      the dashboard.
+- [ ] **Phase 3 (GREENROOM_STAGES_PLAN.md) — Team page + invites**
+      Owner/Admin can invite team members via copy-link (no Resend yet). Settings
+      page with Workspace / Festival / Team tabs. Permission gate component.
 
 ## Later
 
@@ -31,6 +29,14 @@
 ---
 
 ## Done
+
+- 2026-05-11 — **Phase 2 (GREENROOM_STAGES_PLAN.md) — Onboarding + festival creation**
+  Sign-up now redirects to `/onboarding/workspace` (name workspace) then `/onboarding/festival`
+  (name, dates, location) then `/lineup`. `POST /api/workspaces` creates workspace + owner
+  team_member using bare better-auth session (no existing team_member row required).
+  `GET/POST /api/festivals` lists + creates festivals scoped to workspace with slug collision
+  retry. Dashboard layout redirects to onboarding when session has no active festival.
+  413 tests green.
 
 - 2026-05-11 — **Phase 1 (GREENROOM_STAGES_PLAN.md) — Festivals as projects**
   Renamed `festival_editions` -> `festivals`; added `workspaceId`, `slug`, `description`,
