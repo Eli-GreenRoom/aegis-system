@@ -90,7 +90,7 @@ export async function getNowAndNext(
 
   // "next": earliest confirmed-or-live set whose start time is after `t`
   // and isn't already the "now" pick. Sort by (date, startTime)
-  // lexicographically — YYYY-MM-DD strings sort correctly as-is.
+  // lexicographically - YYYY-MM-DD strings sort correctly as-is.
   const ordered = [...all].sort((a, b) => {
     const dateCmp = a.slotDate.localeCompare(b.slotDate);
     if (dateCmp !== 0) return dateCmp;

@@ -1,5 +1,5 @@
 /**
- * Seed script — idempotent. Handles both Phase 0 and Phase 1 backfills.
+ * Seed script - idempotent. Handles both Phase 0 and Phase 1 backfills.
  *
  * Phase 0: create "Aegis Productions" workspace + owner team member,
  *          backfill workspace_id on every tenant table.
@@ -85,7 +85,7 @@ async function main() {
   const sqlClient = neon(url);
   const db = drizzle(sqlClient, { schema });
 
-  // ── Phase 0 ──────────────────────────────────────────────────────────────
+  // -- Phase 0 ------------------------------------------------------------------
 
   // 1. Look up owner from better-auth user table.
   const userRows =
@@ -148,7 +148,7 @@ async function main() {
     console.log(`  ${name}: backfilled ${result.length} rows`);
   }
 
-  // ── Phase 1 ──────────────────────────────────────────────────────────────
+  // -- Phase 1 ------------------------------------------------------------------
 
   // 5. Backfill workspace_id + slug on the existing festival row.
   //    Migration 0007 renamed the table; the row already exists with the
@@ -161,10 +161,10 @@ async function main() {
 
   if (festival) {
     console.log(
-      `Festival backfilled: ${festival.id} (${festival.name}) → slug: ${FESTIVAL_SLUG}`,
+      `Festival backfilled: ${festival.id} (${festival.name}) -> slug: ${FESTIVAL_SLUG}`,
     );
   } else {
-    // Already had workspace_id — just fetch it.
+    // Already had workspace_id - just fetch it.
     const [existing] = await db
       .select()
       .from(schema.festivals)

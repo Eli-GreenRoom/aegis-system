@@ -3,10 +3,10 @@
  *
  * Phase 0: Added workspaces table, rewrote teamMembers (4-role model +
  * festivalScope), added workspaceId to all tenant tables.
- * Phase 1: Renamed festival_editions → festivals, added workspaceId/slug/
+ * Phase 1: Renamed festival_editions -> festivals, added workspaceId/slug/
  * description/tenantBrand; made stages festival-scoped (festivalId +
  * activeDates); replaced slots.day enum with slots.date (YYYY-MM-DD);
- * renamed all editionId FKs → festivalId.
+ * renamed all editionId FKs -> festivalId.
  *
  * Source-of-truth spec: docs/DATA-MODEL.md
  */

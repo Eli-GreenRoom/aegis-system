@@ -96,7 +96,7 @@ export function dateToDayLabel(dateStr: string): string {
 }
 
 /**
- * Default Aegis stage definitions — used by seed.ts to populate stages
+ * Default Aegis stage definitions - used by seed.ts to populate stages
  * for the migrated festival.
  */
 export const DEFAULT_STAGE_SEEDS = [
