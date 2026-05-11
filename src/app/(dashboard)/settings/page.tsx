@@ -1,50 +1,56 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
+import { eq, asc } from "drizzle-orm";
 import Topbar from "@/components/dashboard/Topbar";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
-import { autoFestivalMode, isFestivalMode } from "@/lib/festival-mode";
-import FestivalModeToggle from "./_components/FestivalModeToggle";
+import { db } from "@/db/client";
+import { workspaces, teamMembers } from "@/db/schema";
+import { SettingsTabs } from "./_components/SettingsTabs";
 
 export default async function SettingsPage() {
   const session = await getAppSession();
   if (!session) redirect("/sign-in");
 
   const festival = await getActiveFestival(session);
-  if (!festival)
-    return (
-      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
-        No festival configured.
-      </div>
-    );
 
-  const auto = autoFestivalMode(festival);
-  const effective = isFestivalMode(festival);
+  const [workspace] = await db
+    .select()
+    .from(workspaces)
+    .where(eq(workspaces.id, session.workspaceId))
+    .limit(1);
+
+  const members = await db
+    .select()
+    .from(teamMembers)
+    .where(eq(teamMembers.workspaceId, session.workspaceId))
+    .orderBy(asc(teamMembers.createdAt));
+
+  const subtitle = festival
+    ? `${festival.name} — ${festival.startDate} to ${festival.endDate}`
+    : undefined;
 
   return (
     <>
-      <Topbar
-        title="Settings"
-        subtitle={`${festival.name} — ${festival.startDate} to ${festival.endDate}`}
+      <Topbar title="Settings" subtitle={subtitle} />
+      <SettingsTabs
+        workspaceId={session.workspaceId}
+        workspaceName={workspace?.name ?? ""}
+        festivalName={festival?.name}
+        role={session.role}
+        memberId={session.memberId}
+        permissions={session.permissions}
+        members={members.map((m) => ({
+          id: m.id,
+          email: m.email,
+          name: m.name,
+          role: m.role,
+          status: m.status,
+          inviteToken: m.inviteToken,
+          acceptedAt: m.acceptedAt,
+        }))}
       />
-      <div className="px-6 py-6 max-w-2xl space-y-10">
-        <section>
-          <h2 className="text-[14px] text-[--color-fg] mb-2">Festival mode</h2>
-          <p className="text-[--color-fg-muted] text-sm mb-4">
-            When on, the dashboard switches to a phone-friendly live-ops layout:
-            Now / Pickups / Arrivals / Issues / Roadsheets, with one-tap status
-            advance buttons. Auto-detection turns it on during the festival
-            weekend; force it on early for rehearsals, or leave it off to test
-            in planning mode.
-          </p>
-          <FestivalModeToggle
-            initialActive={festival.festivalModeActive}
-            auto={auto}
-            effective={effective}
-          />
-        </section>
-      </div>
     </>
   );
 }
