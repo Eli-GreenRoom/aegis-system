@@ -1,4 +1,14 @@
-import { and, asc, eq, inArray, isNull, isNotNull, ilike, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  inArray,
+  isNull,
+  isNotNull,
+  ilike,
+  or,
+  sql,
+} from "drizzle-orm";
 import { db } from "@/db/client";
 import { artists, sets, slots } from "@/db/schema";
 import type { ArtistDbValues } from "./schema";
@@ -7,7 +17,7 @@ import type { SetStatus } from "@/lib/lineup/schema";
 export type Artist = typeof artists.$inferSelect;
 
 export interface ListArtistsParams {
-  editionId: string;
+  festivalId: string;
   search?: string;
   agency?: string;
   archived?: "active" | "archived" | "all";
@@ -20,14 +30,14 @@ export interface ListArtistsParams {
 }
 
 export async function listArtists({
-  editionId,
+  festivalId,
   search,
   agency,
   archived = "active",
   stageId,
   setStatus,
 }: ListArtistsParams): Promise<Artist[]> {
-  const filters = [eq(artists.editionId, editionId)];
+  const filters = [eq(artists.festivalId, festivalId)];
 
   if (archived === "active") filters.push(isNull(artists.archivedAt));
   if (archived === "archived") filters.push(isNotNull(artists.archivedAt));
@@ -43,7 +53,7 @@ export async function listArtists({
       ilike(artists.legalName, q),
       ilike(artists.email, q),
       ilike(artists.agency, q),
-      ilike(artists.slug, q)
+      ilike(artists.slug, q),
     );
     if (searchOr) filters.push(searchOr);
   }
@@ -53,7 +63,7 @@ export async function listArtists({
   // Two queries beats joining + DISTINCT-ing the main select for our
   // scale (a few hundred artists).
   if (stageId || setStatus) {
-    const setFilters = [eq(slots.editionId, editionId)];
+    const setFilters = [eq(slots.festivalId, festivalId)];
     if (stageId) setFilters.push(eq(slots.stageId, stageId));
     if (setStatus) setFilters.push(eq(sets.status, setStatus));
     const matchingArtistRows = await db
@@ -73,11 +83,11 @@ export async function listArtists({
     .orderBy(asc(artists.name));
 }
 
-export async function listAgencies(editionId: string): Promise<string[]> {
+export async function listAgencies(festivalId: string): Promise<string[]> {
   const rows = await db
     .selectDistinct({ agency: artists.agency })
     .from(artists)
-    .where(and(eq(artists.editionId, editionId), isNotNull(artists.agency)))
+    .where(and(eq(artists.festivalId, festivalId), isNotNull(artists.agency)))
     .orderBy(asc(artists.agency));
   return rows.map((r) => r.agency).filter((a): a is string => !!a);
 }
@@ -97,8 +107,8 @@ export async function getArtist(id: string): Promise<Artist | null> {
  * + non-archived only.
  */
 export async function listArtistsByIds(
-  editionId: string,
-  ids: string[]
+  festivalId: string,
+  ids: string[],
 ): Promise<Artist[]> {
   if (ids.length === 0) return [];
   return db
@@ -106,40 +116,40 @@ export async function listArtistsByIds(
     .from(artists)
     .where(
       and(
-        eq(artists.editionId, editionId),
+        eq(artists.festivalId, festivalId),
         isNull(artists.archivedAt),
-        inArray(artists.id, ids)
-      )
+        inArray(artists.id, ids),
+      ),
     )
     .orderBy(asc(artists.name));
 }
 
 export async function getArtistBySlug(
-  editionId: string,
-  slug: string
+  festivalId: string,
+  slug: string,
 ): Promise<Artist | null> {
   const [row] = await db
     .select()
     .from(artists)
-    .where(and(eq(artists.editionId, editionId), eq(artists.slug, slug)))
+    .where(and(eq(artists.festivalId, festivalId), eq(artists.slug, slug)))
     .limit(1);
   return row ?? null;
 }
 
 export async function createArtist(
-  editionId: string,
-  input: ArtistDbValues
+  festivalId: string,
+  input: ArtistDbValues,
 ): Promise<Artist> {
   const [row] = await db
     .insert(artists)
-    .values({ ...input, editionId })
+    .values({ ...input, festivalId })
     .returning();
   return row;
 }
 
 export async function updateArtist(
   id: string,
-  input: Partial<ArtistDbValues>
+  input: Partial<ArtistDbValues>,
 ): Promise<Artist | null> {
   if (Object.keys(input).length === 0) {
     return getArtist(id);
@@ -170,10 +180,10 @@ export async function unarchiveArtist(id: string): Promise<Artist | null> {
   return row ?? null;
 }
 
-export async function countActiveArtists(editionId: string): Promise<number> {
+export async function countActiveArtists(festivalId: string): Promise<number> {
   const [row] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(artists)
-    .where(and(eq(artists.editionId, editionId), isNull(artists.archivedAt)));
+    .where(and(eq(artists.festivalId, festivalId), isNull(artists.archivedAt)));
   return row?.n ?? 0;
 }

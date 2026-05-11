@@ -9,19 +9,19 @@ export type Payment = typeof payments.$inferSelect;
 // -- Invoices ------------------------------------------------------------
 
 export interface ListInvoicesParams {
-  editionId: string;
+  festivalId: string;
   search?: string;
   status?: string;
   issuerKind?: string;
 }
 
 export async function listInvoices({
-  editionId,
+  festivalId,
   search,
   status,
   issuerKind,
 }: ListInvoicesParams): Promise<Invoice[]> {
-  const filters = [eq(invoices.editionId, editionId)];
+  const filters = [eq(invoices.festivalId, festivalId)];
   if (status) filters.push(eq(invoices.status, status));
   if (issuerKind) filters.push(eq(invoices.issuerKind, issuerKind));
 
@@ -43,12 +43,12 @@ export async function listInvoices({
 }
 
 export async function listInvoiceIssuerKinds(
-  editionId: string,
+  festivalId: string,
 ): Promise<string[]> {
   const rows = await db
     .selectDistinct({ kind: invoices.issuerKind })
     .from(invoices)
-    .where(eq(invoices.editionId, editionId))
+    .where(eq(invoices.festivalId, festivalId))
     .orderBy(asc(invoices.issuerKind));
   return rows.map((r) => r.kind).filter((k): k is string => !!k);
 }
@@ -63,12 +63,12 @@ export async function getInvoice(id: string): Promise<Invoice | null> {
 }
 
 export async function createInvoice(
-  editionId: string,
+  festivalId: string,
   input: InvoiceDbValues,
 ): Promise<Invoice> {
   const [row] = await db
     .insert(invoices)
-    .values({ ...input, editionId })
+    .values({ ...input, festivalId })
     .returning();
   return row;
 }
@@ -105,7 +105,7 @@ export async function deleteInvoice(id: string): Promise<Invoice | null> {
 // -- Payments ------------------------------------------------------------
 
 export interface ListPaymentsParams {
-  editionId: string;
+  festivalId: string;
   search?: string;
   status?: PaymentStatus;
   artistId?: string;
@@ -114,14 +114,14 @@ export interface ListPaymentsParams {
 }
 
 export async function listPayments({
-  editionId,
+  festivalId,
   search,
   status,
   artistId,
   vendorId,
   invoiceId,
 }: ListPaymentsParams): Promise<Payment[]> {
-  const filters = [eq(payments.editionId, editionId)];
+  const filters = [eq(payments.festivalId, festivalId)];
   if (status) filters.push(eq(payments.status, status));
   if (artistId) filters.push(eq(payments.artistId, artistId));
   if (vendorId) filters.push(eq(payments.vendorId, vendorId));
@@ -154,12 +154,12 @@ export async function getPayment(id: string): Promise<Payment | null> {
 }
 
 export async function createPayment(
-  editionId: string,
+  festivalId: string,
   input: PaymentDbValues,
 ): Promise<Payment> {
   const [row] = await db
     .insert(payments)
-    .values({ ...input, editionId })
+    .values({ ...input, festivalId })
     .returning();
   return row;
 }
@@ -219,7 +219,7 @@ const ZERO_COUNTS: Record<PaymentStatus, number> = {
  * format with `formatCents`.
  */
 export async function getPaymentsSummary(
-  editionId: string,
+  festivalId: string,
 ): Promise<PaymentsSummary> {
   const rows = await db
     .select({
@@ -229,7 +229,7 @@ export async function getPaymentsSummary(
       count: sql<number>`count(*)::int`,
     })
     .from(payments)
-    .where(eq(payments.editionId, editionId))
+    .where(eq(payments.festivalId, festivalId))
     .groupBy(payments.status, payments.currency);
 
   const countsByStatus: Record<PaymentStatus, number> = { ...ZERO_COUNTS };

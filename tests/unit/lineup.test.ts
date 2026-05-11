@@ -30,6 +30,24 @@ vi.mock("@/lib/edition", () => ({
   })),
 }));
 
+vi.mock("@/lib/festivals", () => ({
+  getActiveFestival: vi.fn(async () => ({
+    id: FIXTURE_EDITION_ID,
+    workspaceId: null,
+    slug: "aegis-2026",
+    name: "Aegis Festival 2026",
+    startDate: "2026-08-14",
+    endDate: "2026-08-16",
+    location: "Aranoon Village, Batroun",
+    description: null,
+    tenantBrand: null,
+    festivalModeActive: false,
+    archivedAt: null,
+    createdAt: new Date(),
+  })),
+  festivalDates: vi.fn(() => ["2026-08-14", "2026-08-15", "2026-08-16"]),
+}));
+
 // db.batch returns whatever batchImpl is set to before the call. Tests that
 // exercise a status transition install a fake that returns `[[updatedRow]]`.
 const batchImpl = vi.fn(async (_queries: unknown[]): Promise<unknown[]> => []);
@@ -255,20 +273,20 @@ describe("/api/stages/[id]", () => {
 // ── slots ────────────────────────────────────────────────────────────────
 
 describe("/api/slots", () => {
-  it("GET filters by day", async () => {
-    await slotsListGET(jsonReq("http://test/api/slots?day=saturday", "GET"));
+  it("GET filters by date", async () => {
+    await slotsListGET(jsonReq("http://test/api/slots?date=2026-08-15", "GET"));
     expect(mocks.repo.listSlots).toHaveBeenCalledWith({
-      editionId: FIXTURE_EDITION_ID,
-      day: "saturday",
+      festivalId: FIXTURE_EDITION_ID,
+      date: "2026-08-15",
       stageId: undefined,
     });
   });
 
-  it("GET ignores invalid day", async () => {
-    await slotsListGET(jsonReq("http://test/api/slots?day=bogus", "GET"));
+  it("GET ignores invalid date", async () => {
+    await slotsListGET(jsonReq("http://test/api/slots?date=bogus", "GET"));
     expect(mocks.repo.listSlots).toHaveBeenCalledWith({
-      editionId: FIXTURE_EDITION_ID,
-      day: undefined,
+      festivalId: FIXTURE_EDITION_ID,
+      date: undefined,
       stageId: undefined,
     });
   });
@@ -277,7 +295,7 @@ describe("/api/slots", () => {
     const res = await slotsPOST(
       jsonReq("http://test/api/slots", "POST", {
         stageId: FIXTURE_STAGE_ID,
-        day: "friday",
+        date: "2026-08-14",
         startTime: "22:00",
         endTime: "23:30",
       }),
@@ -290,7 +308,7 @@ describe("/api/slots", () => {
     const res = await slotsPOST(
       jsonReq("http://test/api/slots", "POST", {
         stageId: FIXTURE_STAGE_ID,
-        day: "friday",
+        date: "2026-08-14",
         startTime: "10pm",
         endTime: "11pm",
       }),
@@ -302,7 +320,7 @@ describe("/api/slots", () => {
     const res = await slotsPOST(
       jsonReq("http://test/api/slots", "POST", {
         stageId: FIXTURE_STAGE_ID,
-        day: "friday",
+        date: "2026-08-14",
         startTime: "22:00",
         endTime: "22:00",
       }),
@@ -526,7 +544,7 @@ describe("/api/sets/[id]", () => {
 describe("POST /api/slots/reorder", () => {
   const validBody = {
     stageId: FIXTURE_STAGE_ID,
-    day: "friday",
+    date: "2026-08-14",
     slotIds: [FIXTURE_SLOT_ID, "55555555-5555-4555-8555-aaaaaaaaaaaa"],
   };
 
@@ -538,7 +556,7 @@ describe("POST /api/slots/reorder", () => {
     expect(mocks.repo.reorderSlots).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
       FIXTURE_STAGE_ID,
-      "friday",
+      "2026-08-14",
       validBody.slotIds,
     );
   });
@@ -554,11 +572,11 @@ describe("POST /api/slots/reorder", () => {
     expect(mocks.repo.reorderSlots).not.toHaveBeenCalled();
   });
 
-  it("400 when day invalid", async () => {
+  it("400 when date invalid", async () => {
     const res = await slotsReorderPOST(
       jsonReq("http://test/api/slots/reorder", "POST", {
         ...validBody,
-        day: "monday",
+        date: "not-a-date",
       }),
     );
     expect(res.status).toBe(400);

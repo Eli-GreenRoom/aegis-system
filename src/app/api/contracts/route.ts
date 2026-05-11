@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAppSession, requirePermission } from "@/lib/session";
-import { getCurrentEdition } from "@/lib/edition";
+import { getActiveFestival } from "@/lib/festivals";
 import {
   contractInputSchema,
   contractStatusEnum,
@@ -10,18 +10,24 @@ import { createContract, listContracts } from "@/lib/contracts/repo";
 
 export async function GET(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "contracts");
   if (denied) return denied;
 
-  const edition = await getCurrentEdition();
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return Response.json({ error: "No festival" }, { status: 404 });
+
   const url = new URL(req.url);
   const artistId = url.searchParams.get("artistId") ?? undefined;
   const statusRaw = url.searchParams.get("status") ?? undefined;
-  const statusParsed = statusRaw ? contractStatusEnum.safeParse(statusRaw) : null;
+  const statusParsed = statusRaw
+    ? contractStatusEnum.safeParse(statusRaw)
+    : null;
 
   const rows = await listContracts({
-    editionId: edition.id,
+    festivalId: festival.id,
     artistId,
     status: statusParsed?.success ? statusParsed.data : undefined,
   });
@@ -30,7 +36,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "contracts");
   if (denied) return denied;
 
@@ -45,14 +52,17 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  const edition = await getCurrentEdition();
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return Response.json({ error: "No festival" }, { status: 404 });
+
   const created = await createContract(
-    edition.id,
-    contractToDbValues(parsed.data)
+    festival.id,
+    contractToDbValues(parsed.data),
   );
   return Response.json({ contract: created }, { status: 201 });
 }

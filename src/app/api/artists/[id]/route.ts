@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAppSession, requirePermission } from "@/lib/session";
-import { getCurrentEdition } from "@/lib/edition";
+import { getActiveFestival } from "@/lib/festivals";
 import { artistPatchSchema, toDbPatchValues } from "@/lib/artists/schema";
 import {
   archiveArtist,
@@ -16,7 +16,8 @@ interface Ctx {
 
 export async function GET(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const denied = requirePermission(session, "artists");
   if (denied) return denied;
@@ -30,7 +31,8 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const denied = requirePermission(session, "artists");
   if (denied) return denied;
@@ -48,7 +50,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -56,12 +58,14 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (!existing) return Response.json({ error: "Not found" }, { status: 404 });
 
   if (parsed.data.slug !== undefined && parsed.data.slug !== existing.slug) {
-    const edition = await getCurrentEdition();
-    const slugTaken = await getArtistBySlug(edition.id, parsed.data.slug);
+    const festival = await getActiveFestival(session);
+    if (!festival)
+      return Response.json({ error: "No festival" }, { status: 404 });
+    const slugTaken = await getArtistBySlug(festival.id, parsed.data.slug);
     if (slugTaken && slugTaken.id !== id) {
       return Response.json(
-        { error: "Slug already in use for this edition" },
-        { status: 409 }
+        { error: "Slug already in use for this festival" },
+        { status: 409 },
       );
     }
   }
@@ -72,7 +76,8 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
 export async function DELETE(req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const denied = requirePermission(session, "artists");
   if (denied) return denied;

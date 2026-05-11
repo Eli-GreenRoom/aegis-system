@@ -20,7 +20,7 @@ export const fixtureHotel: Hotel = {
 
 export const fixtureRoomBlock: RoomBlock = {
   id: FIXTURE_ROOM_BLOCK_ID,
-  editionId: FIXTURE_EDITION_ID,
+  festivalId: FIXTURE_EDITION_ID,
   hotelId: FIXTURE_HOTEL_ID,
   label: "Artists - Deluxe",
   roomType: "Deluxe sea view",

@@ -1,17 +1,29 @@
 export const dynamic = "force-dynamic";
 
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { listHotels, listRoomBlocks } from "@/lib/hotels/repo";
 import { listPeople } from "@/lib/people";
 import BookingForm from "../_components/BookingForm";
 
 export default async function NewBookingPage() {
-  const edition = await getCurrentEdition();
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const [hotels, blocks, people] = await Promise.all([
     listHotels(),
-    listRoomBlocks({ editionId: edition.id }),
-    listPeople(edition.id),
+    listRoomBlocks({ festivalId: festival.id }),
+    listPeople(festival.id),
   ]);
 
   if (hotels.length === 0) {

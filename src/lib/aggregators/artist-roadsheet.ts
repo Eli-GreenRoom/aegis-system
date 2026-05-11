@@ -86,7 +86,7 @@ export async function getArtistRoadsheet(
     .innerJoin(slots, eq(sets.slotId, slots.id))
     .innerJoin(stages, eq(slots.stageId, stages.id))
     .where(eq(sets.artistId, artistId))
-    .orderBy(asc(slots.day), asc(slots.startTime));
+    .orderBy(asc(slots.date), asc(slots.startTime));
   const setEntry = setRows[0] ?? null;
 
   // Flights for this artist (polymorphic person, kind='artist').

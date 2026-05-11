@@ -1,19 +1,31 @@
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { getPickupsInWindow } from "@/lib/aggregators";
 import PickupsBoard from "./_components/PickupsBoard";
 
 export const dynamic = "force-dynamic";
 
 export default async function FestivalPickupsPage() {
-  const edition = await getCurrentEdition();
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const now = new Date();
   const in2h = new Date(now.getTime() + 2 * 60 * 60 * 1000);
   const endOfWindow = new Date(now.getTime() + 12 * 60 * 60 * 1000);
 
   const [next2h, later] = await Promise.all([
-    getPickupsInWindow(edition.id, now, in2h),
-    getPickupsInWindow(edition.id, in2h, endOfWindow),
+    getPickupsInWindow(festival.id, now, in2h),
+    getPickupsInWindow(festival.id, in2h, endOfWindow),
   ]);
 
   return (

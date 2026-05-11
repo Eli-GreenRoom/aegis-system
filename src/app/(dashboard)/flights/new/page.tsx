@@ -1,13 +1,25 @@
 export const dynamic = "force-dynamic";
 
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { listPeople } from "@/lib/people";
 import FlightForm from "../_components/FlightForm";
 
 export default async function NewFlightPage() {
-  const edition = await getCurrentEdition();
-  const people = await listPeople(edition.id);
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
+  const people = await listPeople(festival.id);
 
   if (people.length === 0) {
     return (

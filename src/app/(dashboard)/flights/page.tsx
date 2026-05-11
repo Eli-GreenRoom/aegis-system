@@ -1,9 +1,11 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import {
   directionEnum,
   flightStatusEnum,
@@ -25,8 +27,18 @@ interface PageProps {
 }
 
 export default async function FlightsPage({ searchParams }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const sp = await searchParams;
-  const edition = await getCurrentEdition();
 
   const directionParsed = sp.direction
     ? directionEnum.safeParse(sp.direction)
@@ -37,7 +49,7 @@ export default async function FlightsPage({ searchParams }: PageProps) {
     : null;
 
   const flights = await listFlights({
-    editionId: edition.id,
+    festivalId: festival.id,
     search: sp.search,
     direction: directionParsed?.success ? directionParsed.data : undefined,
     status: statusParsed?.success ? statusParsed.data : undefined,
@@ -53,7 +65,7 @@ export default async function FlightsPage({ searchParams }: PageProps) {
     <>
       <Topbar
         title="Flights"
-        subtitle={`${flights.length} legs on ${edition.name}`}
+        subtitle={`${flights.length} legs on ${festival.name}`}
         actions={
           <Link href="/flights/new">
             <Button>New flight</Button>

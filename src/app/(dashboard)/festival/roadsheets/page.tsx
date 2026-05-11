@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { Route } from "next";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { listArtists } from "@/lib/artists/repo";
 
 export const dynamic = "force-dynamic";
@@ -14,11 +16,21 @@ interface PageProps {
 export default async function FestivalRoadsheetsPage({
   searchParams,
 }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const sp = await searchParams;
-  const edition = await getCurrentEdition();
 
   const artists = await listArtists({
-    editionId: edition.id,
+    festivalId: festival.id,
     search: sp.search,
     archived: "active",
   });
@@ -27,7 +39,7 @@ export default async function FestivalRoadsheetsPage({
     <>
       <Topbar
         title="Roadsheets"
-        subtitle={`${artists.length} artists on ${edition.name}`}
+        subtitle={`${artists.length} artists on ${festival.name}`}
       />
       <div className="px-6 py-6">
         <form className="mb-5 flex items-end gap-2 max-w-md">

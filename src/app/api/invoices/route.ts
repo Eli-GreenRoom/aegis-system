@@ -1,23 +1,27 @@
 import { NextRequest } from "next/server";
 import { getAppSession, requirePermission } from "@/lib/session";
-import { getCurrentEdition } from "@/lib/edition";
+import { getActiveFestival } from "@/lib/festivals";
 import { invoiceInputSchema, invoiceToDbValues } from "@/lib/payments/schema";
 import { createInvoice, listInvoices } from "@/lib/payments/repo";
 
 export async function GET(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "payments");
   if (denied) return denied;
 
-  const edition = await getCurrentEdition();
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return Response.json({ error: "No festival" }, { status: 404 });
+
   const url = new URL(req.url);
   const search = url.searchParams.get("search") ?? undefined;
   const status = url.searchParams.get("status") ?? undefined;
   const issuerKind = url.searchParams.get("issuerKind") ?? undefined;
 
   const rows = await listInvoices({
-    editionId: edition.id,
+    festivalId: festival.id,
     search,
     status,
     issuerKind,
@@ -27,7 +31,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "payments");
   if (denied) return denied;
 
@@ -42,11 +47,17 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  const edition = await getCurrentEdition();
-  const created = await createInvoice(edition.id, invoiceToDbValues(parsed.data));
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return Response.json({ error: "No festival" }, { status: 404 });
+
+  const created = await createInvoice(
+    festival.id,
+    invoiceToDbValues(parsed.data),
+  );
   return Response.json({ invoice: created }, { status: 201 });
 }

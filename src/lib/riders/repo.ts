@@ -6,28 +6,28 @@ import type { RiderDbValues, RiderKind } from "./schema";
 export type Rider = typeof riders.$inferSelect;
 
 export interface ListRidersParams {
-  editionId: string;
+  festivalId: string;
   artistId?: string;
   kind?: RiderKind;
   confirmed?: boolean;
 }
 
 /**
- * Riders don't carry editionId directly - they belong to an artist, which
- * is edition-scoped. List filters via a join through artists.
+ * Riders don't carry festivalId directly - they belong to an artist, which
+ * is festival-scoped. List filters via a join through artists.
  */
 export async function listRiders({
-  editionId,
+  festivalId,
   artistId,
   kind,
   confirmed,
 }: ListRidersParams): Promise<Rider[]> {
-  // Get the artist ids for this edition first; cheaper than a 2-table join
+  // Get the artist ids for this festival first; cheaper than a 2-table join
   // and lets us short-circuit when nothing matches.
   const artistRows = await db
     .select({ id: artists.id })
     .from(artists)
-    .where(eq(artists.editionId, editionId));
+    .where(eq(artists.festivalId, festivalId));
   const editionArtistIds = artistRows.map((r) => r.id);
   if (editionArtistIds.length === 0) return [];
 
@@ -67,7 +67,7 @@ export async function createRider(input: RiderDbValues): Promise<Rider> {
 
 export async function updateRider(
   id: string,
-  input: Partial<RiderDbValues>
+  input: Partial<RiderDbValues>,
 ): Promise<Rider | null> {
   if (Object.keys(input).length === 0) return getRider(id);
   const [row] = await db

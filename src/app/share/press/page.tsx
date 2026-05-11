@@ -1,4 +1,4 @@
-import { getCurrentEdition } from "@/lib/edition";
+import { getFirstFestival } from "@/lib/festivals";
 import { listArtists, listArtistsByIds, type Artist } from "@/lib/artists/repo";
 
 interface PageProps {
@@ -12,7 +12,13 @@ export const metadata = {
 
 export default async function PressPage({ searchParams }: PageProps) {
   const sp = await searchParams;
-  const edition = await getCurrentEdition();
+  const festival = await getFirstFestival();
+  if (!festival)
+    return (
+      <main className="min-h-screen px-6 py-16 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </main>
+    );
 
   const ids = (sp.artists ?? "")
     .split(",")
@@ -21,8 +27,8 @@ export default async function PressPage({ searchParams }: PageProps) {
 
   const artists: Artist[] =
     ids.length > 0
-      ? await listArtistsByIds(edition.id, ids)
-      : await listArtists({ editionId: edition.id, archived: "active" });
+      ? await listArtistsByIds(festival.id, ids)
+      : await listArtists({ festivalId: festival.id, archived: "active" });
 
   // Hide private fields. Don't expose internal IDs, fees, contact phones,
   // passport URLs, comments, etc. — only what we'd put on a public roster.
@@ -41,31 +47,26 @@ export default async function PressPage({ searchParams }: PageProps) {
       <div className="max-w-4xl mx-auto">
         <header className="mb-14">
           <div className="text-mono text-xs uppercase tracking-[0.22em] text-brand mb-4">
-            {edition.name}
+            {festival.name}
           </div>
           <h1 className="text-display text-5xl leading-[1.05] mb-3">
             Press kit
           </h1>
           <p className="text-[--color-fg-muted] max-w-xl">
             {safe.length} {safe.length === 1 ? "artist" : "artists"}{" "}
-            {ids.length > 0 ? "on this share" : "on the current lineup"}.
-            Links open in a new tab.
+            {ids.length > 0 ? "on this share" : "on the current lineup"}. Links
+            open in a new tab.
           </p>
         </header>
 
         {safe.length === 0 ? (
           <div className="border border-[--color-border] rounded-md p-10 text-center">
-            <p className="text-[--color-fg-muted]">
-              No artists in this share.
-            </p>
+            <p className="text-[--color-fg-muted]">No artists in this share.</p>
           </div>
         ) : (
           <ul className="divide-y divide-[--color-border]">
             {safe.map((a) => (
-              <li
-                key={a.name}
-                className="py-5 flex items-start gap-4"
-              >
+              <li key={a.name} className="py-5 flex items-start gap-4">
                 <span
                   aria-hidden
                   className="mt-1 inline-block w-2 h-2 rounded-full shrink-0"
@@ -114,7 +115,7 @@ export default async function PressPage({ searchParams }: PageProps) {
         )}
 
         <footer className="mt-20 text-mono text-[10px] uppercase tracking-[0.22em] text-[--color-fg-subtle]">
-          Aegis · {edition.location ?? ""}
+          Aegis · {festival.location ?? ""}
         </footer>
       </div>
     </main>

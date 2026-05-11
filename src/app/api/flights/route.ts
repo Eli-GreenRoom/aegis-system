@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAppSession, requirePermission } from "@/lib/session";
-import { getCurrentEdition } from "@/lib/edition";
+import { getActiveFestival } from "@/lib/festivals";
 import {
   directionEnum,
   flightInputSchema,
@@ -12,11 +12,15 @@ import { createFlight, listFlights } from "@/lib/flights/repo";
 
 export async function GET(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "flights");
   if (denied) return denied;
 
-  const edition = await getCurrentEdition();
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return Response.json({ error: "No festival" }, { status: 404 });
+
   const url = new URL(req.url);
 
   const dir = url.searchParams.get("direction");
@@ -29,7 +33,7 @@ export async function GET(req: NextRequest) {
   const personKindParsed = pk ? personKindEnum.safeParse(pk) : null;
 
   const rows = await listFlights({
-    editionId: edition.id,
+    festivalId: festival.id,
     search: url.searchParams.get("search") ?? undefined,
     direction: directionParsed?.success ? directionParsed.data : undefined,
     status: statusParsed?.success ? statusParsed.data : undefined,
@@ -41,7 +45,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "flights");
   if (denied) return denied;
 
@@ -56,11 +61,17 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  const edition = await getCurrentEdition();
-  const created = await createFlight(edition.id, flightToDbValues(parsed.data));
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return Response.json({ error: "No festival" }, { status: 404 });
+
+  const created = await createFlight(
+    festival.id,
+    flightToDbValues(parsed.data),
+  );
   return Response.json({ flight: created }, { status: 201 });
 }

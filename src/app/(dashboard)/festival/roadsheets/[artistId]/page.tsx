@@ -14,7 +14,10 @@ interface PageProps {
   searchParams: Promise<{ day?: string }>;
 }
 
-export default async function RoadsheetPage({ params, searchParams }: PageProps) {
+export default async function RoadsheetPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { artistId } = await params;
   const sp = await searchParams;
   const day = sp.day;
@@ -22,18 +25,23 @@ export default async function RoadsheetPage({ params, searchParams }: PageProps)
   const sheet = await getArtistRoadsheet(artistId, day);
   if (!sheet) notFound();
 
-  const { artist, set, inboundFlight, outboundFlight, hotel, pickups, riders, payments, contract } =
-    sheet;
+  const {
+    artist,
+    set,
+    inboundFlight,
+    outboundFlight,
+    hotel,
+    pickups,
+    riders,
+    payments,
+    contract,
+  } = sheet;
 
   return (
     <>
       <Topbar
         title={artist.name}
-        subtitle={
-          day
-            ? `Roadsheet · ${day}`
-            : "Roadsheet · whole festival"
-        }
+        subtitle={day ? `Roadsheet · ${day}` : "Roadsheet · whole festival"}
         actions={
           <Link href={"/festival/roadsheets" as Route}>
             <Button variant="ghost">Back</Button>
@@ -64,7 +72,7 @@ export default async function RoadsheetPage({ params, searchParams }: PageProps)
           {set ? (
             <Row
               label={set.stage.name}
-              value={`${set.slot.day} ${set.slot.startTime} - ${set.slot.endTime} · ${set.set.status}`}
+              value={`${set.slot.date} ${set.slot.startTime} - ${set.slot.endTime} · ${set.set.status}`}
             />
           ) : (
             <Empty>No set scheduled.</Empty>
@@ -78,7 +86,10 @@ export default async function RoadsheetPage({ params, searchParams }: PageProps)
               label="Inbound"
               value={`${inboundFlight.airline ?? ""} ${inboundFlight.flightNumber ?? ""} · ${inboundFlight.fromAirport ?? "?"} → ${inboundFlight.toAirport ?? "?"} · ${
                 inboundFlight.scheduledDt
-                  ? format(new Date(inboundFlight.scheduledDt), "EEE d MMM HH:mm")
+                  ? format(
+                      new Date(inboundFlight.scheduledDt),
+                      "EEE d MMM HH:mm",
+                    )
                   : "—"
               } · ${inboundFlight.status}`}
             />
@@ -90,7 +101,10 @@ export default async function RoadsheetPage({ params, searchParams }: PageProps)
               label="Outbound"
               value={`${outboundFlight.airline ?? ""} ${outboundFlight.flightNumber ?? ""} · ${outboundFlight.fromAirport ?? "?"} → ${outboundFlight.toAirport ?? "?"} · ${
                 outboundFlight.scheduledDt
-                  ? format(new Date(outboundFlight.scheduledDt), "EEE d MMM HH:mm")
+                  ? format(
+                      new Date(outboundFlight.scheduledDt),
+                      "EEE d MMM HH:mm",
+                    )
                   : "—"
               } · ${outboundFlight.status}`}
             />
@@ -251,13 +265,7 @@ function Section({
   );
 }
 
-function Row({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex flex-wrap items-baseline gap-x-3 py-1">
       <span className="text-[--color-fg] text-sm">{label}</span>

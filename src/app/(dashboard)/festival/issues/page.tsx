@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { Route } from "next";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { getOpenIssues, type OpenIssue } from "@/lib/aggregators";
 
 export const dynamic = "force-dynamic";
@@ -17,11 +19,21 @@ const SEV_CLASS: Record<OpenIssue["severity"], string> = {
 };
 
 export default async function FestivalIssuesPage({ searchParams }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const sp = await searchParams;
   const scope = sp.scope === "week" || sp.scope === "all" ? sp.scope : "today";
 
-  const edition = await getCurrentEdition();
-  const issues = await getOpenIssues(edition.id, scope);
+  const issues = await getOpenIssues(festival.id, scope);
 
   return (
     <>

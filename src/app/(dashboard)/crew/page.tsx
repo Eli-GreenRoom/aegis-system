@@ -1,9 +1,11 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { listCrew, listCrewRoles, type ListCrewParams } from "@/lib/crew/repo";
 import CrewTable from "./_components/CrewTable";
 import CrewFilters from "./_components/CrewFilters";
@@ -17,6 +19,17 @@ interface PageProps {
 }
 
 export default async function CrewPage({ searchParams }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const sp = await searchParams;
   const archivedRaw = sp.archived ?? "active";
   const archived: ListCrewParams["archived"] =
@@ -24,22 +37,21 @@ export default async function CrewPage({ searchParams }: PageProps) {
       ? archivedRaw
       : "active";
 
-  const edition = await getCurrentEdition();
   const [crew, roles] = await Promise.all([
     listCrew({
-      editionId: edition.id,
+      festivalId: festival.id,
       search: sp.search,
       role: sp.role,
       archived,
     }),
-    listCrewRoles(edition.id),
+    listCrewRoles(festival.id),
   ]);
 
   return (
     <>
       <Topbar
         title="Crew"
-        subtitle={`${crew.length} on ${edition.name}`}
+        subtitle={`${crew.length} on ${festival.name}`}
         actions={
           <Link href="/crew/new">
             <Button>New crew</Button>

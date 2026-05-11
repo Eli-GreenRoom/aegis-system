@@ -7,7 +7,7 @@ export const FIXTURE_CONTRACT_ID = "12121212-1212-4121-8121-121212121212";
 export const fixtureContract: Contract = {
   id: FIXTURE_CONTRACT_ID,
   artistId: FIXTURE_ARTIST_ID,
-  editionId: FIXTURE_EDITION_ID,
+  festivalId: FIXTURE_EDITION_ID,
   status: "draft",
   sentAt: null,
   signedAt: null,

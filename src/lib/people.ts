@@ -15,17 +15,19 @@ export interface Person {
  * Active people (artists + crew) for the current edition. Used by flights /
  * ground / hotels pickers.
  */
-export async function listPeople(editionId: string): Promise<Person[]> {
+export async function listPeople(festivalId: string): Promise<Person[]> {
   const [artistRows, crewRows] = await Promise.all([
     db
       .select({ id: artists.id, name: artists.name, agency: artists.agency })
       .from(artists)
-      .where(and(eq(artists.editionId, editionId), isNull(artists.archivedAt)))
+      .where(
+        and(eq(artists.festivalId, festivalId), isNull(artists.archivedAt)),
+      )
       .orderBy(asc(artists.name)),
     db
       .select({ id: crew.id, name: crew.name, role: crew.role })
       .from(crew)
-      .where(and(eq(crew.editionId, editionId), isNull(crew.archivedAt)))
+      .where(and(eq(crew.festivalId, festivalId), isNull(crew.archivedAt)))
       .orderBy(asc(crew.name)),
   ]);
 

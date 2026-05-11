@@ -20,7 +20,7 @@ export const fixtureVendor: Vendor = {
 export const fixturePickup: Pickup = {
   id: FIXTURE_PICKUP_ID,
   workspaceId: null,
-  editionId: FIXTURE_EDITION_ID,
+  festivalId: FIXTURE_EDITION_ID,
   personKind: "artist",
   personId: FIXTURE_ARTIST_ID,
   routeFrom: "airport",

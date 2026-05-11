@@ -71,15 +71,15 @@ export async function deleteHotel(id: string): Promise<Hotel | null> {
 // -- Room blocks (edition-scoped deals) -----------------------------------
 
 export interface ListRoomBlocksParams {
-  editionId: string;
+  festivalId: string;
   hotelId?: string;
 }
 
 export async function listRoomBlocks({
-  editionId,
+  festivalId,
   hotelId,
 }: ListRoomBlocksParams): Promise<RoomBlock[]> {
-  const filters = [eq(hotelRoomBlocks.editionId, editionId)];
+  const filters = [eq(hotelRoomBlocks.festivalId, festivalId)];
   if (hotelId) filters.push(eq(hotelRoomBlocks.hotelId, hotelId));
   return db
     .select()
@@ -98,12 +98,12 @@ export async function getRoomBlock(id: string): Promise<RoomBlock | null> {
 }
 
 export async function createRoomBlock(
-  editionId: string,
+  festivalId: string,
   input: RoomBlockDbValues,
 ): Promise<RoomBlock> {
   const [row] = await db
     .insert(hotelRoomBlocks)
-    .values({ ...input, editionId })
+    .values({ ...input, festivalId })
     .returning();
   return row;
 }
@@ -132,7 +132,7 @@ export async function deleteRoomBlock(id: string): Promise<RoomBlock | null> {
 // -- Bookings (per-person assignments) ------------------------------------
 
 export interface ListBookingsParams {
-  editionId?: string;
+  festivalId?: string;
   hotelId?: string;
   roomBlockId?: string;
   personKind?: PersonKind;
@@ -166,11 +166,11 @@ export async function listBookings(
 
   // edition filter goes through the linked block. Bookings without a block
   // (walk-up) are scoped only by date / hotel.
-  if (params.editionId) {
+  if (params.festivalId) {
     const blockIds = await db
       .select({ id: hotelRoomBlocks.id })
       .from(hotelRoomBlocks)
-      .where(eq(hotelRoomBlocks.editionId, params.editionId));
+      .where(eq(hotelRoomBlocks.festivalId, params.festivalId));
     const ids = blockIds.map((r) => r.id);
     if (ids.length === 0) {
       // No blocks for this edition - return only walk-up bookings (no block).

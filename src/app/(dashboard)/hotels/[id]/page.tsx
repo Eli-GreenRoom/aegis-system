@@ -1,11 +1,12 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Route } from "next";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import {
   getBlockCapacity,
   getHotel,
@@ -21,14 +22,24 @@ interface PageProps {
 }
 
 export default async function HotelDetailPage({ params }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
   const { id } = await params;
   const hotel = await getHotel(id);
   if (!hotel) notFound();
 
-  const edition = await getCurrentEdition();
-  const blocks = await listRoomBlocks({ editionId: edition.id, hotelId: id });
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
+  const blocks = await listRoomBlocks({ festivalId: festival.id, hotelId: id });
   const bookings = await listBookings({
-    editionId: edition.id,
+    festivalId: festival.id,
     hotelId: id,
   });
 

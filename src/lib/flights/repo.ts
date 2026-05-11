@@ -11,7 +11,7 @@ import type {
 export type Flight = typeof flights.$inferSelect;
 
 export interface ListFlightsParams {
-  editionId: string;
+  festivalId: string;
   search?: string;
   direction?: Direction;
   status?: FlightStatus;
@@ -20,14 +20,14 @@ export interface ListFlightsParams {
 }
 
 export async function listFlights({
-  editionId,
+  festivalId,
   search,
   direction,
   status,
   personKind,
   personId,
 }: ListFlightsParams): Promise<Flight[]> {
-  const filters = [eq(flights.editionId, editionId)];
+  const filters = [eq(flights.festivalId, festivalId)];
   if (direction) filters.push(eq(flights.direction, direction));
   if (status) filters.push(eq(flights.status, status));
   if (personKind) filters.push(eq(flights.personKind, personKind));
@@ -40,7 +40,7 @@ export async function listFlights({
       ilike(flights.airline, q),
       ilike(flights.fromAirport, q),
       ilike(flights.toAirport, q),
-      ilike(flights.pnr, q)
+      ilike(flights.pnr, q),
     );
     if (searchOr) filters.push(searchOr);
   }
@@ -63,31 +63,31 @@ export async function getFlight(id: string): Promise<Flight | null> {
 
 export async function listFlightsForPerson(
   personKind: PersonKind,
-  personId: string
+  personId: string,
 ): Promise<Flight[]> {
   return db
     .select()
     .from(flights)
     .where(
-      and(eq(flights.personKind, personKind), eq(flights.personId, personId))
+      and(eq(flights.personKind, personKind), eq(flights.personId, personId)),
     )
     .orderBy(asc(flights.scheduledDt));
 }
 
 export async function createFlight(
-  editionId: string,
-  input: FlightDbValues
+  festivalId: string,
+  input: FlightDbValues,
 ): Promise<Flight> {
   const [row] = await db
     .insert(flights)
-    .values({ ...input, editionId })
+    .values({ ...input, festivalId })
     .returning();
   return row;
 }
 
 export async function updateFlight(
   id: string,
-  input: Partial<FlightDbValues>
+  input: Partial<FlightDbValues>,
 ): Promise<Flight | null> {
   if (Object.keys(input).length === 0) return getFlight(id);
   const [row] = await db

@@ -3,6 +3,7 @@ import { z } from "zod";
 const slugRegex = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const hhmmRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 const hexRegex = /^#[0-9A-Fa-f]{6}$/;
+const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 const optionalString = z.string().trim().max(500).optional().or(z.literal(""));
 
@@ -28,6 +29,7 @@ export const stageInputSchema = z.object({
     ),
   color: optionalHexColor,
   sortOrder: z.number().int().min(0).max(999).optional(),
+  activeDates: z.array(z.string().regex(dateRegex, "YYYY-MM-DD")).optional(),
 });
 
 export type StageInput = z.infer<typeof stageInputSchema>;
@@ -40,25 +42,32 @@ export const stagePatchSchema = stageInputSchema
 export type StagePatch = z.infer<typeof stagePatchSchema>;
 
 export interface StageDbValues {
+  festivalId: string;
   name: string;
   slug: string;
   color: string | null;
   sortOrder: number;
+  activeDates: string[];
 }
 
-export function stageToDbValues(input: StageInput): StageDbValues {
+export function stageToDbValues(
+  input: StageInput,
+  festivalId: string,
+): StageDbValues {
   return {
+    festivalId,
     name: input.name,
     slug: input.slug,
     color: input.color === undefined || input.color === "" ? null : input.color,
     sortOrder: input.sortOrder ?? 0,
+    activeDates: input.activeDates ?? [],
   };
 }
 
 export function stageToDbPatchValues(
   input: StagePatch,
-): Partial<StageDbValues> {
-  const out: Partial<StageDbValues> = {};
+): Partial<Omit<StageDbValues, "festivalId">> {
+  const out: Partial<Omit<StageDbValues, "festivalId">> = {};
   if ("name" in input && input.name !== undefined) out.name = input.name;
   if ("slug" in input && input.slug !== undefined) out.slug = input.slug;
   if ("color" in input) {
@@ -68,18 +77,23 @@ export function stageToDbPatchValues(
   if ("sortOrder" in input && input.sortOrder !== undefined) {
     out.sortOrder = input.sortOrder;
   }
+  if ("activeDates" in input && input.activeDates !== undefined) {
+    out.activeDates = input.activeDates;
+  }
   return out;
 }
 
 // -- Slot -----------------------------------------------------------------
 
-export const dayEnum = z.enum(["friday", "saturday", "sunday"]);
-export type Day = z.infer<typeof dayEnum>;
+// date is YYYY-MM-DD within the festival's range.
+export const slotDateSchema = z
+  .string()
+  .regex(dateRegex, "YYYY-MM-DD date required");
 
 export const slotInputSchema = z
   .object({
     stageId: z.string().uuid(),
-    day: dayEnum,
+    date: slotDateSchema,
     startTime: z.string().regex(hhmmRegex, "HH:MM (24h)"),
     endTime: z.string().regex(hhmmRegex, "HH:MM (24h)"),
     sortOrder: z.number().int().min(0).max(999).optional(),
@@ -91,11 +105,9 @@ export const slotInputSchema = z
 
 export type SlotInput = z.infer<typeof slotInputSchema>;
 
-// Patch: omit refine, then partial; refine again separately so empty-body
-// still fails. (Zod doesn't allow .partial() on a refined object directly.)
 const slotInputBase = z.object({
   stageId: z.string().uuid(),
-  day: dayEnum,
+  date: slotDateSchema,
   startTime: z.string().regex(hhmmRegex, "HH:MM (24h)"),
   endTime: z.string().regex(hhmmRegex, "HH:MM (24h)"),
   sortOrder: z.number().int().min(0).max(999).optional(),
@@ -119,7 +131,7 @@ export type SlotPatch = z.infer<typeof slotPatchSchema>;
 
 export interface SlotDbValues {
   stageId: string;
-  day: Day;
+  date: string;
   startTime: string;
   endTime: string;
   sortOrder: number;
@@ -128,7 +140,7 @@ export interface SlotDbValues {
 export function slotToDbValues(input: SlotInput): SlotDbValues {
   return {
     stageId: input.stageId,
-    day: input.day,
+    date: input.date,
     startTime: input.startTime,
     endTime: input.endTime,
     sortOrder: input.sortOrder ?? 0,
@@ -139,7 +151,7 @@ export function slotToDbPatchValues(input: SlotPatch): Partial<SlotDbValues> {
   const out: Partial<SlotDbValues> = {};
   if ("stageId" in input && input.stageId !== undefined)
     out.stageId = input.stageId;
-  if ("day" in input && input.day !== undefined) out.day = input.day;
+  if ("date" in input && input.date !== undefined) out.date = input.date;
   if ("startTime" in input && input.startTime !== undefined)
     out.startTime = input.startTime;
   if ("endTime" in input && input.endTime !== undefined)

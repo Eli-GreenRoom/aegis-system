@@ -8,7 +8,7 @@ interface SlotSet {
   slotId: string;
   slotStartTime: string;
   slotEndTime: string;
-  slotDay: string;
+  slotDate: string;
   artistId: string;
   artistName: string;
 }
@@ -38,7 +38,7 @@ export async function getNowAndNext(
     .select()
     .from(slots)
     .where(eq(slots.stageId, stageId))
-    .orderBy(asc(slots.day), asc(slots.startTime));
+    .orderBy(asc(slots.date), asc(slots.startTime));
 
   if (slotRows.length === 0) return { now: null, next: null };
 
@@ -64,7 +64,7 @@ export async function getNowAndNext(
         slotId: slot.id,
         slotStartTime: slot.startTime,
         slotEndTime: slot.endTime,
-        slotDay: slot.day,
+        slotDate: slot.date,
         artistId: r.artist.id,
         artistName: r.artist.name,
       };
@@ -89,17 +89,11 @@ export async function getNowAndNext(
   }
 
   // "next": earliest confirmed-or-live set whose start time is after `t`
-  // and isn't already the "now" pick. Cross-day ordering is loose - we
-  // sort by (day, startTime) lexicographically since `slots.day` is
-  // friday/saturday/sunday and slot times are HH:MM.
-  const dayOrder = { friday: 0, saturday: 1, sunday: 2 } as Record<
-    string,
-    number
-  >;
+  // and isn't already the "now" pick. Sort by (date, startTime)
+  // lexicographically — YYYY-MM-DD strings sort correctly as-is.
   const ordered = [...all].sort((a, b) => {
-    const da = dayOrder[a.slotDay] ?? 99;
-    const db_ = dayOrder[b.slotDay] ?? 99;
-    if (da !== db_) return da - db_;
+    const dateCmp = a.slotDate.localeCompare(b.slotDate);
+    if (dateCmp !== 0) return dateCmp;
     return a.slotStartTime.localeCompare(b.slotStartTime);
   });
   const next =

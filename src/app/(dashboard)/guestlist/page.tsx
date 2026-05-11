@@ -2,9 +2,11 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import type { Route } from "next";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { listArtists } from "@/lib/artists/repo";
 import { getGuestlistSummary, listGuestlist } from "@/lib/guestlist/repo";
 import { guestCategoryEnum } from "@/lib/guestlist/schema";
@@ -22,8 +24,18 @@ interface PageProps {
 }
 
 export default async function GuestlistPage({ searchParams }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const sp = await searchParams;
-  const edition = await getCurrentEdition();
 
   const categoryParsed = sp.category
     ? guestCategoryEnum.safeParse(sp.category)
@@ -43,7 +55,7 @@ export default async function GuestlistPage({ searchParams }: PageProps) {
 
   const [entries, summary, artists] = await Promise.all([
     listGuestlist({
-      editionId: edition.id,
+      festivalId: festival.id,
       search: sp.search,
       category: categoryParsed?.success ? categoryParsed.data : undefined,
       hostArtistId: sp.hostArtistId,
@@ -51,8 +63,8 @@ export default async function GuestlistPage({ searchParams }: PageProps) {
       inviteSent,
       checkedIn,
     }),
-    getGuestlistSummary(edition.id),
-    listArtists({ editionId: edition.id, archived: "active" }),
+    getGuestlistSummary(festival.id),
+    listArtists({ festivalId: festival.id, archived: "active" }),
   ]);
 
   const artistsById = new Map(artists.map((a) => [a.id, a.name]));
@@ -61,7 +73,7 @@ export default async function GuestlistPage({ searchParams }: PageProps) {
     <>
       <Topbar
         title="Guestlist"
-        subtitle={`${entries.length} of ${summary.total} on ${edition.name}`}
+        subtitle={`${entries.length} of ${summary.total} on ${festival.name}`}
         actions={
           <Link href={"/guestlist/new" as Route}>
             <Button>New entry</Button>

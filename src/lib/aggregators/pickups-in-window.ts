@@ -18,7 +18,7 @@ export interface PickupInWindow {
  * Spec: docs/OPERATIONS-FLOW.md -4 ("Pickups in next 2h" panel).
  */
 export async function getPickupsInWindow(
-  editionId: string,
+  festivalId: string,
   startDt: Date,
   endDt: Date,
 ): Promise<PickupInWindow[]> {
@@ -27,7 +27,7 @@ export async function getPickupsInWindow(
     .from(groundTransportPickups)
     .where(
       and(
-        eq(groundTransportPickups.editionId, editionId),
+        eq(groundTransportPickups.festivalId, festivalId),
         gte(groundTransportPickups.pickupDt, startDt),
         lt(groundTransportPickups.pickupDt, endDt),
       ),

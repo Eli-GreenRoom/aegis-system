@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { format } from "date-fns";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { listStages } from "@/lib/lineup/repo";
 import {
   getCurrentlyActiveBookings,
@@ -14,18 +16,28 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function FestivalNowPage() {
-  const edition = await getCurrentEdition();
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
   const in2h = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
-  const stages = await listStages();
+  const stages = await listStages(festival.id);
 
   const [pickupsSoon, activeBookings, issues, ...stageNowAndNext] =
     await Promise.all([
-      getPickupsInWindow(edition.id, now, in2h),
-      getCurrentlyActiveBookings(edition.id, today),
-      getOpenIssues(edition.id, "today"),
+      getPickupsInWindow(festival.id, now, in2h),
+      getCurrentlyActiveBookings(festival.id, today),
+      getOpenIssues(festival.id, "today"),
       ...stages.map((s) => getNowAndNext(s.id, now)),
     ]);
 
@@ -33,7 +45,7 @@ export default async function FestivalNowPage() {
     <>
       <Topbar
         title="Now"
-        subtitle={`${edition.name} · ${format(now, "EEE d MMM HH:mm")}`}
+        subtitle={`${festival.name} · ${format(now, "EEE d MMM HH:mm")}`}
       />
       <div className="px-6 py-6 space-y-8">
         {/* Stages: now + next */}
@@ -53,8 +65,7 @@ export default async function FestivalNowPage() {
                     <span
                       className="inline-block w-2 h-2 rounded-full"
                       style={{
-                        background:
-                          stage.color ?? "var(--color-fg-subtle)",
+                        background: stage.color ?? "var(--color-fg-subtle)",
                       }}
                     />
                     <span className="text-[13px] text-[--color-fg]">
@@ -203,7 +214,11 @@ function NowNextRow({
   tone,
 }: {
   label: string;
-  set: { artistName: string; slotStartTime: string; slotEndTime: string } | null;
+  set: {
+    artistName: string;
+    slotStartTime: string;
+    slotEndTime: string;
+  } | null;
   tone: "mint" | "brand";
 }) {
   const toneClass = tone === "mint" ? "text-mint" : "text-brand";

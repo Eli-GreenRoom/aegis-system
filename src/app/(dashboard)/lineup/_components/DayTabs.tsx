@@ -3,23 +3,26 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Suspense, useTransition } from "react";
 import type { Route } from "next";
+import { festivalDates, dateToDayLabel, type Festival } from "@/lib/festivals";
 
-const DAYS = [
-  { value: "friday", label: "Friday" },
-  { value: "saturday", label: "Saturday" },
-  { value: "sunday", label: "Sunday" },
-] as const;
+interface DayTabsInnerProps {
+  active: string;
+  festival: Pick<Festival, "startDate" | "endDate">;
+}
 
-function DayTabsInner({ active }: { active: string }) {
+function DayTabsInner({ active, festival }: DayTabsInnerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
 
-  function setDay(day: string) {
+  const dates = festivalDates(festival);
+  const firstDate = dates[0] ?? "";
+
+  function setDate(date: string) {
     const sp = new URLSearchParams(params.toString());
-    if (day === "friday") sp.delete("day");
-    else sp.set("day", day);
+    if (date === firstDate) sp.delete("date");
+    else sp.set("date", date);
     const qs = sp.toString();
     startTransition(() => {
       router.push((qs ? `${pathname}?${qs}` : pathname) as Route);
@@ -28,12 +31,12 @@ function DayTabsInner({ active }: { active: string }) {
 
   return (
     <div className="flex items-center gap-1 mb-5">
-      {DAYS.map(({ value, label }) => {
-        const isActive = active === value;
+      {dates.map((date) => {
+        const isActive = active === date;
         return (
           <button
-            key={value}
-            onClick={() => setDay(value)}
+            key={date}
+            onClick={() => setDate(date)}
             className={[
               "px-3 py-1.5 rounded-md text-sm transition-colors",
               isActive
@@ -41,7 +44,7 @@ function DayTabsInner({ active }: { active: string }) {
                 : "text-[--color-fg-muted] hover:text-[--color-fg] hover:bg-[--color-surface]",
             ].join(" ")}
           >
-            {label}
+            {dateToDayLabel(date)}
           </button>
         );
       })}
@@ -54,7 +57,10 @@ function DayTabsInner({ active }: { active: string }) {
   );
 }
 
-export default function DayTabs(props: { active: string }) {
+export default function DayTabs(props: {
+  active: string;
+  festival: Pick<Festival, "startDate" | "endDate">;
+}) {
   return (
     <Suspense>
       <DayTabsInner {...props} />

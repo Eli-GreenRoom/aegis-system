@@ -3,6 +3,10 @@
  *
  * Phase 0: Added workspaces table, rewrote teamMembers (4-role model +
  * festivalScope), added workspaceId to all tenant tables.
+ * Phase 1: Renamed festival_editions → festivals, added workspaceId/slug/
+ * description/tenantBrand; made stages festival-scoped (festivalId +
+ * activeDates); replaced slots.day enum with slots.date (YYYY-MM-DD);
+ * renamed all editionId FKs → festivalId.
  *
  * Source-of-truth spec: docs/DATA-MODEL.md
  */
@@ -36,6 +40,8 @@ export const teamMemberStatusEnum = pgEnum("team_member_status", [
   "suspended",
 ]);
 
+// stageDayEnum kept in DB for migration compatibility; no longer used by
+// application code after Phase 1. Will be dropped in a future migration.
 export const stageDayEnum = pgEnum("stage_day", [
   "friday",
   "saturday",
@@ -167,36 +173,64 @@ export const teamMembers = pgTable(
   (t) => [unique().on(t.workspaceId, t.email)],
 );
 
-// -- Festival editions / lineup --------------------------------------------
+// -- Festivals / lineup ----------------------------------------------------
 
-export const festivalEditions = pgTable("festival_editions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  year: integer("year").notNull().unique(),
-  name: text("name").notNull(),
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date").notNull(),
-  location: text("location"),
-  festivalModeActive: boolean("festival_mode_active").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const festivals = pgTable(
+  "festivals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date").notNull(),
+    location: text("location"),
+    description: text("description"),
+    // Tenant brand (logos, palette, contact) used on customer-facing exports
+    // only. App chrome stays GreenRoom emerald.
+    tenantBrand: jsonb("tenant_brand"),
+    festivalModeActive: boolean("festival_mode_active")
+      .notNull()
+      .default(false),
+    archivedAt: timestamp("archived_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [unique().on(t.workspaceId, t.slug)],
+);
 
-export const stages = pgTable("stages", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
-  color: text("color"),
-  sortOrder: integer("sort_order").notNull().default(0),
-});
+// Back-compat alias used by any remaining references to the old name.
+// Remove after the full sweep is done.
+export const festivalEditions = festivals;
+
+export const stages = pgTable(
+  "stages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    festivalId: uuid("festival_id")
+      .notNull()
+      .references(() => festivals.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    color: text("color"),
+    // Days this stage is active (YYYY-MM-DD strings within the festival range).
+    activeDates: jsonb("active_dates").notNull().default([]),
+    sortOrder: integer("sort_order").notNull().default(0),
+    archivedAt: timestamp("archived_at"),
+  },
+  (t) => [unique().on(t.festivalId, t.slug)],
+);
 
 export const slots = pgTable("slots", {
   id: uuid("id").primaryKey().defaultRandom(),
-  editionId: uuid("edition_id")
+  festivalId: uuid("festival_id")
     .notNull()
-    .references(() => festivalEditions.id, { onDelete: "cascade" }),
+    .references(() => festivals.id, { onDelete: "cascade" }),
   stageId: uuid("stage_id")
     .notNull()
     .references(() => stages.id, { onDelete: "cascade" }),
-  day: stageDayEnum("day").notNull(),
+  date: date("date").notNull(),
   startTime: text("start_time").notNull(),
   endTime: text("end_time").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
@@ -207,9 +241,9 @@ export const slots = pgTable("slots", {
 export const artists = pgTable("artists", {
   id: uuid("id").primaryKey().defaultRandom(),
   workspaceId: uuid("workspace_id").references(() => workspaces.id),
-  editionId: uuid("edition_id")
+  festivalId: uuid("festival_id")
     .notNull()
-    .references(() => festivalEditions.id, { onDelete: "cascade" }),
+    .references(() => festivals.id, { onDelete: "cascade" }),
   slug: text("slug").notNull(),
   name: text("name").notNull(),
   legalName: text("legal_name"),
@@ -237,9 +271,9 @@ export const artists = pgTable("artists", {
 export const crew = pgTable("crew", {
   id: uuid("id").primaryKey().defaultRandom(),
   workspaceId: uuid("workspace_id").references(() => workspaces.id),
-  editionId: uuid("edition_id")
+  festivalId: uuid("festival_id")
     .notNull()
-    .references(() => festivalEditions.id, { onDelete: "cascade" }),
+    .references(() => festivals.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   role: text("role").notNull(),
   email: text("email"),
@@ -276,9 +310,9 @@ export const sets = pgTable("sets", {
 export const flights = pgTable("flights", {
   id: uuid("id").primaryKey().defaultRandom(),
   workspaceId: uuid("workspace_id").references(() => workspaces.id),
-  editionId: uuid("edition_id")
+  festivalId: uuid("festival_id")
     .notNull()
-    .references(() => festivalEditions.id),
+    .references(() => festivals.id),
   personKind: personKindEnum("person_kind").notNull(),
   personId: uuid("person_id").notNull(),
   direction: flightDirectionEnum("direction").notNull(),
@@ -314,9 +348,9 @@ export const vendors = pgTable("vendors", {
 export const groundTransportPickups = pgTable("ground_transport_pickups", {
   id: uuid("id").primaryKey().defaultRandom(),
   workspaceId: uuid("workspace_id").references(() => workspaces.id),
-  editionId: uuid("edition_id")
+  festivalId: uuid("festival_id")
     .notNull()
-    .references(() => festivalEditions.id),
+    .references(() => festivals.id),
   personKind: personKindEnum("person_kind").notNull(),
   personId: uuid("person_id").notNull(),
   routeFrom: pickupRouteEnum("route_from").notNull(),
@@ -356,9 +390,9 @@ export const hotels = pgTable("hotels", {
 
 export const hotelRoomBlocks = pgTable("hotel_room_blocks", {
   id: uuid("id").primaryKey().defaultRandom(),
-  editionId: uuid("edition_id")
+  festivalId: uuid("festival_id")
     .notNull()
-    .references(() => festivalEditions.id),
+    .references(() => festivals.id),
   hotelId: uuid("hotel_id")
     .notNull()
     .references(() => hotels.id),
@@ -373,7 +407,7 @@ export const hotelRoomBlocks = pgTable("hotel_room_blocks", {
 
 export const hotelBookings = pgTable("hotel_bookings", {
   id: uuid("id").primaryKey().defaultRandom(),
-  // Direct workspace scope: no editionId on this table.
+  // Direct workspace scope: no festivalId on this table.
   workspaceId: uuid("workspace_id").references(() => workspaces.id),
   roomBlockId: uuid("room_block_id").references(() => hotelRoomBlocks.id),
   personKind: personKindEnum("person_kind").notNull(),
@@ -400,9 +434,9 @@ export const hotelBookings = pgTable("hotel_bookings", {
 export const invoices = pgTable("invoices", {
   id: uuid("id").primaryKey().defaultRandom(),
   workspaceId: uuid("workspace_id").references(() => workspaces.id),
-  editionId: uuid("edition_id")
+  festivalId: uuid("festival_id")
     .notNull()
-    .references(() => festivalEditions.id),
+    .references(() => festivals.id),
   number: text("number"),
   issuerKind: text("issuer_kind").notNull(),
   issuerId: uuid("issuer_id"),
@@ -419,9 +453,9 @@ export const invoices = pgTable("invoices", {
 export const payments = pgTable("payments", {
   id: uuid("id").primaryKey().defaultRandom(),
   workspaceId: uuid("workspace_id").references(() => workspaces.id),
-  editionId: uuid("edition_id")
+  festivalId: uuid("festival_id")
     .notNull()
-    .references(() => festivalEditions.id),
+    .references(() => festivals.id),
   artistId: uuid("artist_id").references(() => artists.id),
   vendorId: uuid("vendor_id").references(() => vendors.id),
   invoiceId: uuid("invoice_id").references(() => invoices.id),
@@ -444,9 +478,9 @@ export const contracts = pgTable("contracts", {
   artistId: uuid("artist_id")
     .notNull()
     .references(() => artists.id, { onDelete: "cascade" }),
-  editionId: uuid("edition_id")
+  festivalId: uuid("festival_id")
     .notNull()
-    .references(() => festivalEditions.id),
+    .references(() => festivals.id),
   status: contractStatusEnum("status").notNull().default("draft"),
   sentAt: timestamp("sent_at"),
   signedAt: timestamp("signed_at"),
@@ -471,7 +505,6 @@ export const riders = pgTable("riders", {
 
 export const documents = pgTable("documents", {
   id: uuid("id").primaryKey().defaultRandom(),
-  // Phase 0: renamed from ownerId (text user-id) to workspaceId (uuid FK).
   workspaceId: uuid("workspace_id").references(() => workspaces.id),
   entityType: text("entity_type").notNull(),
   entityId: uuid("entity_id"),
@@ -489,9 +522,9 @@ export const documents = pgTable("documents", {
 export const guestlistEntries = pgTable("guestlist_entries", {
   id: uuid("id").primaryKey().defaultRandom(),
   workspaceId: uuid("workspace_id").references(() => workspaces.id),
-  editionId: uuid("edition_id")
+  festivalId: uuid("festival_id")
     .notNull()
-    .references(() => festivalEditions.id),
+    .references(() => festivals.id),
   category: guestCategoryEnum("category").notNull(),
   hostArtistId: uuid("host_artist_id").references(() => artists.id),
   name: text("name").notNull(),

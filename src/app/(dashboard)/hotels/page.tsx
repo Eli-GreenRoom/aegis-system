@@ -2,9 +2,11 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import type { Route } from "next";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { listHotels, listRoomBlocks } from "@/lib/hotels/repo";
 
 interface PageProps {
@@ -12,12 +14,22 @@ interface PageProps {
 }
 
 export default async function HotelsPage({ searchParams }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const sp = await searchParams;
-  const edition = await getCurrentEdition();
 
   const [hotels, blocks] = await Promise.all([
     listHotels({ search: sp.search }),
-    listRoomBlocks({ editionId: edition.id }),
+    listRoomBlocks({ festivalId: festival.id }),
   ]);
 
   // Aggregate rooms reserved per hotel for the current edition.
@@ -35,7 +47,7 @@ export default async function HotelsPage({ searchParams }: PageProps) {
     <>
       <Topbar
         title="Hotels"
-        subtitle={`${hotels.length} ${hotels.length === 1 ? "hotel" : "hotels"} · ${edition.name}`}
+        subtitle={`${hotels.length} ${hotels.length === 1 ? "hotel" : "hotels"} · ${festival.name}`}
         actions={
           <div className="flex items-center gap-2">
             <Link href={"/hotels/bookings" as Route}>

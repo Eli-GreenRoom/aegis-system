@@ -9,7 +9,7 @@ export const FIXTURE_PAYMENT_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 export const fixtureInvoice: Invoice = {
   id: FIXTURE_INVOICE_ID,
   workspaceId: null,
-  editionId: FIXTURE_EDITION_ID,
+  festivalId: FIXTURE_EDITION_ID,
   number: "INV-001",
   issuerKind: "agency",
   issuerId: null,
@@ -26,7 +26,7 @@ export const fixtureInvoice: Invoice = {
 export const fixturePayment: Payment = {
   id: FIXTURE_PAYMENT_ID,
   workspaceId: null,
-  editionId: FIXTURE_EDITION_ID,
+  festivalId: FIXTURE_EDITION_ID,
   artistId: FIXTURE_ARTIST_ID,
   vendorId: null,
   invoiceId: FIXTURE_INVOICE_ID,

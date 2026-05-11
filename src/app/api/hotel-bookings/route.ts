@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAppSession, requirePermission } from "@/lib/session";
-import { getCurrentEdition } from "@/lib/edition";
+import { getActiveFestival } from "@/lib/festivals";
 import {
   hotelBookingInputSchema,
   hotelBookingToDbValues,
@@ -20,7 +20,8 @@ const VALID_STATUSES = new Set([
 
 export async function GET(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "hotels");
   if (denied) return denied;
 
@@ -29,7 +30,9 @@ export async function GET(req: NextRequest) {
   const roomBlockId = url.searchParams.get("roomBlockId") ?? undefined;
   const personKindRaw = url.searchParams.get("personKind") ?? undefined;
   const personKind: PersonKind | undefined =
-    personKindRaw === "artist" || personKindRaw === "crew" ? personKindRaw : undefined;
+    personKindRaw === "artist" || personKindRaw === "crew"
+      ? personKindRaw
+      : undefined;
   const personId = url.searchParams.get("personId") ?? undefined;
   const statusRaw = url.searchParams.get("status") ?? undefined;
   const status: HotelBookingStatus | undefined =
@@ -39,16 +42,19 @@ export async function GET(req: NextRequest) {
   const activeFrom = url.searchParams.get("activeFrom") ?? undefined;
   const activeTo = url.searchParams.get("activeTo") ?? undefined;
 
-  // Default to current-edition scope unless caller passed roomBlockId or
+  // Default to current-festival scope unless caller passed roomBlockId or
   // an explicit "scope=all" override.
   const scope = url.searchParams.get("scope");
-  let editionId: string | undefined;
+  let festivalId: string | undefined;
   if (!roomBlockId && scope !== "all") {
-    editionId = (await getCurrentEdition()).id;
+    const festival = await getActiveFestival(session);
+    if (!festival)
+      return Response.json({ error: "No festival" }, { status: 404 });
+    festivalId = festival.id;
   }
 
   const rows = await listBookings({
-    editionId,
+    festivalId,
     hotelId,
     roomBlockId,
     personKind,
@@ -62,7 +68,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "hotels");
   if (denied) return denied;
 
@@ -77,7 +84,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

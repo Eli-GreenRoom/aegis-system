@@ -30,6 +30,24 @@ vi.mock("@/lib/edition", () => ({
   })),
 }));
 
+vi.mock("@/lib/festivals", () => ({
+  getActiveFestival: vi.fn(async () => ({
+    id: FIXTURE_EDITION_ID,
+    workspaceId: null,
+    slug: "aegis-2026",
+    name: "Aegis Festival 2026",
+    startDate: "2026-08-14",
+    endDate: "2026-08-16",
+    location: "Aranoon Village, Batroun",
+    description: null,
+    tenantBrand: null,
+    festivalModeActive: false,
+    archivedAt: null,
+    createdAt: new Date(),
+  })),
+  festivalDates: vi.fn(() => ["2026-08-14", "2026-08-15", "2026-08-16"]),
+}));
+
 const batchImpl = vi.fn(async (_queries: unknown[]): Promise<unknown[]> => []);
 
 vi.mock("@/db/client", () => ({
@@ -314,7 +332,7 @@ describe("/api/room-blocks", () => {
     const body = await res.json();
     expect(body.roomBlocks).toHaveLength(1);
     expect(mocks.repo.listRoomBlocks).toHaveBeenCalledWith({
-      editionId: FIXTURE_EDITION_ID,
+      festivalId: FIXTURE_EDITION_ID,
       hotelId: undefined,
     });
   });
@@ -324,7 +342,7 @@ describe("/api/room-blocks", () => {
       jsonReq(`http://test/api/room-blocks?hotelId=${FIXTURE_HOTEL_ID}`, "GET"),
     );
     expect(mocks.repo.listRoomBlocks).toHaveBeenCalledWith({
-      editionId: FIXTURE_EDITION_ID,
+      festivalId: FIXTURE_EDITION_ID,
       hotelId: FIXTURE_HOTEL_ID,
     });
   });
@@ -463,7 +481,7 @@ describe("/api/hotel-bookings", () => {
   it("GET defaults to current-edition scope", async () => {
     await bookingsListGET(jsonReq("http://test/api/hotel-bookings", "GET"));
     expect(mocks.repo.listBookings).toHaveBeenCalledWith(
-      expect.objectContaining({ editionId: FIXTURE_EDITION_ID }),
+      expect.objectContaining({ festivalId: FIXTURE_EDITION_ID }),
     );
   });
 
@@ -472,7 +490,7 @@ describe("/api/hotel-bookings", () => {
       jsonReq("http://test/api/hotel-bookings?scope=all", "GET"),
     );
     expect(mocks.repo.listBookings).toHaveBeenCalledWith(
-      expect.objectContaining({ editionId: undefined }),
+      expect.objectContaining({ festivalId: undefined }),
     );
   });
 

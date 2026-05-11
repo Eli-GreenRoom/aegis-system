@@ -6,17 +6,17 @@ import type { ContractDbValues, ContractStatus } from "./schema";
 export type Contract = typeof contracts.$inferSelect;
 
 export interface ListContractsParams {
-  editionId: string;
+  festivalId: string;
   artistId?: string;
   status?: ContractStatus;
 }
 
 export async function listContracts({
-  editionId,
+  festivalId,
   artistId,
   status,
 }: ListContractsParams): Promise<Contract[]> {
-  const filters = [eq(contracts.editionId, editionId)];
+  const filters = [eq(contracts.festivalId, festivalId)];
   if (artistId) filters.push(eq(contracts.artistId, artistId));
   if (status) filters.push(eq(contracts.status, status));
 
@@ -28,7 +28,7 @@ export async function listContracts({
 }
 
 export async function listContractsForArtist(
-  artistId: string
+  artistId: string,
 ): Promise<Contract[]> {
   return db
     .select()
@@ -47,19 +47,19 @@ export async function getContract(id: string): Promise<Contract | null> {
 }
 
 export async function createContract(
-  editionId: string,
-  input: ContractDbValues
+  festivalId: string,
+  input: ContractDbValues,
 ): Promise<Contract> {
   const [row] = await db
     .insert(contracts)
-    .values({ ...input, editionId })
+    .values({ ...input, festivalId })
     .returning();
   return row;
 }
 
 export async function updateContract(
   id: string,
-  input: Partial<ContractDbValues>
+  input: Partial<ContractDbValues>,
 ): Promise<Contract | null> {
   if (Object.keys(input).length === 0) return getContract(id);
   const [row] = await db
@@ -73,7 +73,7 @@ export async function updateContract(
 /** Unawaited update builder for use inside `db.batch([..., recordTransition])`. */
 export function buildUpdateContract(
   id: string,
-  input: Partial<ContractDbValues>
+  input: Partial<ContractDbValues>,
 ) {
   return db
     .update(contracts)

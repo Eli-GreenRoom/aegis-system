@@ -26,6 +26,24 @@ vi.mock("@/lib/edition", () => ({
   })),
 }));
 
+vi.mock("@/lib/festivals", () => ({
+  getActiveFestival: vi.fn(async () => ({
+    id: FIXTURE_EDITION_ID,
+    workspaceId: null,
+    slug: "aegis-2026",
+    name: "Aegis Festival 2026",
+    startDate: "2026-08-14",
+    endDate: "2026-08-16",
+    location: "Aranoon Village, Batroun",
+    description: null,
+    tenantBrand: null,
+    festivalModeActive: false,
+    archivedAt: null,
+    createdAt: new Date(),
+  })),
+  festivalDates: vi.fn(() => ["2026-08-14", "2026-08-15", "2026-08-16"]),
+}));
+
 const batchImpl = vi.fn(async (_queries: unknown[]): Promise<unknown[]> => []);
 
 vi.mock("@/db/client", () => ({
@@ -116,7 +134,7 @@ describe("GET /api/flights", () => {
       ),
     );
     expect(mocks.repo.listFlights).toHaveBeenCalledWith({
-      editionId: FIXTURE_EDITION_ID,
+      festivalId: FIXTURE_EDITION_ID,
       search: "ME202",
       direction: "inbound",
       status: "scheduled",
@@ -133,7 +151,7 @@ describe("GET /api/flights", () => {
       ),
     );
     expect(mocks.repo.listFlights).toHaveBeenCalledWith({
-      editionId: FIXTURE_EDITION_ID,
+      festivalId: FIXTURE_EDITION_ID,
       search: undefined,
       direction: undefined,
       status: undefined,

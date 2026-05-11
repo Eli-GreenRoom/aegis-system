@@ -6,19 +6,19 @@ import type { CrewDbValues } from "./schema";
 export type CrewMember = typeof crew.$inferSelect;
 
 export interface ListCrewParams {
-  editionId: string;
+  festivalId: string;
   search?: string;
   role?: string;
   archived?: "active" | "archived" | "all";
 }
 
 export async function listCrew({
-  editionId,
+  festivalId,
   search,
   role,
   archived = "active",
 }: ListCrewParams): Promise<CrewMember[]> {
-  const filters = [eq(crew.editionId, editionId)];
+  const filters = [eq(crew.festivalId, festivalId)];
 
   if (archived === "active") filters.push(isNull(crew.archivedAt));
   if (archived === "archived") filters.push(isNotNull(crew.archivedAt));
@@ -33,7 +33,7 @@ export async function listCrew({
       ilike(crew.name, q),
       ilike(crew.role, q),
       ilike(crew.email, q),
-      ilike(crew.phone, q)
+      ilike(crew.phone, q),
     );
     if (searchOr) filters.push(searchOr);
   }
@@ -45,38 +45,34 @@ export async function listCrew({
     .orderBy(asc(crew.name));
 }
 
-export async function listCrewRoles(editionId: string): Promise<string[]> {
+export async function listCrewRoles(festivalId: string): Promise<string[]> {
   const rows = await db
     .selectDistinct({ role: crew.role })
     .from(crew)
-    .where(and(eq(crew.editionId, editionId), isNotNull(crew.role)))
+    .where(and(eq(crew.festivalId, festivalId), isNotNull(crew.role)))
     .orderBy(asc(crew.role));
   return rows.map((r) => r.role).filter((r): r is string => !!r);
 }
 
 export async function getCrewMember(id: string): Promise<CrewMember | null> {
-  const [row] = await db
-    .select()
-    .from(crew)
-    .where(eq(crew.id, id))
-    .limit(1);
+  const [row] = await db.select().from(crew).where(eq(crew.id, id)).limit(1);
   return row ?? null;
 }
 
 export async function createCrewMember(
-  editionId: string,
-  input: CrewDbValues
+  festivalId: string,
+  input: CrewDbValues,
 ): Promise<CrewMember> {
   const [row] = await db
     .insert(crew)
-    .values({ ...input, editionId })
+    .values({ ...input, festivalId })
     .returning();
   return row;
 }
 
 export async function updateCrewMember(
   id: string,
-  input: Partial<CrewDbValues>
+  input: Partial<CrewDbValues>,
 ): Promise<CrewMember | null> {
   if (Object.keys(input).length === 0) {
     return getCrewMember(id);
@@ -89,7 +85,9 @@ export async function updateCrewMember(
   return row ?? null;
 }
 
-export async function archiveCrewMember(id: string): Promise<CrewMember | null> {
+export async function archiveCrewMember(
+  id: string,
+): Promise<CrewMember | null> {
   const [row] = await db
     .update(crew)
     .set({ archivedAt: sql`now()` })
@@ -98,7 +96,9 @@ export async function archiveCrewMember(id: string): Promise<CrewMember | null> 
   return row ?? null;
 }
 
-export async function unarchiveCrewMember(id: string): Promise<CrewMember | null> {
+export async function unarchiveCrewMember(
+  id: string,
+): Promise<CrewMember | null> {
   const [row] = await db
     .update(crew)
     .set({ archivedAt: null })

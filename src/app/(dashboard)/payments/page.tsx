@@ -2,9 +2,11 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import type { Route } from "next";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import {
   getPaymentsSummary,
   listInvoices,
@@ -27,8 +29,18 @@ interface PageProps {
 }
 
 export default async function PaymentsPage({ searchParams }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const sp = await searchParams;
-  const edition = await getCurrentEdition();
 
   const statusParsed = sp.status
     ? paymentStatusEnum.safeParse(sp.status)
@@ -36,17 +48,17 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
 
   const [payments, summary, artists, vendors, invoices] = await Promise.all([
     listPayments({
-      editionId: edition.id,
+      festivalId: festival.id,
       search: sp.search,
       status: statusParsed?.success ? statusParsed.data : undefined,
       artistId: sp.artistId,
       vendorId: sp.vendorId,
       invoiceId: sp.invoiceId,
     }),
-    getPaymentsSummary(edition.id),
-    listArtists({ editionId: edition.id, archived: "active" }),
+    getPaymentsSummary(festival.id),
+    listArtists({ festivalId: festival.id, archived: "active" }),
     listVendors(),
-    listInvoices({ editionId: edition.id }),
+    listInvoices({ festivalId: festival.id }),
   ]);
   const artistsById = new Map(artists.map((a) => [a.id, a.name]));
   const vendorsById = new Map(vendors.map((v) => [v.id, v.name]));
@@ -58,7 +70,7 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
     <>
       <Topbar
         title="Payments"
-        subtitle={`${payments.length} on ${edition.name}`}
+        subtitle={`${payments.length} on ${festival.name}`}
         actions={
           <div className="flex items-center gap-2">
             <Link href={"/payments/invoices" as Route}>

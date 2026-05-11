@@ -54,7 +54,7 @@ interface Scope {
  * Spec: docs/OPERATIONS-FLOW.md -4 (rule list).
  */
 export async function getOpenIssues(
-  editionId: string,
+  festivalId: string,
   scope: OpenIssuesScope,
   now: Date = new Date(),
 ): Promise<OpenIssue[]> {
@@ -77,11 +77,13 @@ export async function getOpenIssues(
       .select({ set: sets, slot: slots })
       .from(sets)
       .innerJoin(slots, eq(sets.slotId, slots.id))
-      .where(and(eq(slots.editionId, editionId), eq(sets.status, "confirmed"))),
+      .where(
+        and(eq(slots.festivalId, festivalId), eq(sets.status, "confirmed")),
+      ),
 
     // All contracts for this edition - to figure out which sets have
     // an associated contract for their artist.
-    db.select().from(contracts).where(eq(contracts.editionId, editionId)),
+    db.select().from(contracts).where(eq(contracts.festivalId, festivalId)),
 
     // All riders. Riders link to artist, not edition; we'll filter by
     // edition-scoped artists below.
@@ -94,7 +96,7 @@ export async function getOpenIssues(
           .from(flights)
           .where(
             and(
-              eq(flights.editionId, editionId),
+              eq(flights.festivalId, festivalId),
               eq(flights.direction, "inbound"),
               gte(flights.scheduledDt, rules.start),
               lt(flights.scheduledDt, rules.end),
@@ -105,7 +107,7 @@ export async function getOpenIssues(
           .from(flights)
           .where(
             and(
-              eq(flights.editionId, editionId),
+              eq(flights.festivalId, festivalId),
               eq(flights.direction, "inbound"),
             ),
           ),
@@ -114,10 +116,10 @@ export async function getOpenIssues(
     db
       .select()
       .from(groundTransportPickups)
-      .where(eq(groundTransportPickups.editionId, editionId)),
+      .where(eq(groundTransportPickups.festivalId, festivalId)),
 
     // All payments for this edition.
-    db.select().from(payments).where(eq(payments.editionId, editionId)),
+    db.select().from(payments).where(eq(payments.festivalId, festivalId)),
 
     // Bookings active on each day in scope (we'll dedupe).
     db.select().from(hotelBookings),
@@ -129,14 +131,14 @@ export async function getOpenIssues(
           .from(guestlistEntries)
           .where(
             and(
-              eq(guestlistEntries.editionId, editionId),
+              eq(guestlistEntries.festivalId, festivalId),
               eq(guestlistEntries.inviteSent, false),
             ),
           )
       : db
           .select()
           .from(guestlistEntries)
-          .where(eq(guestlistEntries.editionId, editionId)),
+          .where(eq(guestlistEntries.festivalId, festivalId)),
 
     // Pickups completed in the last 60 minutes - candidates for the
     // "where did they go?" rule.
@@ -146,7 +148,7 @@ export async function getOpenIssues(
           .from(groundTransportPickups)
           .where(
             and(
-              eq(groundTransportPickups.editionId, editionId),
+              eq(groundTransportPickups.festivalId, festivalId),
               eq(groundTransportPickups.status, "completed"),
               gte(
                 groundTransportPickups.completedAt,
@@ -160,7 +162,7 @@ export async function getOpenIssues(
           .from(groundTransportPickups)
           .where(
             and(
-              eq(groundTransportPickups.editionId, editionId),
+              eq(groundTransportPickups.festivalId, festivalId),
               eq(groundTransportPickups.status, "completed"),
             ),
           ),
@@ -194,14 +196,14 @@ export async function getOpenIssues(
   const editionArtists = await db
     .select({ id: artists.id })
     .from(artists)
-    .where(eq(artists.editionId, editionId));
+    .where(eq(artists.festivalId, festivalId));
   const editionArtistIds = new Set(editionArtists.map((a) => a.id));
 
   const issues: OpenIssue[] = [];
 
   // Rule 1: confirmed set + no contract uploaded - high.
   for (const { set, slot } of confirmedSets) {
-    if (!inScope(slot.startTime, slot.day, rules, now)) continue;
+    if (!inScope(slot.date, rules, now)) continue;
     const c = contractByArtistId.get(set.artistId);
     const hasUploadedContract = !!c && (!!c.fileUrl || !!c.signedFileUrl);
     if (!hasUploadedContract) {
@@ -219,7 +221,7 @@ export async function getOpenIssues(
 
   // Rule 2: confirmed set + no rider received - medium.
   for (const { set, slot } of confirmedSets) {
-    if (!inScope(slot.startTime, slot.day, rules, now)) continue;
+    if (!inScope(slot.date, rules, now)) continue;
     const list = ridersByArtistId.get(set.artistId) ?? [];
     const anyReceived = list.some((r) => !!r.fileUrl || r.confirmed);
     if (!anyReceived && editionArtistIds.has(set.artistId)) {
@@ -263,7 +265,7 @@ export async function getOpenIssues(
     paymentsByArtistId.set(p.artistId, list);
   }
   for (const { set, slot } of confirmedSets) {
-    if (!inScope(slot.startTime, slot.day, rules, now)) continue;
+    if (!inScope(slot.date, rules, now)) continue;
     const list = paymentsByArtistId.get(set.artistId) ?? [];
     const anyUnpaid = list.some(
       (p) => p.status !== "paid" && p.status !== "void",
@@ -359,51 +361,29 @@ function makeScope(scope: OpenIssuesScope, now: Date): Scope | null {
 }
 
 /**
- * Approximate "is this slot in scope" check. Slot times are HH:MM
- * strings + a day-of-week enum, not absolute datetimes - so we treat
- * "today" as "the slot's day matches today's day name OR is one of the
- * three festival days within the next 7 if scope is week". For 'all'
- * we accept everything. This is a coarse filter; UI does the final
- * sort by the slot's start time.
+ * Is this slot's date within the scope window? Slot now carries a
+ * `date` string (YYYY-MM-DD) which compares correctly lexicographically.
+ * For 'all' scope (null) every slot is in scope.
  */
-function inScope(
-  _slotStartTime: string,
-  slotDay: string,
-  scope: Scope | null,
-  now: Date,
-): boolean {
+function inScope(slotDate: string, scope: Scope | null, now: Date): boolean {
   if (!scope) return true;
-  // Map JS day name -> our enum.
-  const todayName = now
-    .toLocaleDateString("en-US", { weekday: "long" })
-    .toLowerCase();
-  if (scope === null) return true;
-  const dayMs = 24 * 60 * 60 * 1000;
-  const hours = (scope.end.getTime() - scope.start.getTime()) / 3600000;
-  if (hours <= 24) {
-    return slotDay === todayName;
-  }
-  // 'week' scope: any of the festival days that fall within the window.
-  // Without the edition's start date in this aggregator we can't pin
-  // each festival day to a calendar date, so we accept all three. The
-  // chronological sort downstream handles ordering.
-  void dayMs;
-  return ["friday", "saturday", "sunday"].includes(slotDay);
+  void now;
+  // Compare the date string against the scope window boundaries.
+  // scope.start and scope.end are Date objects; extract their UTC date strings.
+  const scopeStartDate = scope.start.toISOString().slice(0, 10);
+  const scopeEndDate = scope.end.toISOString().slice(0, 10);
+  return slotDate >= scopeStartDate && slotDate < scopeEndDate;
 }
 
 function anchor(
   slot: typeof slots.$inferSelect,
   scope: Scope | null,
-  now: Date,
+  _now: Date,
 ): string | null {
-  // Best-effort: combine today's date with the slot start time so the
-  // sort gets something stable. Only meaningful for 'today' scope; for
-  // 'week' / 'all' the slot day enum is the strongest hint.
+  // Combine slot.date (YYYY-MM-DD) with slot.startTime (HH:MM) for a
+  // stable ISO anchor that sorts correctly across festival days.
   if (!scope) return null;
-  const [hh, mm] = slot.startTime.split(":").map(Number);
-  const a = new Date(now);
-  a.setHours(hh, mm, 0, 0);
-  return a.toISOString();
+  return `${slot.date}T${slot.startTime}:00.000Z`;
 }
 
 function bookingActiveInScope(

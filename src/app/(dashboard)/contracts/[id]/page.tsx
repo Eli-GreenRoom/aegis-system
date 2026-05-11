@@ -1,8 +1,9 @@
 export const dynamic = "force-dynamic";
 
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { listArtists } from "@/lib/artists/repo";
 import { getContract } from "@/lib/contracts/repo";
 import ContractForm from "../_components/ContractForm";
@@ -12,13 +13,23 @@ interface PageProps {
 }
 
 export default async function ContractDetailPage({ params }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
   const { id } = await params;
   const contract = await getContract(id);
   if (!contract) notFound();
 
-  const edition = await getCurrentEdition();
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const artists = await listArtists({
-    editionId: edition.id,
+    festivalId: festival.id,
     archived: "active",
   });
 

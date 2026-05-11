@@ -2,9 +2,11 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import type { Route } from "next";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { listInvoices, listInvoiceIssuerKinds } from "@/lib/payments/repo";
 import { formatCents } from "@/lib/utils";
 
@@ -17,24 +19,34 @@ interface PageProps {
 }
 
 export default async function InvoicesPage({ searchParams }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const sp = await searchParams;
-  const edition = await getCurrentEdition();
 
   const [invoices, kinds] = await Promise.all([
     listInvoices({
-      editionId: edition.id,
+      festivalId: festival.id,
       search: sp.search,
       status: sp.status,
       issuerKind: sp.issuerKind,
     }),
-    listInvoiceIssuerKinds(edition.id),
+    listInvoiceIssuerKinds(festival.id),
   ]);
 
   return (
     <>
       <Topbar
         title="Invoices"
-        subtitle={`${invoices.length} on ${edition.name}`}
+        subtitle={`${invoices.length} on ${festival.name}`}
         actions={
           <div className="flex items-center gap-2">
             <Link href={"/payments" as Route}>

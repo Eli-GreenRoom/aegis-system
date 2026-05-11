@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCents } from "@/lib/utils";
-import type { Day, SetStatus } from "@/lib/lineup/schema";
+import type { SetStatus } from "@/lib/lineup/schema";
 import type {
   Slot,
   SlotWithSets,
@@ -21,7 +21,7 @@ interface ArtistOption {
 }
 
 interface Props {
-  day: Day;
+  day: string;
   grid: StageWithSlots[];
   artists: ArtistOption[];
 }
@@ -383,7 +383,7 @@ type SlotDialogProps =
   | {
       mode: "add";
       stageId: string;
-      day: Day;
+      day: string;
       stageName: string;
       onClose: () => void;
       onSaved: () => void;
@@ -416,7 +416,7 @@ function SlotDialog(props: SlotDialogProps) {
       ? { startTime, endTime }
       : {
           stageId: props.stageId,
-          day: props.day,
+          date: props.day,
           startTime,
           endTime,
         };
@@ -438,7 +438,7 @@ function SlotDialog(props: SlotDialogProps) {
   const title = isEdit
     ? `Edit slot · ${props.slot.startTime}-${props.slot.endTime}`
     : `New slot · ${props.stageName}`;
-  const subtitle = isEdit ? props.slot.day : props.day;
+  const subtitle = isEdit ? props.slot.date : props.day;
 
   return (
     <Dialog title={title} onClose={props.onClose}>

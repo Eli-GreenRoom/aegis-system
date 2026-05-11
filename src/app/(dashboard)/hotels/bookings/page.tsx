@@ -2,9 +2,11 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import type { Route } from "next";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { hotelBookingStatusEnum, personKindEnum } from "@/lib/hotels/schema";
 import { listBookings, listHotels, listRoomBlocks } from "@/lib/hotels/repo";
 import { resolvePeople } from "@/lib/people";
@@ -23,8 +25,18 @@ interface PageProps {
 }
 
 export default async function BookingsPage({ searchParams }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const sp = await searchParams;
-  const edition = await getCurrentEdition();
 
   const statusParsed = sp.status
     ? hotelBookingStatusEnum.safeParse(sp.status)
@@ -35,7 +47,7 @@ export default async function BookingsPage({ searchParams }: PageProps) {
 
   const [bookings, hotels, blocks] = await Promise.all([
     listBookings({
-      editionId: edition.id,
+      festivalId: festival.id,
       hotelId: sp.hotelId,
       roomBlockId: sp.roomBlockId,
       status: statusParsed?.success ? statusParsed.data : undefined,
@@ -45,7 +57,7 @@ export default async function BookingsPage({ searchParams }: PageProps) {
       activeTo: sp.activeTo,
     }),
     listHotels(),
-    listRoomBlocks({ editionId: edition.id }),
+    listRoomBlocks({ festivalId: festival.id }),
   ]);
 
   const people = await resolvePeople(
@@ -59,7 +71,7 @@ export default async function BookingsPage({ searchParams }: PageProps) {
     <>
       <Topbar
         title="Bookings"
-        subtitle={`${bookings.length} on ${edition.name}`}
+        subtitle={`${bookings.length} on ${festival.name}`}
         actions={
           <Link href={"/hotels/bookings/new" as Route}>
             <Button>New booking</Button>

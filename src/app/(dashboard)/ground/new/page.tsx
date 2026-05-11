@@ -1,15 +1,27 @@
 export const dynamic = "force-dynamic";
 
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { listPeople } from "@/lib/people";
 import { listVendors } from "@/lib/ground/repo";
 import PickupForm from "../_components/PickupForm";
 
 export default async function NewPickupPage() {
-  const edition = await getCurrentEdition();
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const [people, vendors] = await Promise.all([
-    listPeople(edition.id),
+    listPeople(festival.id),
     listVendors(),
   ]);
 

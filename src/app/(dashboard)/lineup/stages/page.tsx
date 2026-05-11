@@ -1,13 +1,27 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { listStages } from "@/lib/lineup/repo";
 import StagesAdmin from "./_components/StagesAdmin";
 
 export default async function StagesPage() {
-  const stages = await listStages();
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
+  const stages = await listStages(festival.id);
   return (
     <>
       <Topbar

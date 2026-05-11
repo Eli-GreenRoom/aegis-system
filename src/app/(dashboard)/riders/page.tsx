@@ -2,9 +2,11 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import type { Route } from "next";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { listArtists } from "@/lib/artists/repo";
 import { listRiders } from "@/lib/riders/repo";
 import { riderKindEnum } from "@/lib/riders/schema";
@@ -19,8 +21,18 @@ interface PageProps {
 }
 
 export default async function RidersPage({ searchParams }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const sp = await searchParams;
-  const edition = await getCurrentEdition();
 
   const kindParsed = sp.kind ? riderKindEnum.safeParse(sp.kind) : null;
   const confirmed =
@@ -32,12 +44,12 @@ export default async function RidersPage({ searchParams }: PageProps) {
 
   const [riders, artists] = await Promise.all([
     listRiders({
-      editionId: edition.id,
+      festivalId: festival.id,
       artistId: sp.artistId,
       kind: kindParsed?.success ? kindParsed.data : undefined,
       confirmed,
     }),
-    listArtists({ editionId: edition.id, archived: "active" }),
+    listArtists({ festivalId: festival.id, archived: "active" }),
   ]);
 
   const artistsById = new Map(artists.map((a) => [a.id, a.name]));
@@ -46,7 +58,7 @@ export default async function RidersPage({ searchParams }: PageProps) {
     <>
       <Topbar
         title="Riders"
-        subtitle={`${riders.length} on ${edition.name}`}
+        subtitle={`${riders.length} on ${festival.name}`}
         actions={
           <Link href={"/riders/new" as Route}>
             <Button>New rider</Button>

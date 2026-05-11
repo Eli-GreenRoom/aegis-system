@@ -3,9 +3,11 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { format } from "date-fns";
 import type { Route } from "next";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { listArtists } from "@/lib/artists/repo";
 import { listContracts } from "@/lib/contracts/repo";
 import {
@@ -21,8 +23,18 @@ interface PageProps {
 }
 
 export default async function ContractsPage({ searchParams }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const sp = await searchParams;
-  const edition = await getCurrentEdition();
 
   const statusParsed = sp.status
     ? contractStatusEnum.safeParse(sp.status)
@@ -30,11 +42,11 @@ export default async function ContractsPage({ searchParams }: PageProps) {
 
   const [contracts, artists] = await Promise.all([
     listContracts({
-      editionId: edition.id,
+      festivalId: festival.id,
       artistId: sp.artistId,
       status: statusParsed?.success ? statusParsed.data : undefined,
     }),
-    listArtists({ editionId: edition.id, archived: "active" }),
+    listArtists({ festivalId: festival.id, archived: "active" }),
   ]);
 
   const artistsById = new Map(artists.map((a) => [a.id, a.name]));
@@ -43,7 +55,7 @@ export default async function ContractsPage({ searchParams }: PageProps) {
     <>
       <Topbar
         title="Contracts"
-        subtitle={`${contracts.length} on ${edition.name}`}
+        subtitle={`${contracts.length} on ${festival.name}`}
         actions={
           <Link href={"/contracts/new" as Route}>
             <Button>New contract</Button>

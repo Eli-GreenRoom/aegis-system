@@ -53,7 +53,7 @@ export async function deleteVendor(id: string): Promise<Vendor | null> {
 // -- Pickups -------------------------------------------------------------
 
 export interface ListPickupsParams {
-  editionId: string;
+  festivalId: string;
   search?: string;
   status?: PickupStatus;
   routeFrom?: Route;
@@ -64,7 +64,7 @@ export interface ListPickupsParams {
 }
 
 export async function listPickups({
-  editionId,
+  festivalId,
   search,
   status,
   routeFrom,
@@ -73,7 +73,7 @@ export async function listPickups({
   personId,
   vendorId,
 }: ListPickupsParams): Promise<Pickup[]> {
-  const filters = [eq(groundTransportPickups.editionId, editionId)];
+  const filters = [eq(groundTransportPickups.festivalId, festivalId)];
   if (status) filters.push(eq(groundTransportPickups.status, status));
   if (routeFrom) filters.push(eq(groundTransportPickups.routeFrom, routeFrom));
   if (routeTo) filters.push(eq(groundTransportPickups.routeTo, routeTo));
@@ -111,12 +111,12 @@ export async function getPickup(id: string): Promise<Pickup | null> {
 }
 
 export async function createPickup(
-  editionId: string,
+  festivalId: string,
   input: PickupDbValues,
 ): Promise<Pickup> {
   const [row] = await db
     .insert(groundTransportPickups)
-    .values({ ...input, editionId })
+    .values({ ...input, festivalId })
     .returning();
   return row;
 }

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAppSession, requirePermission } from "@/lib/session";
-import { getCurrentEdition } from "@/lib/edition";
+import { getActiveFestival } from "@/lib/festivals";
 import {
   guestCategoryEnum,
   guestlistInputSchema,
@@ -10,11 +10,15 @@ import { createGuestlistEntry, listGuestlist } from "@/lib/guestlist/repo";
 
 export async function GET(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "guestlist");
   if (denied) return denied;
 
-  const edition = await getCurrentEdition();
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return Response.json({ error: "No festival" }, { status: 404 });
+
   const url = new URL(req.url);
   const search = url.searchParams.get("search") ?? undefined;
   const categoryRaw = url.searchParams.get("category") ?? undefined;
@@ -39,7 +43,7 @@ export async function GET(req: NextRequest) {
         : undefined;
 
   const rows = await listGuestlist({
-    editionId: edition.id,
+    festivalId: festival.id,
     search,
     category: categoryParsed?.success ? categoryParsed.data : undefined,
     hostArtistId,
@@ -52,7 +56,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "guestlist");
   if (denied) return denied;
 
@@ -67,14 +72,17 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  const edition = await getCurrentEdition();
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return Response.json({ error: "No festival" }, { status: 404 });
+
   const created = await createGuestlistEntry(
-    edition.id,
-    guestlistToDbValues(parsed.data)
+    festival.id,
+    guestlistToDbValues(parsed.data),
   );
   return Response.json({ entry: created }, { status: 201 });
 }

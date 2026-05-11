@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
 import { stages, slots, sets, artists } from "@/db/schema";
-import type { Day, SetDbValues, SlotDbValues, StageDbValues } from "./schema";
+import type { SetDbValues, SlotDbValues, StageDbValues } from "./schema";
 
 export type Stage = typeof stages.$inferSelect;
 export type Slot = typeof slots.$inferSelect;
@@ -10,10 +10,11 @@ export type Artist = typeof artists.$inferSelect;
 
 // -- Stages --------------------------------------------------------------
 
-export async function listStages(): Promise<Stage[]> {
+export async function listStages(festivalId: string): Promise<Stage[]> {
   return db
     .select()
     .from(stages)
+    .where(eq(stages.festivalId, festivalId))
     .orderBy(asc(stages.sortOrder), asc(stages.name));
 }
 
@@ -26,11 +27,14 @@ export async function getStage(id: string): Promise<Stage | null> {
   return row ?? null;
 }
 
-export async function getStageBySlug(slug: string): Promise<Stage | null> {
+export async function getStageBySlug(
+  slug: string,
+  festivalId: string,
+): Promise<Stage | null> {
   const [row] = await db
     .select()
     .from(stages)
-    .where(eq(stages.slug, slug))
+    .where(and(eq(stages.slug, slug), eq(stages.festivalId, festivalId)))
     .limit(1);
   return row ?? null;
 }
@@ -42,7 +46,7 @@ export async function createStage(input: StageDbValues): Promise<Stage> {
 
 export async function updateStage(
   id: string,
-  input: Partial<StageDbValues>,
+  input: Partial<Omit<StageDbValues, "festivalId">>,
 ): Promise<Stage | null> {
   if (Object.keys(input).length === 0) return getStage(id);
   const [row] = await db
@@ -61,24 +65,24 @@ export async function deleteStage(id: string): Promise<Stage | null> {
 // -- Slots ---------------------------------------------------------------
 
 export interface ListSlotsParams {
-  editionId: string;
-  day?: Day;
+  festivalId: string;
+  date?: string;
   stageId?: string;
 }
 
 export async function listSlots({
-  editionId,
-  day,
+  festivalId,
+  date,
   stageId,
 }: ListSlotsParams): Promise<Slot[]> {
-  const filters = [eq(slots.editionId, editionId)];
-  if (day) filters.push(eq(slots.day, day));
+  const filters = [eq(slots.festivalId, festivalId)];
+  if (date) filters.push(eq(slots.date, date));
   if (stageId) filters.push(eq(slots.stageId, stageId));
   return db
     .select()
     .from(slots)
     .where(and(...filters))
-    .orderBy(asc(slots.day), asc(slots.startTime), asc(slots.sortOrder));
+    .orderBy(asc(slots.date), asc(slots.startTime), asc(slots.sortOrder));
 }
 
 export async function getSlot(id: string): Promise<Slot | null> {
@@ -87,12 +91,12 @@ export async function getSlot(id: string): Promise<Slot | null> {
 }
 
 export async function createSlot(
-  editionId: string,
+  festivalId: string,
   input: SlotDbValues,
 ): Promise<Slot> {
   const [row] = await db
     .insert(slots)
-    .values({ ...input, editionId })
+    .values({ ...input, festivalId })
     .returning();
   return row;
 }
@@ -117,16 +121,13 @@ export async function deleteSlot(id: string): Promise<Slot | null> {
 
 /**
  * Reassign `sortOrder` for the given slot ids to their array index.
- * Validates that every id belongs to the same `(stageId, day)` and to
- * the given edition before writing - otherwise a malicious payload
- * could renumber slots from another stage.
- *
- * Returns the count of rows written, or null when validation fails.
+ * Validates that every id belongs to the same `(stageId, date)` and to
+ * the given festival before writing.
  */
 export async function reorderSlots(
-  editionId: string,
+  festivalId: string,
   stageId: string,
-  day: Day,
+  date: string,
   slotIds: string[],
 ): Promise<{ updated: number } | null> {
   if (slotIds.length === 0) return { updated: 0 };
@@ -136,17 +137,14 @@ export async function reorderSlots(
     .from(slots)
     .where(
       and(
-        eq(slots.editionId, editionId),
+        eq(slots.festivalId, festivalId),
         eq(slots.stageId, stageId),
-        eq(slots.day, day),
+        eq(slots.date, date),
         inArray(slots.id, slotIds),
       ),
     );
   if (rows.length !== slotIds.length) return null;
 
-  // One UPDATE per slot. Cheap at our scale (handful of slots per stage
-  // per day). Could be batched into a single CASE expression but the
-  // gain is negligible.
   let updated = 0;
   for (let i = 0; i < slotIds.length; i++) {
     const id = slotIds[i];
@@ -201,10 +199,6 @@ export async function updateSet(
   return row ?? null;
 }
 
-/**
- * Unawaited update builder. Compose with `db.batch([..., recordTransition(...)])`
- * so the state change and the audit row commit atomically.
- */
 export function buildUpdateSet(id: string, input: Partial<SetDbValues>) {
   return db.update(sets).set(input).where(eq(sets.id, id)).returning();
 }
@@ -230,21 +224,21 @@ export interface StageWithSlots {
 }
 
 /**
- * Returns the full grid for one edition + day: every stage, with its slots
+ * Returns the full grid for one festival + date: every stage, with its slots
  * (ordered by start time then sortOrder), each slot with its sets (each set
  * with the joined artist's display fields). Empty stages/slots included so
  * the UI can render zero state.
  */
 export async function getLineupGrid(
-  editionId: string,
-  day: Day,
+  festivalId: string,
+  date: string,
 ): Promise<StageWithSlots[]> {
-  const allStages = await listStages();
+  const allStages = await listStages(festivalId);
 
   const slotRows = await db
     .select()
     .from(slots)
-    .where(and(eq(slots.editionId, editionId), eq(slots.day, day)))
+    .where(and(eq(slots.festivalId, festivalId), eq(slots.date, date)))
     .orderBy(asc(slots.startTime), asc(slots.sortOrder));
 
   const slotIds = slotRows.map((s) => s.id);

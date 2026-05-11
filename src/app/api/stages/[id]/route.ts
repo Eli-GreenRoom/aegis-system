@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAppSession, requirePermission } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import { stagePatchSchema, stageToDbPatchValues } from "@/lib/lineup/schema";
 import {
   deleteStage,
@@ -14,7 +15,8 @@ interface Ctx {
 
 export async function GET(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "lineup");
   if (denied) return denied;
 
@@ -26,7 +28,8 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "lineup");
   if (denied) return denied;
 
@@ -43,7 +46,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -51,7 +54,10 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (!existing) return Response.json({ error: "Not found" }, { status: 404 });
 
   if (parsed.data.slug !== undefined && parsed.data.slug !== existing.slug) {
-    const taken = await getStageBySlug(parsed.data.slug);
+    const festival = await getActiveFestival(session);
+    const taken = festival
+      ? await getStageBySlug(parsed.data.slug, festival.id)
+      : null;
     if (taken && taken.id !== id) {
       return Response.json({ error: "Slug already in use" }, { status: 409 });
     }
@@ -63,7 +69,8 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   const denied = requirePermission(session, "lineup");
   if (denied) return denied;
 

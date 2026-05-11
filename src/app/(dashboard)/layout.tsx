@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getAppSession } from "@/lib/session";
-import { getCurrentEdition } from "@/lib/edition";
+import { getActiveFestival } from "@/lib/festivals";
 import { isFestivalMode } from "@/lib/festival-mode";
 import Sidebar from "@/components/dashboard/Sidebar";
 
@@ -12,8 +12,8 @@ export default async function DashboardLayout({
   const session = await getAppSession();
   if (!session) redirect("/sign-in");
 
-  const edition = await getCurrentEdition();
-  const festivalMode = isFestivalMode(edition);
+  const festival = await getActiveFestival(session);
+  const festivalMode = festival ? isFestivalMode(festival) : false;
 
   return (
     <div className="flex h-screen overflow-hidden">

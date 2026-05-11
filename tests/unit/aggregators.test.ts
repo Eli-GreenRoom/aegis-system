@@ -16,7 +16,10 @@ const { queue, peopleResolver } = vi.hoisted(() => {
   const q: unknown[][] = [];
   // resolvePeople is mocked at the module boundary; tests push into
   // this Map keyed by `kind:id`.
-  const r = new Map<string, { kind: string; id: string; name: string; agency: string | null }>();
+  const r = new Map<
+    string,
+    { kind: string; id: string; name: string; agency: string | null }
+  >();
   return { queue: q, peopleResolver: r };
 });
 
@@ -115,7 +118,7 @@ describe("getArrivalsToday", () => {
     pushQueryResult([
       {
         id: FLIGHT_ID,
-        editionId: EDITION_ID,
+        festivalId: EDITION_ID,
         personKind: "artist",
         personId: ARTIST_ID,
         direction: "inbound",
@@ -126,7 +129,7 @@ describe("getArrivalsToday", () => {
     pushQueryResult([
       {
         id: PICKUP_ID,
-        editionId: EDITION_ID,
+        festivalId: EDITION_ID,
         linkedFlightId: FLIGHT_ID,
         status: "scheduled",
       },
@@ -154,7 +157,7 @@ describe("getArrivalsToday", () => {
     pushQueryResult([
       {
         id: FLIGHT_ID,
-        editionId: EDITION_ID,
+        festivalId: EDITION_ID,
         personKind: "artist",
         personId: ARTIST_ID,
         direction: "inbound",
@@ -163,7 +166,7 @@ describe("getArrivalsToday", () => {
     ]);
     pushQueryResult([
       // pickup row exists but doesn't link to this flight
-      { id: "other", editionId: EDITION_ID, linkedFlightId: null },
+      { id: "other", festivalId: EDITION_ID, linkedFlightId: null },
     ]);
     const out = await getArrivalsToday(EDITION_ID, "2026-08-15");
     expect(out[0].linkedPickup).toBeNull();
@@ -183,7 +186,7 @@ describe("getPickupsInWindow", () => {
     pushQueryResult([
       {
         id: PICKUP_ID,
-        editionId: EDITION_ID,
+        festivalId: EDITION_ID,
         personKind: "artist",
         personId: ARTIST_ID,
         vendorId: VENDOR_ID,
@@ -198,7 +201,7 @@ describe("getPickupsInWindow", () => {
     const out = await getPickupsInWindow(
       EDITION_ID,
       new Date("2026-08-15T17:00:00Z"),
-      new Date("2026-08-15T19:00:00Z")
+      new Date("2026-08-15T19:00:00Z"),
     );
     expect(out).toHaveLength(1);
     expect(out[0].vendor?.name).toBe("LuxCars");
@@ -210,7 +213,7 @@ describe("getPickupsInWindow", () => {
     const out = await getPickupsInWindow(
       EDITION_ID,
       new Date(),
-      new Date(Date.now() + 60_000)
+      new Date(Date.now() + 60_000),
     );
     expect(out).toEqual([]);
   });
@@ -225,7 +228,7 @@ describe("getPickupsInWindow", () => {
     pushQueryResult([
       {
         id: PICKUP_ID,
-        editionId: EDITION_ID,
+        festivalId: EDITION_ID,
         personKind: "crew",
         personId: ARTIST_ID,
         vendorId: null,
@@ -237,7 +240,7 @@ describe("getPickupsInWindow", () => {
     const out = await getPickupsInWindow(
       EDITION_ID,
       new Date("2026-08-15T17:00:00Z"),
-      new Date("2026-08-15T19:00:00Z")
+      new Date("2026-08-15T19:00:00Z"),
     );
     expect(out[0].vendor).toBeNull();
   });
@@ -257,21 +260,26 @@ describe("getNowAndNext", () => {
       {
         id: SLOT_ID,
         stageId: STAGE_ID,
-        day: "saturday",
+        date: "2026-08-15",
         startTime: "22:00",
         endTime: "23:30",
       },
       {
         id: "slot2",
         stageId: STAGE_ID,
-        day: "saturday",
+        date: "2026-08-15",
         startTime: "23:30",
         endTime: "01:00",
       },
     ]);
     pushQueryResult([
       {
-        set: { id: SET_ID, status: "live", slotId: SLOT_ID, artistId: ARTIST_ID },
+        set: {
+          id: SET_ID,
+          status: "live",
+          slotId: SLOT_ID,
+          artistId: ARTIST_ID,
+        },
         artist: { id: ARTIST_ID, name: "Hiroko" },
       },
       {
@@ -294,7 +302,7 @@ describe("getNowAndNext", () => {
       {
         id: SLOT_ID,
         stageId: STAGE_ID,
-        day: "saturday",
+        date: "2026-08-15",
         startTime: "22:00",
         endTime: "23:30",
       },
@@ -404,7 +412,7 @@ describe("getArtistRoadsheet", () => {
   it("aggregates set, flights, hotel, pickups, riders, contract, payments", async () => {
     // 1. artist
     pushQueryResult([
-      { id: ARTIST_ID, editionId: EDITION_ID, name: "Hiroko" },
+      { id: ARTIST_ID, festivalId: EDITION_ID, name: "Hiroko" },
     ]);
     // 2. sets+slots+stages
     pushQueryResult([
@@ -454,9 +462,7 @@ describe("getArtistRoadsheet", () => {
       },
     ]);
     // 7. riders
-    pushQueryResult([
-      { id: "r1", artistId: ARTIST_ID, kind: "hospitality" },
-    ]);
+    pushQueryResult([{ id: "r1", artistId: ARTIST_ID, kind: "hospitality" }]);
     // 8. contracts (top 1)
     pushQueryResult([
       { id: CONTRACT_ID, artistId: ARTIST_ID, status: "signed" },
@@ -538,7 +544,7 @@ describe("getOpenIssues", () => {
         set: { id: SET_ID, artistId: ARTIST_ID, status: "confirmed" },
         slot: {
           id: SLOT_ID,
-          editionId: EDITION_ID,
+          festivalId: EDITION_ID,
           day: "saturday",
           startTime: "22:00",
         },
@@ -563,7 +569,7 @@ describe("getOpenIssues", () => {
     pushQueryResult([
       {
         id: "p1",
-        editionId: EDITION_ID,
+        festivalId: EDITION_ID,
         artistId: ARTIST_ID,
         status: "paid",
       },
@@ -624,7 +630,7 @@ describe("getOpenIssues", () => {
         set: { id: SET_ID, artistId: ARTIST_ID, status: "confirmed" },
         slot: {
           id: SLOT_ID,
-          editionId: EDITION_ID,
+          festivalId: EDITION_ID,
           day: "saturday",
           startTime: "22:00",
         },
@@ -638,7 +644,7 @@ describe("getOpenIssues", () => {
     pushQueryResult([]); // inbound in scope
     pushQueryResult([]); // pickups
     pushQueryResult([
-      { id: "p1", editionId: EDITION_ID, artistId: ARTIST_ID, status: "paid" },
+      { id: "p1", festivalId: EDITION_ID, artistId: ARTIST_ID, status: "paid" },
     ]); // payments - paid
     pushQueryResult([]); // bookings active
     pushQueryResult([

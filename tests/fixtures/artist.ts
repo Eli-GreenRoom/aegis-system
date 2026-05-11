@@ -6,7 +6,7 @@ export const FIXTURE_ARTIST_ID = "22222222-2222-2222-2222-222222222222";
 export const fixtureArtist: Artist = {
   id: FIXTURE_ARTIST_ID,
   workspaceId: null,
-  editionId: FIXTURE_EDITION_ID,
+  festivalId: FIXTURE_EDITION_ID,
   slug: "hiroko",
   name: "Hiroko",
   legalName: null,

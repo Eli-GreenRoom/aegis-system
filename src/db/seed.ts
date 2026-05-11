@@ -1,29 +1,33 @@
 /**
- * Phase 0 seed: create the "Aegis Productions" workspace and owner team
- * member, then backfill workspace_id on every existing tenant row.
+ * Seed script — idempotent. Handles both Phase 0 and Phase 1 backfills.
  *
- * Run AFTER migration A (nullable workspace_id columns exist) and BEFORE
- * migration B (the NOT NULL flip). The script is idempotent.
+ * Phase 0: create "Aegis Productions" workspace + owner team member,
+ *          backfill workspace_id on every tenant table.
+ * Phase 1: backfill workspace_id + slug on the existing festival row,
+ *          backfill festival_id on stages (from edition_id already copied
+ *          by migration 0007), seed the 4 default stages under the festival.
  *
+ * Run between migration A (nullable columns) and migration B (NOT NULL flip).
  * Usage: npm run db:seed
  */
 
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 import { loadEnvConfig } from "@next/env";
-import { isNull, sql } from "drizzle-orm";
+import { eq, isNull, sql } from "drizzle-orm";
 import * as schema from "./schema";
 import type { PgTable } from "drizzle-orm/pg-core";
+import { DEFAULT_STAGE_SEEDS } from "@/lib/festivals";
 
 loadEnvConfig(process.cwd());
 
 const WORKSPACE_NAME = "Aegis Productions";
 const WORKSPACE_SLUG = "aegis-productions";
+const FESTIVAL_SLUG = "aegis-festival-2026";
 const OWNER_EMAIL = process.env.OWNER_EMAIL ?? "booking@aegisfestival.com";
 
-// Tenant tables that need workspace_id backfilled.
-// Using explicit array so TS knows these are real PgTables.
-const TENANT_TABLES: Array<{
+// Tables that need workspace_id backfilled (Phase 0).
+const WORKSPACE_TENANT_TABLES: Array<{
   name: string;
   table: PgTable & { workspaceId: unknown };
 }> = [
@@ -81,8 +85,9 @@ async function main() {
   const sqlClient = neon(url);
   const db = drizzle(sqlClient, { schema });
 
-  // 1. Look up the owner's user row from better-auth's `user` table.
-  //    better-auth owns this table; we query it via raw sql tag.
+  // ── Phase 0 ──────────────────────────────────────────────────────────────
+
+  // 1. Look up owner from better-auth user table.
   const userRows =
     await sqlClient`SELECT id FROM "user" WHERE email = ${OWNER_EMAIL} LIMIT 1`;
   if (userRows.length === 0) {
@@ -105,7 +110,7 @@ async function main() {
     .returning();
   console.log(`Workspace: ${workspace.id} (${workspace.name})`);
 
-  // 3. Upsert owner team_member row.
+  // 3. Upsert owner team_member.
   const [member] = await db
     .insert(schema.teamMembers)
     .values({
@@ -132,8 +137,8 @@ async function main() {
 
   const wsId = workspace.id;
 
-  // 4. Backfill workspace_id on every tenant table (WHERE workspace_id IS NULL).
-  for (const { name, table } of TENANT_TABLES) {
+  // 4. Backfill workspace_id on every workspace-scoped tenant table.
+  for (const { name, table } of WORKSPACE_TENANT_TABLES) {
     const wsCol = table.workspaceId;
     const result = await db
       .update(table)
@@ -143,8 +148,71 @@ async function main() {
     console.log(`  ${name}: backfilled ${result.length} rows`);
   }
 
+  // ── Phase 1 ──────────────────────────────────────────────────────────────
+
+  // 5. Backfill workspace_id + slug on the existing festival row.
+  //    Migration 0007 renamed the table; the row already exists with the
+  //    old data (year, name, startDate, endDate, location, festivalModeActive).
+  const [festival] = await db
+    .update(schema.festivals)
+    .set({ workspaceId: wsId, slug: FESTIVAL_SLUG })
+    .where(isNull(schema.festivals.workspaceId))
+    .returning();
+
+  if (festival) {
+    console.log(
+      `Festival backfilled: ${festival.id} (${festival.name}) → slug: ${FESTIVAL_SLUG}`,
+    );
+  } else {
+    // Already had workspace_id — just fetch it.
+    const [existing] = await db
+      .select()
+      .from(schema.festivals)
+      .where(eq(schema.festivals.workspaceId, wsId))
+      .limit(1);
+    console.log(`Festival already scoped: ${existing?.id} (${existing?.name})`);
+  }
+
+  const festivalRow =
+    festival ??
+    (await db
+      .select()
+      .from(schema.festivals)
+      .where(eq(schema.festivals.workspaceId, wsId))
+      .limit(1)
+      .then((rows) => rows[0]));
+
+  if (!festivalRow) throw new Error("No festival row found after backfill");
+
+  // 6. Seed the 4 default stages under the festival (idempotent).
+  //    Migration 0007 already copied festival_id from the old edition_id FK,
+  //    so existing stages already have festival_id set. This upsert handles
+  //    fresh installs or re-runs.
+  for (const s of DEFAULT_STAGE_SEEDS) {
+    const existing = await db
+      .select({ id: schema.stages.id })
+      .from(schema.stages)
+      .where(eq(schema.stages.slug, s.slug))
+      .limit(1);
+
+    if (existing.length === 0) {
+      const [created] = await db
+        .insert(schema.stages)
+        .values({ ...s, festivalId: festivalRow.id, activeDates: [] })
+        .returning({ id: schema.stages.id });
+      console.log(`  Stage created: ${s.name} (${created.id})`);
+    } else {
+      // Ensure festival_id is set on existing stage.
+      await db
+        .update(schema.stages)
+        .set({ festivalId: festivalRow.id })
+        .where(eq(schema.stages.id, existing[0].id));
+      console.log(`  Stage already exists: ${s.name}`);
+    }
+  }
+
   console.log(
-    "\nSeed complete. Now run migration B to flip columns to NOT NULL.",
+    "\nSeed complete. Now run migration 0008 to flip columns to NOT NULL.",
   );
   process.exitCode = 0;
 }

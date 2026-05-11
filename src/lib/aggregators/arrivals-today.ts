@@ -20,7 +20,7 @@ export interface ArrivalToday {
  * Spec: docs/OPERATIONS-FLOW.md -4.
  */
 export async function getArrivalsToday(
-  editionId: string,
+  festivalId: string,
   date: string,
 ): Promise<ArrivalToday[]> {
   // Treat `date` as a UTC calendar day. Match scheduledDt in
@@ -33,7 +33,7 @@ export async function getArrivalsToday(
     .from(flights)
     .where(
       and(
-        eq(flights.editionId, editionId),
+        eq(flights.festivalId, festivalId),
         eq(flights.direction, "inbound"),
         gte(flights.scheduledDt, start),
         lt(flights.scheduledDt, end),
@@ -49,7 +49,7 @@ export async function getArrivalsToday(
   const linkedPickupRows = await db
     .select()
     .from(groundTransportPickups)
-    .where(eq(groundTransportPickups.editionId, editionId));
+    .where(eq(groundTransportPickups.festivalId, festivalId));
   const pickupsByFlightId = new Map<
     string,
     typeof groundTransportPickups.$inferSelect

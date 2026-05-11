@@ -6,7 +6,7 @@ import type { GuestCategory, GuestlistDbValues } from "./schema";
 export type GuestlistEntry = typeof guestlistEntries.$inferSelect;
 
 export interface ListGuestlistParams {
-  editionId: string;
+  festivalId: string;
   search?: string;
   category?: GuestCategory;
   hostArtistId?: string;
@@ -16,7 +16,7 @@ export interface ListGuestlistParams {
 }
 
 export async function listGuestlist({
-  editionId,
+  festivalId,
   search,
   category,
   hostArtistId,
@@ -24,7 +24,7 @@ export async function listGuestlist({
   inviteSent,
   checkedIn,
 }: ListGuestlistParams): Promise<GuestlistEntry[]> {
-  const filters = [eq(guestlistEntries.editionId, editionId)];
+  const filters = [eq(guestlistEntries.festivalId, festivalId)];
   if (category) filters.push(eq(guestlistEntries.category, category));
   if (hostArtistId)
     filters.push(eq(guestlistEntries.hostArtistId, hostArtistId));
@@ -64,12 +64,12 @@ export async function getGuestlistEntry(
 }
 
 export async function createGuestlistEntry(
-  editionId: string,
+  festivalId: string,
   input: GuestlistDbValues,
 ): Promise<GuestlistEntry> {
   const [row] = await db
     .insert(guestlistEntries)
-    .values({ ...input, editionId })
+    .values({ ...input, festivalId })
     .returning();
   return row;
 }
@@ -116,7 +116,7 @@ const ZERO_COUNTS: Record<GuestCategory, number> = {
 };
 
 export async function getGuestlistSummary(
-  editionId: string,
+  festivalId: string,
 ): Promise<GuestlistSummary> {
   const rows = await db
     .select({
@@ -126,7 +126,7 @@ export async function getGuestlistSummary(
       count: sql<number>`count(*)::int`,
     })
     .from(guestlistEntries)
-    .where(eq(guestlistEntries.editionId, editionId))
+    .where(eq(guestlistEntries.festivalId, festivalId))
     .groupBy(
       guestlistEntries.category,
       guestlistEntries.inviteSent,

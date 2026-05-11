@@ -20,14 +20,14 @@ export interface ActiveBooking {
  * Spec: docs/OPERATIONS-FLOW.md -4.
  */
 export async function getCurrentlyActiveBookings(
-  editionId: string,
+  festivalId: string,
   date: string,
 ): Promise<ActiveBooking[]> {
   // Limit to bookings whose linked block is in this edition (or no block).
   const blockRows = await db
     .select({ id: hotelRoomBlocks.id })
     .from(hotelRoomBlocks)
-    .where(eq(hotelRoomBlocks.editionId, editionId));
+    .where(eq(hotelRoomBlocks.festivalId, festivalId));
   const editionBlockIds = blockRows.map((b) => b.id);
 
   const bookingRows = await db

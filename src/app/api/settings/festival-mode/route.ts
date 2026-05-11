@@ -2,9 +2,9 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { festivalEditions } from "@/db/schema";
+import { festivals } from "@/db/schema";
 import { getAppSession, requirePermission } from "@/lib/session";
-import { getCurrentEdition } from "@/lib/edition";
+import { getActiveFestival } from "@/lib/festivals";
 
 const inputSchema = z.object({
   active: z.boolean(),
@@ -12,7 +12,7 @@ const inputSchema = z.object({
 
 /**
  * POST /api/settings/festival-mode
- * Body: `{ active: boolean }` - flips the current edition's
+ * Body: `{ active: boolean }` - flips the current festival's
  * `festivalModeActive` flag. When true, the dashboard switches to
  * festival-mode layout regardless of the calendar date.
  */
@@ -38,12 +38,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const edition = await getCurrentEdition();
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return Response.json({ error: "No festival" }, { status: 404 });
+
   const [updated] = await db
-    .update(festivalEditions)
+    .update(festivals)
     .set({ festivalModeActive: parsed.data.active })
-    .where(eq(festivalEditions.id, edition.id))
+    .where(eq(festivals.id, festival.id))
     .returning();
 
-  return Response.json({ edition: updated });
+  return Response.json({ festival: updated });
 }

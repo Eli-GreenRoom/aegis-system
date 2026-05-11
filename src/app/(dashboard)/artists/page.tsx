@@ -1,9 +1,11 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
-import { getCurrentEdition } from "@/lib/edition";
+import { getAppSession } from "@/lib/session";
+import { getActiveFestival } from "@/lib/festivals";
 import {
   listAgencies,
   listArtists,
@@ -26,6 +28,17 @@ interface PageProps {
 }
 
 export default async function ArtistsPage({ searchParams }: PageProps) {
+  const session = await getAppSession();
+  if (!session) redirect("/sign-in");
+
+  const festival = await getActiveFestival(session);
+  if (!festival)
+    return (
+      <div className="px-6 py-6 text-[--color-fg-muted] text-sm">
+        No festival configured.
+      </div>
+    );
+
   const sp = await searchParams;
   const archivedRaw = sp.archived ?? "active";
   const archived: ListArtistsParams["archived"] =
@@ -37,22 +50,21 @@ export default async function ArtistsPage({ searchParams }: PageProps) {
     ? setStatusEnum.safeParse(sp.setStatus)
     : null;
 
-  const edition = await getCurrentEdition();
   // The visible table respects the filters; the share dialog always offers
   // the full set of active artists so a search/agency filter doesn't
   // accidentally restrict what you share.
   const [artists, agencies, stages, shareCandidates] = await Promise.all([
     listArtists({
-      editionId: edition.id,
+      festivalId: festival.id,
       search: sp.search,
       agency: sp.agency,
       archived,
       stageId: sp.stageId,
       setStatus: setStatusParsed?.success ? setStatusParsed.data : undefined,
     }),
-    listAgencies(edition.id),
-    listStages(),
-    listArtists({ editionId: edition.id, archived: "active" }),
+    listAgencies(festival.id),
+    listStages(festival.id),
+    listArtists({ festivalId: festival.id, archived: "active" }),
   ]);
 
   const sharePicker = shareCandidates.map((a) => ({
@@ -66,7 +78,7 @@ export default async function ArtistsPage({ searchParams }: PageProps) {
     <>
       <Topbar
         title="Artists"
-        subtitle={`${artists.length} ${artists.length === 1 ? "artist" : "artists"} for ${edition.name}`}
+        subtitle={`${artists.length} ${artists.length === 1 ? "artist" : "artists"} for ${festival.name}`}
         actions={
           <div className="flex items-center gap-2">
             <ShareDialog artists={sharePicker} />
