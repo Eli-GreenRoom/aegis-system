@@ -7,13 +7,11 @@
 
 ## Now
 
-- [ ] **Phase 1 (GREENROOM_STAGES_PLAN.md) — Festivals as projects**
-      Rename `festival_editions → festivals`. Add `workspaceId`, `slug`, `description`,
-      `tenantBrand`. Drop `stageDayEnum`; replace `slots.day` enum with `slots.date` date
-      column. Make `stages` festival-scoped (add `festivalId`, `activeDates`). Replace
-      `src/lib/edition.ts` with `src/lib/festivals.ts` (`getActiveFestival`, `listFestivals`).
-      All routes that call `getCurrentEdition()` switch to `getActiveFestival(session)`.
-      DoD: two festivals can coexist; switching cookie swaps dashboard data.
+- [ ] **Phase 2 (GREENROOM_STAGES_PLAN.md) — Onboarding + festival creation**
+      Sign-up -> workspace -> festival -> dashboard flow. New festival creation form,
+      festival switcher in topbar, workspace settings page. DoD: a fresh sign-up
+      lands on a wizard that creates workspace + first festival before reaching
+      the dashboard.
 
 ## Later
 
@@ -33,6 +31,18 @@
 ---
 
 ## Done
+
+- 2026-05-11 — **Phase 1 (GREENROOM_STAGES_PLAN.md) — Festivals as projects**
+  Renamed `festival_editions` -> `festivals`; added `workspaceId`, `slug`, `description`,
+  `tenantBrand`, `archivedAt`. Dropped `stageDayEnum`; replaced `slots.day` enum with
+  `slots.date` (YYYY-MM-DD). Made `stages` festival-scoped (`festivalId` NOT NULL FK,
+  `activeDates` jsonb, `(festivalId, slug)` unique). Replaced `src/lib/edition.ts` with
+  `src/lib/festivals.ts` (`getActiveFestival`, `listFestivals`, `festivalDates`,
+  `dateToDayLabel`, `DEFAULT_STAGE_SEEDS`). All ~50 routes/pages/repos switched from
+  `getCurrentEdition()` to `getActiveFestival(session)`; all `editionId` FKs renamed to
+  `festivalId`. DayTabs now uses `?date=YYYY-MM-DD` URL param + derives Friday/Saturday/
+  Sunday labels from festival dates. Two-phase migration: 0007 (nullable + backfill) ->
+  seed -> 0008 (NOT NULL flip + drop old columns). 413 tests green.
 
 - 2026-05-10 — **Phase 0 (GREENROOM_STAGES_PLAN.md) — Workspace foundation + multi-tenant scoping**
   Added `workspaces` table + 4-role `team_members` (owner/admin/member/viewer). New
