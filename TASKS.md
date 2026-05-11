@@ -7,9 +7,9 @@
 
 ## Now
 
-- [ ] **Phase 3 (GREENROOM_STAGES_PLAN.md) — Team page + invites**
-      Owner/Admin can invite team members via copy-link (no Resend yet). Settings
-      page with Workspace / Festival / Team tabs. Permission gate component.
+- [ ] **Phase 4 (GREENROOM_STAGES_PLAN.md) — Festival settings page**
+      Editable festival (name, dates, location). Stages CRUD per festival with
+      activeDates. Nothing hardcodes a stage list, date, or festival name.
 
 ## Later
 
@@ -29,6 +29,15 @@
 ---
 
 ## Done
+
+- 2026-05-11 — **Phase 3 (GREENROOM_STAGES_PLAN.md) — Team invites + settings page**
+  GET/POST /api/team (list members, create pending invite with copy-link URL).
+  PATCH/DELETE /api/team/[id] (update role/permissions/status, remove member).
+  POST /api/team/invite/[token] (accept invite — sets userId, status active).
+  /invite/[token] public page (server: resolve invite, guard email, render AcceptInviteForm).
+  Settings page rebuilt: Workspace tab (read-only name) + Team tab (invite form + member list
+  with role/status badges + optimistic remove). PermissionGate component. email.ts placeholder.
+  413 tests green.
 
 - 2026-05-11 — **Phase 2 (GREENROOM_STAGES_PLAN.md) — Onboarding + festival creation**
   Sign-up now redirects to `/onboarding/workspace` (name workspace) then `/onboarding/festival`
