@@ -25,7 +25,7 @@ function toDtLocal(d: Date | string | null | undefined): string {
   // datetime-local needs YYYY-MM-DDTHH:MM (local time, no TZ).
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-    date.getDate()
+    date.getDate(),
   )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
@@ -167,15 +167,22 @@ export default function FlightForm({ flight, people }: Props) {
         </div>
       )}
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Person" error={errors.personKind?.message ?? errors.personId?.message} required>
+        <Field
+          label="Person"
+          error={errors.personKind?.message ?? errors.personId?.message}
+          required
+        >
           <select
             defaultValue={`${flight?.personKind ?? "artist"}:${flight?.personId ?? people[0]?.id ?? ""}`}
             onChange={(e) => {
               const { kind, id } = setPerson(e.target.value);
               // Update both hidden fields using the registered controls.
               const form = e.currentTarget.form!;
-              (form.elements.namedItem("personKind") as HTMLInputElement).value = kind;
-              (form.elements.namedItem("personId") as HTMLInputElement).value = id;
+              (
+                form.elements.namedItem("personKind") as HTMLInputElement
+              ).value = kind;
+              (form.elements.namedItem("personId") as HTMLInputElement).value =
+                id;
             }}
             className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
           >
@@ -225,6 +232,7 @@ export default function FlightForm({ flight, people }: Props) {
             {...register("status")}
             className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
           >
+            <option value="not_needed">Not needed</option>
             <option value="scheduled">Scheduled</option>
             <option value="boarded">Boarded</option>
             <option value="in_air">In air</option>
@@ -240,7 +248,9 @@ export default function FlightForm({ flight, people }: Props) {
             min={0}
             step={5}
             placeholder="45"
-            {...register("delayMinutes", { setValueAs: (v) => (v === "" || v == null ? null : Number(v)) })}
+            {...register("delayMinutes", {
+              setValueAs: (v) => (v === "" || v == null ? null : Number(v)),
+            })}
           />
         </Field>
 

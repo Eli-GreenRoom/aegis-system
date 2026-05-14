@@ -35,21 +35,23 @@ export const parsedFlightSchema = z.object({
 });
 export type ParsedFlight = z.infer<typeof parsedFlightSchema>;
 
-const SYSTEM_PROMPT = `You extract structured data from airline confirmation emails for a festival operator.
+function buildSystemPrompt(festivalLocation?: string | null): string {
+  const location = festivalLocation?.trim() || "Beirut, Lebanon (BEY)";
+  return `You extract structured data from airline confirmation emails for a festival operator.
 
-The festival is in Lebanon (Beirut, BEY). Use this to infer flight direction:
-- "inbound" if the destination airport is BEY (or another Lebanese airport)
-- "outbound" if the origin airport is BEY
-- null if neither matches
+The festival is in ${location}. Use this to infer flight direction:
+- "inbound" if the flight is arriving at the festival location/country
+- "outbound" if the flight is departing from the festival location/country
+- null if you cannot determine direction from the airports
 
 Output JSON matching this exact shape:
 {
   "passengerName": string | null,
   "airline": string | null,
   "flightNumber": string | null,
-  "fromAirport": "XXX" | null,             // 3-letter IATA, uppercase
+  "fromAirport": "XXX" | null,
   "toAirport":   "XXX" | null,
-  "scheduledDt": "YYYY-MM-DDTHH:MM:SSZ" | null,  // ISO 8601, prefer UTC
+  "scheduledDt": "YYYY-MM-DDTHH:MM:SSZ" | null,
   "pnr": string | null,
   "seat": string | null,
   "direction": "inbound" | "outbound" | null
@@ -58,11 +60,15 @@ Output JSON matching this exact shape:
 Rules:
 - If a field isn't present, return null. Don't guess.
 - IATA codes are exactly 3 uppercase letters. If a city is given without a code, return null.
-- For the datetime: if the email gives a local time at the origin airport, return that as ISO with no timezone offset (the operator will confirm). If a UTC offset is given, normalise to UTC.
+- For the datetime: if the email gives a local time at the origin airport, return that as ISO with no timezone offset. If a UTC offset is given, normalise to UTC.
 - Return ONLY the JSON object. No prose, no code fences, no markdown.
-- For round trips, return the OUTBOUND-FROM-FESTIVAL leg only (i.e. the trip leaving BEY). If the email lists multiple legs and you can't tell which is which, pick the first.`;
+- For round trips, pick the inbound leg (arriving at festival location).`;
+}
 
-export async function parseFlightText(text: string): Promise<ParsedFlight> {
+export async function parseFlightText(
+  text: string,
+  festivalLocation?: string | null,
+): Promise<ParsedFlight> {
   if (!text.trim()) {
     throw new Error("Empty input");
   }
@@ -70,7 +76,7 @@ export async function parseFlightText(text: string): Promise<ParsedFlight> {
   const response = await anthropic.messages.create({
     model: AI_MODEL,
     max_tokens: 512,
-    system: SYSTEM_PROMPT,
+    system: buildSystemPrompt(festivalLocation),
     messages: [
       {
         role: "user",

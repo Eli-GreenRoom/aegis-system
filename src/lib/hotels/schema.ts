@@ -180,6 +180,7 @@ export const hotelBookingStatusEnum = z.enum([
   "checked_out",
   "no_show",
   "cancelled",
+  "not_needed",
 ]);
 export type HotelBookingStatus = z.infer<typeof hotelBookingStatusEnum>;
 

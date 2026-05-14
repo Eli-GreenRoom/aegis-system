@@ -18,6 +18,7 @@ const ADVANCE_LABEL: Partial<Record<FlightStatus, string>> = {
 };
 
 const STATUS_CLASS: Record<FlightStatus, string> = {
+  not_needed: "border-l-[--color-fg-subtle]",
   scheduled: "border-l-[--color-border-strong]",
   boarded: "border-l-brand",
   in_air: "border-l-[--color-stage-alt]",

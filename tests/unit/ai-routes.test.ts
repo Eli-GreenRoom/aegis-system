@@ -7,6 +7,10 @@ vi.mock("@/lib/session", () => ({
   requirePermission: vi.fn(() => null),
 }));
 
+vi.mock("@/lib/festivals", () => ({
+  getActiveFestival: vi.fn().mockResolvedValue({ location: "Beirut, Lebanon" }),
+}));
+
 vi.mock("@/lib/ai/parse-invoice", () => ({
   parseInvoiceText: vi.fn(),
 }));

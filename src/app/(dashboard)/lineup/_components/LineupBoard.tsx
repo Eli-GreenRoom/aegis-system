@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -260,24 +262,29 @@ export default function LineupBoard({ day, grid, artists }: Props) {
                           key={s.id}
                           className="flex items-center justify-between gap-2 text-[12px]"
                         >
+                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                            <span
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
+                              style={{
+                                background:
+                                  stage.color ??
+                                  s.artist.color ??
+                                  "var(--color-fg-subtle)",
+                              }}
+                            />
+                            <Link
+                              href={`/artists/${s.artist.id}`}
+                              className="truncate text-[--color-fg] hover:text-brand transition-colors"
+                            >
+                              {s.artist.name}
+                            </Link>
+                          </div>
                           <button
                             onClick={() => setEditSet(s)}
-                            className="flex items-center gap-2 text-left flex-1 min-w-0 hover:text-brand"
-                          >
-                            <span className="truncate text-[--color-fg]">
-                              {s.artist.name}
-                            </span>
-                            {s.artist.agency && (
-                              <span className="text-mono text-[10px] text-[--color-fg-subtle] truncate">
-                                {s.artist.agency}
-                              </span>
-                            )}
-                          </button>
-                          <span
-                            className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${STATUS_CLASSES[s.status as SetStatus]}`}
+                            className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${STATUS_CLASSES[s.status as SetStatus]} hover:opacity-80`}
                           >
                             {STATUS_LABEL[s.status as SetStatus]}
-                          </span>
+                          </button>
                           <button
                             onClick={() => deleteSet(s.id)}
                             disabled={busy}
@@ -361,21 +368,36 @@ function Dialog({
   onClose: () => void;
   children: React.ReactNode;
 }) {
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       onClick={onClose}
-      className="fixed inset-0 z-40 bg-[--color-bg]/70 flex items-center justify-center px-4"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "0 16px",
+        background: "rgba(0,0,0,0.72)",
+      }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm rounded-md border border-[--color-border-strong] bg-[--color-surface] p-5 space-y-4"
+        className="w-full max-w-sm rounded-[--radius-lg] p-5 space-y-4"
+        style={{
+          background: "var(--color-surface-raised)",
+          boxShadow:
+            "0 0 0 1px rgba(255,255,255,0.08), 0 24px 64px rgba(0,0,0,0.7)",
+        }}
       >
-        <h2 className="text-[15px] text-[--color-fg]">{title}</h2>
+        <h2 className="text-[15px] font-semibold text-[--color-fg]">{title}</h2>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -554,7 +576,6 @@ function AddSetDialog({
             {artists.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
-                {a.agency ? ` - ${a.agency}` : ""}
               </option>
             ))}
           </select>

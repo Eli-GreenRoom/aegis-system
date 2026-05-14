@@ -72,7 +72,7 @@ describe("parseFlightText", () => {
       direction: null,
     });
     await expect(parseFlightText("blah blah")).rejects.toThrow(
-      /failed validation/
+      /failed validation/,
     );
   });
 
@@ -89,7 +89,7 @@ describe("parseFlightText", () => {
       direction: null,
     });
     await expect(parseFlightText("blah blah")).rejects.toThrow(
-      /failed validation/
+      /failed validation/,
     );
   });
 
@@ -111,7 +111,7 @@ describe("parseFlightText", () => {
       direction: "sideways",
     });
     await expect(parseFlightText("anything at all")).rejects.toThrow(
-      /failed validation/
+      /failed validation/,
     );
   });
 
@@ -130,6 +130,6 @@ describe("parseFlightText", () => {
     await parseFlightText("blah blah");
     const call = messagesCreate.mock.calls[0][0];
     expect(call.model).toBe("claude-sonnet-4-6");
-    expect(call.system).toContain("Beirut, BEY");
+    expect(call.system).toContain("Beirut, Lebanon (BEY)");
   });
 });

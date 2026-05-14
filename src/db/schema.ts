@@ -78,6 +78,7 @@ export const flightStatusEnum = pgEnum("flight_status", [
   "landed",
   "delayed",
   "cancelled",
+  "not_needed",
 ]);
 
 export const pickupRouteEnum = pgEnum("pickup_route", [
@@ -102,6 +103,7 @@ export const hotelBookingStatusEnum = pgEnum("hotel_booking_status", [
   "checked_out",
   "no_show",
   "cancelled",
+  "not_needed",
 ]);
 
 export const paymentStatusEnum = pgEnum("payment_status", [

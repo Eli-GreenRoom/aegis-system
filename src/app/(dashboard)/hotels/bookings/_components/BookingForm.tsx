@@ -34,7 +34,7 @@ const formSchema = hotelBookingBaseSchema
           v === "" ||
           (typeof v === "number" && v >= 0) ||
           (typeof v === "string" && /^\d+(\.\d{1,2})?$/.test(v)),
-        { message: "must be a non-negative number with up to 2 decimals" }
+        { message: "must be a non-negative number with up to 2 decimals" },
       ),
   })
   .refine((v) => v.checkin <= v.checkout, {
@@ -44,7 +44,12 @@ const formSchema = hotelBookingBaseSchema
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function BookingForm({ booking, hotels, blocks, people }: Props) {
+export default function BookingForm({
+  booking,
+  hotels,
+  blocks,
+  people,
+}: Props) {
   const router = useRouter();
   const isEdit = !!booking;
   const [serverError, setServerError] = useState("");
@@ -70,7 +75,8 @@ export default function BookingForm({ booking, hotels, blocks, people }: Props) 
         booking?.creditsAmountCents != null
           ? (booking.creditsAmountCents / 100).toFixed(2)
           : "",
-      creditsCurrency: (booking?.creditsCurrency as "USD" | "EUR" | undefined) ?? "USD",
+      creditsCurrency:
+        (booking?.creditsCurrency as "USD" | "EUR" | undefined) ?? "USD",
       status: booking?.status ?? "booked",
       confirmationUrl: booking?.confirmationUrl ?? "",
       comments: booking?.comments ?? "",
@@ -166,8 +172,11 @@ export default function BookingForm({ booking, hotels, blocks, people }: Props) 
             onChange={(e) => {
               const { kind, id } = setPerson(e.target.value);
               const form = e.currentTarget.form!;
-              (form.elements.namedItem("personKind") as HTMLInputElement).value = kind;
-              (form.elements.namedItem("personId") as HTMLInputElement).value = id;
+              (
+                form.elements.namedItem("personKind") as HTMLInputElement
+              ).value = kind;
+              (form.elements.namedItem("personId") as HTMLInputElement).value =
+                id;
             }}
             className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
           >
@@ -228,6 +237,7 @@ export default function BookingForm({ booking, hotels, blocks, people }: Props) 
             {...register("status")}
             className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
           >
+            <option value="not_needed">Not needed</option>
             <option value="tentative">Tentative</option>
             <option value="booked">Booked</option>
             <option value="checked_in">Checked in</option>
@@ -256,10 +266,7 @@ export default function BookingForm({ booking, hotels, blocks, people }: Props) 
         </Field>
 
         <div className="col-span-2">
-          <Field
-            label="Confirmation"
-            error={errors.confirmationUrl?.message}
-          >
+          <Field label="Confirmation" error={errors.confirmationUrl?.message}>
             <Controller
               control={control}
               name="confirmationUrl"

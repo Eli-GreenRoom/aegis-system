@@ -57,6 +57,13 @@
       "when": 1778200000001,
       "tag": "0008_phase_1b_festivals_notnull",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778300000000,
+      "tag": "0009_add_not_needed_to_enums",
+      "breakpoints": true
     }
   ]
 }

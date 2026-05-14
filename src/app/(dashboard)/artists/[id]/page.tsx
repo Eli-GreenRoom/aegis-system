@@ -365,11 +365,13 @@ function contractLevel(s: string): Level {
   return s === "signed" ? "ok" : "warn";
 }
 function flightLevel(s: string): Level {
+  if (s === "not_needed") return "ok";
   return s === "confirmed" || s === "landed" || s === "departed"
     ? "ok"
     : "warn";
 }
 function hotelLevel(s: string): Level {
+  if (s === "not_needed") return "ok";
   return s === "confirmed" || s === "checked_in" || s === "checked_out"
     ? "ok"
     : "warn";

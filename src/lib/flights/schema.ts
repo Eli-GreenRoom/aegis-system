@@ -15,6 +15,7 @@ export const flightStatusEnum = z.enum([
   "landed",
   "delayed",
   "cancelled",
+  "not_needed",
 ]);
 export type FlightStatus = z.infer<typeof flightStatusEnum>;
 

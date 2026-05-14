@@ -18,9 +18,10 @@ import type { Artist } from "@/lib/artists/repo";
 
 interface Props {
   artist?: Artist;
+  festivalLocation?: string | null;
 }
 
-export default function ArtistForm({ artist }: Props) {
+export default function ArtistForm({ artist, festivalLocation }: Props) {
   const router = useRouter();
   const isEdit = !!artist;
   const [serverError, setServerError] = useState("");
@@ -146,14 +147,19 @@ export default function ArtistForm({ artist }: Props) {
           <Input {...register("soundcloud")} autoComplete="off" />
         </Field>
         <Field label="Color (#RRGGBB)" error={errors.color?.message}>
-          <Input {...register("color")} placeholder="#E5B85A" autoComplete="off" />
+          <Input
+            {...register("color")}
+            placeholder="#E5B85A"
+            autoComplete="off"
+          />
         </Field>
         <Field label="Visa status" error={errors.visaStatus?.message}>
           <select
             {...register("visaStatus")}
-            className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
+            className="w-full rounded-[--radius-md] border border-white/[0.10] bg-white/[0.04] px-3 py-2 text-sm text-[--color-fg]"
           >
             <option value="">-</option>
+            <option value="not_needed">Not needed</option>
             <option value="pending">Pending</option>
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
@@ -190,8 +196,11 @@ export default function ArtistForm({ artist }: Props) {
           {...register("local")}
           className="rounded-md border border-[--color-border-strong] bg-[--color-surface]"
         />
-        <Label htmlFor="local" className="!text-[12px] !normal-case !tracking-normal text-[--color-fg]">
-          Local artist (Lebanon)
+        <Label
+          htmlFor="local"
+          className="!text-[12px] !normal-case !tracking-normal text-[--color-fg]"
+        >
+          Local artist{festivalLocation ? ` (${festivalLocation})` : ""}
         </Label>
       </div>
 
