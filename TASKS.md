@@ -7,9 +7,10 @@
 
 ## Now
 
-- [ ] **Phase 4 (GREENROOM_STAGES_PLAN.md) — Festival settings page**
-      Editable festival (name, dates, location). Stages CRUD per festival with
-      activeDates. Nothing hardcodes a stage list, date, or festival name.
+- [ ] **Phase 5 (GREENROOM_STAGES_PLAN.md) — T-date fix + topbar festival/workspace switcher**
+      Topbar T-date driven by active festival startDate. FestivalSwitcher dropdown
+      (lists festivals, sets cookie, reloads). WorkspaceSwitcher if >1 workspace.
+      Festival chip hidden when no festival exists.
 
 ## Later
 
@@ -29,6 +30,16 @@
 ---
 
 ## Done
+
+- 2026-05-14 — **Phase 4 (GREENROOM_STAGES_PLAN.md) — Festival settings page**
+  Festival tab added to Settings: editable name, dates (start/end), location,
+  description via PATCH /api/festivals/[id]. Stages CRUD in the same tab:
+  add/edit/delete stages with name, slug (auto-derived), 8-preset color picker
+  - custom hex input, per-stage activeDates chip selector (click to toggle
+    dates in the festival window; empty = all days). Slot creation now guards
+    activeDates: rejects 422 when the requested date is not in the stage's
+    activeDates list (empty/null = unrestricted). 12 new tests; 425 total.
+    `npm run check` green.
 
 - 2026-05-11 — **Phase 3 (GREENROOM_STAGES_PLAN.md) — Team invites + settings page**
   GET/POST /api/team (list members, create pending invite with copy-link URL).
