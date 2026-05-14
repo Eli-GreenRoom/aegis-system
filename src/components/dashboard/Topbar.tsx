@@ -29,9 +29,9 @@ export default function Topbar({
   const daysOut = startDate ? tMinus(startDate) : null;
 
   return (
-    <header className="h-14 shrink-0 border-b border-[--color-border] flex items-center px-6 gap-6">
+    <header className="sticky top-0 z-10 h-14 shrink-0 flex items-center px-6 gap-6 bg-[--color-bg]/80 backdrop-blur-xl border-b border-white/[0.05]">
       <div className="flex-1 min-w-0">
-        <h1 className="text-display text-[20px] leading-none truncate">
+        <h1 className="text-[15px] font-semibold text-[--color-fg] leading-none tracking-[-0.01em] truncate">
           {title}
         </h1>
         {subtitle && (
@@ -47,14 +47,17 @@ export default function Topbar({
         <FestivalSwitcher />
 
         {daysOut !== null && (
-          <div className="text-mono text-[11px] text-[--color-fg-subtle]">
+          <div
+            className="text-[11px] text-[--color-fg-subtle]"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
             {daysOut > 0 ? (
               <>
-                <span className="text-[--color-fg-muted]">T-</span>
-                <span className="text-brand">{daysOut}d</span>
+                <span className="text-[--color-fg-subtle]">T&#8209;</span>
+                <span className="text-brand font-medium">{daysOut}d</span>
               </>
             ) : daysOut === 0 ? (
-              <span className="text-brand">Day 0</span>
+              <span className="text-brand font-medium">Day 0</span>
             ) : (
               <span className="text-[--color-fg-subtle]">post-festival</span>
             )}

@@ -179,8 +179,8 @@ export default function Sidebar({ userEmail, festivalMode }: Props) {
           className={[
             "mt-3 relative flex items-center gap-2.5 px-3 py-[7px] text-[13px] rounded-md transition-colors",
             isActive("/settings")
-              ? "text-[--color-fg] bg-[--color-surface-raised]"
-              : "text-[--color-fg-muted] hover:text-[--color-fg] hover:bg-[--color-surface-raised]/60",
+              ? "text-[--color-fg] bg-white/[0.06]"
+              : "text-[--color-fg-muted] hover:text-[--color-fg] hover:bg-white/[0.04]",
           ].join(" ")}
         >
           <Settings className="w-[15px] h-[15px] shrink-0" />
@@ -198,7 +198,7 @@ export default function Sidebar({ userEmail, festivalMode }: Props) {
         </div>
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-2.5 px-3 py-[7px] text-[13px] text-[--color-fg-muted] hover:text-[--color-fg] hover:bg-[--color-surface-raised]/60 rounded-md w-full transition-colors text-left"
+          className="flex items-center gap-2.5 px-3 py-[7px] text-[13px] text-[--color-fg-muted] hover:text-[--color-fg] hover:bg-white/[0.04] rounded-[--radius-md] w-full transition-colors text-left"
         >
           <LogOut className="w-[15px] h-[15px] shrink-0" />
           Sign out
@@ -228,8 +228,8 @@ function NavItem({
         "relative flex items-center gap-2.5 rounded-md transition-colors",
         dense ? "pl-7 pr-3 py-[5px] text-[12px]" : "px-3 py-[7px] text-[13px]",
         active
-          ? "text-[--color-fg] bg-[--color-surface-raised]"
-          : "text-[--color-fg-muted] hover:text-[--color-fg] hover:bg-[--color-surface-raised]/60",
+          ? "text-[--color-fg] bg-white/[0.06]"
+          : "text-[--color-fg-muted] hover:text-[--color-fg] hover:bg-white/[0.04]",
       ].join(" ")}
     >
       {active && (

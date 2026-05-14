@@ -7,45 +7,51 @@
  *   - Text is `#FAFAFA` not pure white — reduces halation on OLED
  *   - Borders are very low-alpha white so they sit above surface without
  *     competing with data
- *
- * Locked. Don't add or change without updating AGENT.md §3 and docs/BRAND.md.
  */
 
 @theme {
   /* ── Brand accent (GreenRoom HQ emerald) ────────────────────────── */
-  --color-brand: #34d399; /* emerald — primary CTA, success, active state */
-  --color-brand-fg: #0a0a0b; /* near-black text on brand-colored backgrounds */
+  --color-brand: #34d399;
+  --color-brand-fg: #0a0a0b;
 
   /* ── Surfaces (neutral dark) ───────────────────────────────────── */
-  --color-bg: #0a0a0b; /* page background */
-  --color-surface: #111113; /* sidebar, rail */
-  --color-surface-raised: #1a1a1d; /* card, panel, popover */
-  --color-surface-overlay: #222226; /* modal scrim base */
+  --color-bg: #0a0a0b;
+  --color-surface: #111113;
+  --color-surface-raised: #1a1a1d;
+  --color-surface-overlay: #222226;
 
   /* ── Text on dark ──────────────────────────────────────────────── */
-  --color-fg: #fafafa; /* primary body text */
-  --color-fg-muted: #a1a1aa; /* secondary labels */
-  --color-fg-subtle: #52525b; /* captions, timestamps */
+  --color-fg: #fafafa;
+  --color-fg-muted: #a1a1aa;
+  --color-fg-subtle: #52525b;
 
   /* ── Borders ───────────────────────────────────────────────────── */
   --color-border: rgba(250, 250, 250, 0.08);
-  --color-border-subtle: rgba(250, 250, 250, 0.06);
+  --color-border-subtle: rgba(250, 250, 250, 0.05);
   --color-border-strong: rgba(250, 250, 250, 0.18);
 
-  /* ── Status (always named tokens, never generic Tailwind hues) ── */
-  --color-success: var(--color-brand); /* emerald */
-  --color-warn: #fbbf24; /* amber */
-  --color-danger: #f87171; /* red */
-  --color-info: #7c9eff; /* alt-stage blue, used sparingly */
+  /* ── Status ─────────────────────────────────────────────────────── */
+  --color-success: var(--color-brand);
+  --color-warn: #fbbf24;
+  --color-danger: #f87171;
+  --color-info: #7c9eff;
 
-  /* ── Stages (used sparingly — only on stage chips/badges) ──────── */
-  --color-stage-main: #e5b85a; /* gold — Aegis tenant data, not brand */
-  --color-stage-alt: #7c9eff; /* blue */
-  --color-stage-pool: #a78bfa; /* violet */
-  --color-stage-coll: #f472b6; /* pink */
+  /* ── Stages (used on chips/badges only) ─────────────────────────── */
+  --color-stage-main: #e5b85a;
+  --color-stage-alt: #7c9eff;
+  --color-stage-pool: #a78bfa;
+  --color-stage-coll: #f472b6;
 
-  /* ── Radius ────────────────────────────────────────────────────── */
-  --radius-md: 8px; /* only radius used */
+  /* ── Radius ─────────────────────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* ── Shadows ────────────────────────────────────────────────────── */
+  --shadow-card:
+    0 0 0 1px rgba(255, 255, 255, 0.07), 0 4px 24px rgba(0, 0, 0, 0.45);
+  --shadow-elevated:
+    0 0 0 1px rgba(255, 255, 255, 0.1), 0 8px 40px rgba(0, 0, 0, 0.6);
 
   /* ── Fonts ─────────────────────────────────────────────────────── */
   /* Geist Sans: body/UI. Geist Mono: numbers/dates/IDs. Newsreader: wordmark + H1 only. */

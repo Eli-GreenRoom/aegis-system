@@ -131,7 +131,7 @@ export default async function DashboardHomePage() {
 
       <div className="px-6 py-6 space-y-6 max-w-4xl">
         {/* Festival hero */}
-        <div className="rounded-[--radius-md] border border-[--color-border] bg-[--color-surface-raised] px-5 py-4 flex items-center justify-between gap-4">
+        <div className="rounded-[--radius-lg] bg-[--color-surface-raised] shadow-card px-5 py-4 flex items-center justify-between gap-4">
           <div>
             <div className="text-[17px] font-semibold text-[--color-fg] leading-snug">
               {festival.name}
@@ -204,7 +204,7 @@ export default async function DashboardHomePage() {
                 <Link
                   key={issue.key}
                   href={issueHref(issue.entityType, issue.entityId)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-[--radius-md] border transition-colors hover:brightness-110 ${SEV_ROW[issue.severity]}`}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-[--radius-md] transition-colors hover:brightness-125 ${SEV_ROW[issue.severity]}`}
                 >
                   <span
                     className={`text-[10px] font-semibold w-8 shrink-0 ${SEV_TEXT[issue.severity]}`}
@@ -237,7 +237,7 @@ export default async function DashboardHomePage() {
               {pickups.map(({ pickup, person, vendor }) => (
                 <div
                   key={pickup.id}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-[--radius-md] border border-[--color-border] bg-[--color-surface-raised]"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-[--radius-md] bg-[--color-surface-raised] shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
                 >
                   <span
                     className="text-[12px] text-[--color-fg-subtle] w-10 shrink-0"
@@ -307,7 +307,7 @@ function StatCard({
   return (
     <Link
       href={href as Route}
-      className="rounded-[--radius-md] border border-[--color-border] bg-[--color-surface-raised] px-4 py-3.5 hover:bg-[--color-surface-overlay] transition-colors block"
+      className="rounded-[--radius-lg] bg-[--color-surface-raised] shadow-card px-4 py-3.5 hover:brightness-110 transition-all block"
     >
       <div
         className="text-[22px] font-semibold leading-none text-[--color-fg]"
