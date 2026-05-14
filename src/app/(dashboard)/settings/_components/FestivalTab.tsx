@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -234,6 +235,8 @@ export function FestivalTab({
   stages: initialStages,
   canEdit,
 }: FestivalTabProps) {
+  const router = useRouter();
+
   // Festival fields
   const [name, setName] = useState(initialName);
   const [startDate, setStartDate] = useState(initialStart);
@@ -281,6 +284,7 @@ export function FestivalTab({
       return;
     }
     setFestSaved(true);
+    router.refresh();
     setTimeout(() => setFestSaved(false), 3000);
   }
 
