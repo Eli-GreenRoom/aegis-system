@@ -55,7 +55,7 @@ export default async function LineupPage({ searchParams }: PageProps) {
         title="Lineup"
         subtitle={`${totalSlots} slots, ${totalSets} sets on ${festival.name}`}
         actions={
-          <Link href="/lineup/stages">
+          <Link href="/settings?tab=festival">
             <Button variant="secondary">Stages</Button>
           </Link>
         }
