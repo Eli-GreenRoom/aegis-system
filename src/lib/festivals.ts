@@ -1,4 +1,5 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
+import { cookies } from "next/headers";
 import { db } from "@/db/client";
 import { festivals, stages } from "@/db/schema";
 import type { AppSession } from "@/lib/session";
@@ -37,17 +38,40 @@ export async function getFirstFestival(): Promise<Festival | null> {
 }
 
 /**
- * Return the first (oldest) non-archived festival in the session's workspace.
- * Phase 2 will add a cookie-based switcher; for now we always return the
- * earliest festival so the existing data is immediately visible.
+ * Return the active festival for the session's workspace.
+ * Prefers the festival ID stored in the `active_festival_id` cookie; falls
+ * back to the oldest non-archived festival if the cookie is absent or stale.
  */
 export async function getActiveFestival(
   session: Pick<AppSession, "workspaceId">,
 ): Promise<Festival | null> {
+  const cookieStore = await cookies();
+  const cookieFestivalId = cookieStore.get("active_festival_id")?.value;
+
+  if (cookieFestivalId) {
+    const [row] = await db
+      .select()
+      .from(festivals)
+      .where(
+        and(
+          eq(festivals.id, cookieFestivalId),
+          eq(festivals.workspaceId, session.workspaceId),
+          isNull(festivals.archivedAt),
+        ),
+      )
+      .limit(1);
+    if (row) return row;
+  }
+
   const [row] = await db
     .select()
     .from(festivals)
-    .where(eq(festivals.workspaceId, session.workspaceId))
+    .where(
+      and(
+        eq(festivals.workspaceId, session.workspaceId),
+        isNull(festivals.archivedAt),
+      ),
+    )
     .orderBy(asc(festivals.startDate))
     .limit(1);
   return row ?? null;

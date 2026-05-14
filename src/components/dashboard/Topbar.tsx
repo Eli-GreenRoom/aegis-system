@@ -1,6 +1,7 @@
 "use client";
 
 import { useFestival } from "./FestivalContext";
+import FestivalSwitcher from "./FestivalSwitcher";
 
 /** T-minus in UTC calendar days — no timezone drift. */
 function tMinus(startDateIso: string): number {
@@ -42,20 +43,24 @@ export default function Topbar({
 
       {actions && <div className="flex items-center gap-2">{actions}</div>}
 
-      {daysOut !== null && (
-        <div className="text-mono text-[11px] text-[--color-fg-subtle] shrink-0">
-          {daysOut > 0 ? (
-            <>
-              <span className="text-[--color-fg-muted]">T-</span>
-              <span className="text-brand">{daysOut}d</span>
-            </>
-          ) : daysOut === 0 ? (
-            <span className="text-brand">Day 0</span>
-          ) : (
-            <span className="text-[--color-fg-subtle]">post-festival</span>
-          )}
-        </div>
-      )}
+      <div className="flex items-center gap-3 shrink-0">
+        <FestivalSwitcher />
+
+        {daysOut !== null && (
+          <div className="text-mono text-[11px] text-[--color-fg-subtle]">
+            {daysOut > 0 ? (
+              <>
+                <span className="text-[--color-fg-muted]">T-</span>
+                <span className="text-brand">{daysOut}d</span>
+              </>
+            ) : daysOut === 0 ? (
+              <span className="text-brand">Day 0</span>
+            ) : (
+              <span className="text-[--color-fg-subtle]">post-festival</span>
+            )}
+          </div>
+        )}
+      </div>
     </header>
   );
 }

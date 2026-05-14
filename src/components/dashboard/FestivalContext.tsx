@@ -1,20 +1,33 @@
 "use client";
 
 import { createContext, useContext } from "react";
+import type { Festival } from "@/lib/festivals";
 
-const FestivalContext = createContext<{ startDate: string | null }>({
+interface FestivalContextValue {
+  startDate: string | null;
+  festival: Festival | null;
+  festivals: Festival[];
+}
+
+const FestivalContext = createContext<FestivalContextValue>({
   startDate: null,
+  festival: null,
+  festivals: [],
 });
 
 export function FestivalProvider({
-  startDate,
+  festival,
+  festivals,
   children,
 }: {
-  startDate: string | null;
+  festival: Festival | null;
+  festivals: Festival[];
   children: React.ReactNode;
 }) {
   return (
-    <FestivalContext.Provider value={{ startDate }}>
+    <FestivalContext.Provider
+      value={{ startDate: festival?.startDate ?? null, festival, festivals }}
+    >
       {children}
     </FestivalContext.Provider>
   );
