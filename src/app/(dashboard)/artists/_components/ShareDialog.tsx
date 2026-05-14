@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import type { Artist } from "@/lib/artists/repo";
 
@@ -72,8 +73,9 @@ function Dialog({
 
   const withoutLinks = artists.filter((a) => !a.pressKitUrl).length;
 
-  return (
-    /* backdrop — inline styles bypass any transform/overflow stacking context */
+  return createPortal(
+    /* backdrop — rendered at document.body via portal so no ancestor
+       transform/backdrop-filter can affect position:fixed centering */
     <div
       role="dialog"
       aria-modal="true"
@@ -229,6 +231,7 @@ function Dialog({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
