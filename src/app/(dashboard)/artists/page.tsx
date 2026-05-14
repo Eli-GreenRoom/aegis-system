@@ -11,6 +11,7 @@ import {
   listArtists,
   type ListArtistsParams,
 } from "@/lib/artists/repo";
+import { getArtistStatusMap } from "@/lib/artists/status";
 import { listStages } from "@/lib/lineup/repo";
 import { setStatusEnum } from "@/lib/lineup/schema";
 import ArtistsTable from "./_components/ArtistsTable";
@@ -67,6 +68,8 @@ export default async function ArtistsPage({ searchParams }: PageProps) {
     listArtists({ festivalId: festival.id, archived: "active" }),
   ]);
 
+  const statusMap = await getArtistStatusMap(artists.map((a) => a.id));
+
   const sharePicker = shareCandidates.map((a) => ({
     id: a.id,
     name: a.name,
@@ -93,7 +96,7 @@ export default async function ArtistsPage({ searchParams }: PageProps) {
           agencies={agencies}
           stages={stages.map((s) => ({ id: s.id, name: s.name }))}
         />
-        <ArtistsTable artists={artists} />
+        <ArtistsTable artists={artists} statusMap={statusMap} />
       </div>
     </>
   );
