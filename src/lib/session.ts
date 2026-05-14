@@ -44,7 +44,7 @@ export async function getAppSession(
   try {
     session = await auth.api.getSession({ headers: h });
   } catch {
-    // Transient DB connection error (ECONNRESET etc.) — treat as unauthenticated
+    // Transient DB connection error (ECONNRESET etc.) - treat as unauthenticated
     // so callers get a clean 401 rather than an unhandled 500.
     return null;
   }
