@@ -9,6 +9,26 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    color-scheme: dark;
+  }
+
+  /* Styled selects — appearance:none + custom chevron so OS doesn't render
+     the native widget with a light background on dark-mode browsers */
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%2371717a' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px !important;
+    cursor: pointer;
+  }
+
+  /* Checkbox base */
+  input[type="checkbox"] {
+    accent-color: var(--color-brand);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
   }
 
   ::selection {

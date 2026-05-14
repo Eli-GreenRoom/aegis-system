@@ -59,7 +59,7 @@ function ArtistsFiltersInner({ agencies, stages }: Props) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Name, agency, slug, email"
-          className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] placeholder:text-[--color-fg-subtle] focus:border-brand focus:outline-none focus:ring-1 focus:ring-[--color-brand]"
+          className="w-full rounded-[--radius-md] border border-white/[0.10] bg-white/[0.04] px-3 py-2 text-sm text-[--color-fg] placeholder:text-[--color-fg-subtle] focus:border-[--color-brand]/40 focus:outline-none focus:ring-1 focus:ring-[--color-brand]/20"
         />
       </div>
 
@@ -70,7 +70,7 @@ function ArtistsFiltersInner({ agencies, stages }: Props) {
         <select
           value={agency}
           onChange={(e) => apply({ agency: e.target.value })}
-          className="rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] focus:border-brand focus:outline-none focus:ring-1 focus:ring-[--color-brand]"
+          className="rounded-[--radius-md] border border-white/[0.10] bg-white/[0.04] px-3 py-2 text-sm text-[--color-fg] focus:border-[--color-brand]/40 focus:outline-none focus:ring-1 focus:ring-[--color-brand]/20"
         >
           <option value="">All</option>
           {agencies.map((a) => (
@@ -88,7 +88,7 @@ function ArtistsFiltersInner({ agencies, stages }: Props) {
         <select
           value={stageId}
           onChange={(e) => apply({ stageId: e.target.value })}
-          className="rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] focus:border-brand focus:outline-none focus:ring-1 focus:ring-[--color-brand]"
+          className="rounded-[--radius-md] border border-white/[0.10] bg-white/[0.04] px-3 py-2 text-sm text-[--color-fg] focus:border-[--color-brand]/40 focus:outline-none focus:ring-1 focus:ring-[--color-brand]/20"
         >
           <option value="">All</option>
           {stages.map((s) => (
@@ -106,7 +106,7 @@ function ArtistsFiltersInner({ agencies, stages }: Props) {
         <select
           value={setStatus}
           onChange={(e) => apply({ setStatus: e.target.value })}
-          className="rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] focus:border-brand focus:outline-none focus:ring-1 focus:ring-[--color-brand]"
+          className="rounded-[--radius-md] border border-white/[0.10] bg-white/[0.04] px-3 py-2 text-sm text-[--color-fg] focus:border-[--color-brand]/40 focus:outline-none focus:ring-1 focus:ring-[--color-brand]/20"
         >
           <option value="">Any</option>
           <option value="option">Option</option>
@@ -125,7 +125,7 @@ function ArtistsFiltersInner({ agencies, stages }: Props) {
         <select
           value={archived}
           onChange={(e) => apply({ archived: e.target.value })}
-          className="rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] focus:border-brand focus:outline-none focus:ring-1 focus:ring-[--color-brand]"
+          className="rounded-[--radius-md] border border-white/[0.10] bg-white/[0.04] px-3 py-2 text-sm text-[--color-fg] focus:border-[--color-brand]/40 focus:outline-none focus:ring-1 focus:ring-[--color-brand]/20"
         >
           <option value="active">Active</option>
           <option value="archived">Archived</option>

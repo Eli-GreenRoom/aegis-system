@@ -12,4 +12,4 @@ if (!apiKey) {
 
 export const anthropic = new Anthropic({ apiKey });
 
-export const AI_MODEL = "claude-sonnet-4-6" as const;
+export const AI_MODEL = "claude-haiku-4-5-20251001" as const;

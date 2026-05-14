@@ -4,61 +4,79 @@ import type { Artist } from "@/lib/artists/repo";
 export default function ArtistsTable({ artists }: { artists: Artist[] }) {
   if (artists.length === 0) {
     return (
-      <div className="border border-[--color-border] rounded-md p-10 text-center">
+      <div className="shadow-card rounded-[--radius-lg] p-10 text-center">
         <p className="text-[--color-fg-muted] text-sm">No artists.</p>
       </div>
     );
   }
 
   return (
-    <div className="border border-[--color-border] rounded-md overflow-hidden">
+    <div className="shadow-card rounded-[--radius-lg] overflow-hidden">
       <table className="w-full text-sm">
-        <thead className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] bg-[--color-surface]">
-          <tr>
-            <th className="text-left px-4 py-2 font-normal">Name</th>
-            <th className="text-left px-4 py-2 font-normal">Agency</th>
-            <th className="text-left px-4 py-2 font-normal">Country</th>
-            <th className="text-left px-4 py-2 font-normal">Email</th>
-            <th className="text-left px-4 py-2 font-normal">Local</th>
-            <th className="text-right px-4 py-2 font-normal w-[1%]"></th>
+        <thead className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle]">
+          <tr className="border-b border-white/[0.06]">
+            <th className="text-left px-4 py-3 font-normal">Name</th>
+            <th className="text-left px-4 py-3 font-normal">Agency</th>
+            <th className="text-left px-4 py-3 font-normal hidden sm:table-cell">
+              Country
+            </th>
+            <th className="text-left px-4 py-3 font-normal hidden md:table-cell">
+              Email
+            </th>
+            <th className="text-right px-4 py-3 font-normal w-[1%]"></th>
           </tr>
         </thead>
         <tbody>
           {artists.map((a) => (
             <tr
               key={a.id}
-              className="border-t border-[--color-border] hover:bg-[--color-surface]/40"
+              className="border-t border-white/[0.04] hover:bg-white/[0.03] transition-colors"
             >
-              <td className="px-4 py-2">
-                <Link
-                  href={`/artists/${a.id}`}
-                  className="text-[--color-fg] hover:text-brand"
-                >
-                  {a.name}
-                </Link>
-                {a.archivedAt && (
-                  <span className="ml-2 text-mono text-[9px] uppercase tracking-[0.16em] text-[--color-fg-subtle]">
-                    archived
-                  </span>
-                )}
-                <div className="text-mono text-[10px] text-[--color-fg-subtle] mt-0.5">
-                  {a.slug}
+              <td className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span
+                    className="shrink-0 w-2 h-2 rounded-full"
+                    style={{ background: a.color ?? "var(--color-fg-subtle)" }}
+                  />
+                  <div>
+                    <Link
+                      href={`/artists/${a.id}`}
+                      className="text-[--color-fg] hover:text-brand transition-colors font-medium"
+                    >
+                      {a.name}
+                    </Link>
+                    {a.archivedAt && (
+                      <span className="ml-2 text-mono text-[9px] uppercase tracking-[0.14em] text-[--color-fg-subtle]">
+                        archived
+                      </span>
+                    )}
+                    {a.local && (
+                      <span className="ml-2 text-mono text-[9px] uppercase tracking-[0.14em] text-[--color-brand]">
+                        local
+                      </span>
+                    )}
+                  </div>
                 </div>
               </td>
-              <td className="px-4 py-2 text-[--color-fg-muted]">{a.agency ?? ""}</td>
-              <td className="px-4 py-2 text-[--color-fg-muted]">{a.nationality ?? ""}</td>
-              <td className="px-4 py-2 text-[--color-fg-muted] text-mono text-xs">
-                {a.email ?? ""}
+              <td className="px-4 py-3 text-[--color-fg-muted] text-[13px]">
+                {a.agency ?? (
+                  <span className="text-[--color-fg-subtle]">-</span>
+                )}
               </td>
-              <td className="px-4 py-2 text-[--color-fg-muted]">
-                {a.local ? "yes" : ""}
+              <td className="px-4 py-3 text-[--color-fg-muted] text-[13px] hidden sm:table-cell">
+                {a.nationality ?? (
+                  <span className="text-[--color-fg-subtle]">-</span>
+                )}
               </td>
-              <td className="px-4 py-2 text-right">
+              <td className="px-4 py-3 text-[--color-fg-muted] text-mono text-[11px] hidden md:table-cell">
+                {a.email ?? <span className="text-[--color-fg-subtle]">-</span>}
+              </td>
+              <td className="px-4 py-3 text-right">
                 <Link
-                  href={`/artists/${a.id}/edit`}
-                  className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-brand"
+                  href={`/artists/${a.id}`}
+                  className="text-mono text-[10px] uppercase tracking-[0.14em] text-[--color-fg-subtle] hover:text-brand transition-colors"
                 >
-                  edit
+                  view
                 </Link>
               </td>
             </tr>
