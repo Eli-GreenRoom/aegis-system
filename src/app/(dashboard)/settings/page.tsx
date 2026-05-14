@@ -6,7 +6,7 @@ import Topbar from "@/components/dashboard/Topbar";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
 import { db } from "@/db/client";
-import { workspaces, teamMembers } from "@/db/schema";
+import { workspaces, teamMembers, stages } from "@/db/schema";
 import { SettingsTabs } from "./_components/SettingsTabs";
 
 export default async function SettingsPage() {
@@ -27,6 +27,14 @@ export default async function SettingsPage() {
     .where(eq(teamMembers.workspaceId, session.workspaceId))
     .orderBy(asc(teamMembers.createdAt));
 
+  const festivalStages = festival
+    ? await db
+        .select()
+        .from(stages)
+        .where(eq(stages.festivalId, festival.id))
+        .orderBy(asc(stages.sortOrder), asc(stages.name))
+    : [];
+
   const subtitle = festival
     ? `${festival.name} — ${festival.startDate} to ${festival.endDate}`
     : undefined;
@@ -37,7 +45,26 @@ export default async function SettingsPage() {
       <SettingsTabs
         workspaceId={session.workspaceId}
         workspaceName={workspace?.name ?? ""}
-        festivalName={festival?.name}
+        festival={
+          festival
+            ? {
+                id: festival.id,
+                name: festival.name,
+                startDate: festival.startDate,
+                endDate: festival.endDate,
+                location: festival.location ?? null,
+                description: festival.description ?? null,
+              }
+            : undefined
+        }
+        stages={festivalStages.map((s) => ({
+          id: s.id,
+          name: s.name,
+          slug: s.slug,
+          color: s.color,
+          sortOrder: s.sortOrder,
+          activeDates: s.activeDates as string[] | null,
+        }))}
         role={session.role}
         memberId={session.memberId}
         permissions={session.permissions}

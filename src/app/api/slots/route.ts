@@ -6,7 +6,7 @@ import {
   slotInputSchema,
   slotToDbValues,
 } from "@/lib/lineup/schema";
-import { createSlot, listSlots } from "@/lib/lineup/repo";
+import { createSlot, getStage, listSlots } from "@/lib/lineup/repo";
 
 export async function GET(req: NextRequest) {
   const session = await getAppSession();
@@ -56,6 +56,20 @@ export async function POST(req: NextRequest) {
   const festival = await getActiveFestival(session);
   if (!festival)
     return Response.json({ error: "No festival" }, { status: 404 });
+
+  // Guard: date must fall within the stage's activeDates (when set).
+  const stage = await getStage(parsed.data.stageId);
+  if (stage) {
+    const active = stage.activeDates as string[] | null;
+    if (active && active.length > 0 && !active.includes(parsed.data.date)) {
+      return Response.json(
+        {
+          error: `This stage is not active on ${parsed.data.date}. Active dates: ${active.join(", ")}.`,
+        },
+        { status: 422 },
+      );
+    }
+  }
 
   const created = await createSlot(festival.id, slotToDbValues(parsed.data));
   return Response.json({ slot: created }, { status: 201 });

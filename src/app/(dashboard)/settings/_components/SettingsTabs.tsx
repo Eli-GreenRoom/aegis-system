@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ROLE_LABELS } from "@/lib/permissions";
 import type { PermissionMap } from "@/lib/permissions";
+import { FestivalTab } from "./FestivalTab";
 
 interface MemberRow {
   id: string;
@@ -17,20 +18,41 @@ interface MemberRow {
   acceptedAt: Date | null;
 }
 
+interface StageRow {
+  id: string;
+  name: string;
+  slug: string;
+  color: string | null;
+  sortOrder: number;
+  activeDates: string[] | null;
+}
+
+interface FestivalData {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  location: string | null;
+  description: string | null;
+}
+
 interface SettingsTabsProps {
   workspaceId: string;
   workspaceName: string;
-  festivalName?: string;
+  festival?: FestivalData;
+  stages?: StageRow[];
   role: string;
   memberId: string;
   permissions: PermissionMap;
   members: MemberRow[];
 }
 
-type Tab = "workspace" | "team";
+type Tab = "workspace" | "festival" | "team";
 
 export function SettingsTabs({
   workspaceName,
+  festival,
+  stages = [],
   memberId,
   permissions,
   members: initialMembers,
@@ -109,6 +131,15 @@ export function SettingsTabs({
         >
           Workspace
         </button>
+        {festival && (
+          <button
+            type="button"
+            className={`text-sm pb-2 -mb-px ${tabBtn("festival", "Festival")}`}
+            onClick={() => setTab("festival")}
+          >
+            Festival
+          </button>
+        )}
         <button
           type="button"
           className={`text-sm pb-2 -mb-px ${tabBtn("team", "Team")}`}
@@ -117,6 +148,20 @@ export function SettingsTabs({
           Team
         </button>
       </div>
+
+      {/* Festival tab */}
+      {tab === "festival" && festival && (
+        <FestivalTab
+          festivalId={festival.id}
+          festivalName={festival.name}
+          startDate={festival.startDate}
+          endDate={festival.endDate}
+          location={festival.location}
+          description={festival.description}
+          stages={stages}
+          canEdit={!!permissions["festival.settings"]}
+        />
+      )}
 
       {/* Workspace tab */}
       {tab === "workspace" && (
