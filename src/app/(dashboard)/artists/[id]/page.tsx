@@ -32,9 +32,9 @@ export default async function ArtistDetailPage({ params }: PageProps) {
 
   const techRider = riders.find((r) => r.kind === "technical");
   const hospRider = riders.find((r) => r.kind === "hospitality");
-
-  const totalPayments = payments.length;
-  const paidCount = payments.filter((p) => p.status === "paid").length;
+  const outstandingPayments = payments.filter(
+    (p) => p.status !== "paid" && p.status !== "void",
+  );
 
   return (
     <>
@@ -46,7 +46,7 @@ export default async function ArtistDetailPage({ params }: PageProps) {
         }
         actions={
           <div className="flex items-center gap-2">
-            <Link href={`/festival/roadsheets/${artist.id}`}>
+            <Link href={`/festival/roadsheets/${artist.id}` as Route}>
               <Button variant="secondary" size="sm">
                 Roadsheet
               </Button>
@@ -58,250 +58,399 @@ export default async function ArtistDetailPage({ params }: PageProps) {
         }
       />
 
-      <div className="px-6 py-6 max-w-2xl space-y-2">
-        {/* Set */}
-        <LogisticsRow
-          label="Set"
-          status={set ? setStatusLevel(set.set.status) : "missing"}
-          badge={set ? set.set.status : "none"}
-          detail={
-            set
-              ? `${set.stage.name} · ${set.slot.date} ${set.slot.startTime}–${set.slot.endTime}`
-              : "No set scheduled"
-          }
-          href={`/lineup`}
-        />
+      <div className="px-6 py-6 max-w-2xl space-y-5">
+        {/* Identity card */}
+        <div
+          className="rounded-[--radius-lg] p-5"
+          style={{ boxShadow: "var(--shadow-card)" }}
+        >
+          <div className="flex items-start gap-4">
+            <div
+              className="mt-0.5 w-11 h-11 rounded-full shrink-0 flex items-center justify-center text-[11px] font-bold"
+              style={{
+                background: artist.color ?? "var(--color-surface-overlay)",
+                color: "rgba(0,0,0,0.55)",
+              }}
+            >
+              {artist.name.slice(0, 2).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[17px] font-semibold text-[--color-fg] tracking-[-0.01em]">
+                  {artist.name}
+                </span>
+                {artist.legalName && artist.legalName !== artist.name && (
+                  <span className="text-mono text-[10px] text-[--color-fg-subtle]">
+                    ({artist.legalName})
+                  </span>
+                )}
+                {artist.local && <Chip label="Local" />}
+                {artist.archivedAt && <Chip label="Archived" muted />}
+              </div>
 
-        {/* Contract */}
-        <LogisticsRow
-          label="Contract"
-          status={contract ? contractLevel(contract.status) : "missing"}
-          badge={contract ? contract.status : "none"}
-          detail={
-            contract
-              ? contract.signedAt
-                ? `Signed ${format(new Date(contract.signedAt), "d MMM")}`
-                : "Unsigned"
-              : "No contract"
-          }
-          href={`/contracts`}
-        />
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-[--color-fg-muted]">
+                {artist.agency && <span>{artist.agency}</span>}
+                {artist.nationality && <span>{artist.nationality}</span>}
+                {artist.visaStatus && (
+                  <span className="text-[--color-fg-subtle]">
+                    Visa: {artist.visaStatus}
+                  </span>
+                )}
+              </div>
 
-        {/* Inbound flight */}
-        <LogisticsRow
-          label="Inbound flight"
-          status={inboundFlight ? flightLevel(inboundFlight.status) : "missing"}
-          badge={inboundFlight ? inboundFlight.status : "none"}
-          detail={
-            inboundFlight
-              ? `${inboundFlight.airline ?? ""} ${inboundFlight.flightNumber ?? ""} · ${inboundFlight.fromAirport ?? "?"} → ${inboundFlight.toAirport ?? "?"}${inboundFlight.scheduledDt ? ` · ${format(new Date(inboundFlight.scheduledDt), "EEE d MMM HH:mm")}` : ""}`
-              : "Not booked"
-          }
-          href={`/flights`}
-        />
+              {/* Contact row */}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
+                {artist.email && (
+                  <a
+                    href={`mailto:${artist.email}`}
+                    className="text-[--color-fg-muted] hover:text-brand transition-colors font-mono"
+                  >
+                    {artist.email}
+                  </a>
+                )}
+                {artist.phone && (
+                  <span className="text-[--color-fg-subtle] font-mono">
+                    {artist.phone}
+                  </span>
+                )}
+                {artist.agentEmail && (
+                  <a
+                    href={`mailto:${artist.agentEmail}`}
+                    className="text-[--color-fg-subtle] hover:text-brand transition-colors font-mono"
+                  >
+                    Agent: {artist.agentEmail}
+                  </a>
+                )}
+              </div>
 
-        {/* Outbound flight */}
-        <LogisticsRow
-          label="Outbound flight"
-          status={
-            outboundFlight ? flightLevel(outboundFlight.status) : "missing"
-          }
-          badge={outboundFlight ? outboundFlight.status : "none"}
-          detail={
-            outboundFlight
-              ? `${outboundFlight.airline ?? ""} ${outboundFlight.flightNumber ?? ""} · ${outboundFlight.fromAirport ?? "?"} → ${outboundFlight.toAirport ?? "?"}${outboundFlight.scheduledDt ? ` · ${format(new Date(outboundFlight.scheduledDt), "EEE d MMM HH:mm")}` : ""}`
-              : "Not booked"
-          }
-          href={`/flights`}
-        />
+              {/* Links */}
+              {(artist.pressKitUrl ||
+                artist.instagram ||
+                artist.soundcloud) && (
+                <div className="flex flex-wrap gap-3 pt-0.5">
+                  {artist.pressKitUrl && (
+                    <ExtLink href={artist.pressKitUrl} label="Press kit" />
+                  )}
+                  {artist.instagram && (
+                    <ExtLink
+                      href={maybeUrl(
+                        artist.instagram,
+                        "https://instagram.com/",
+                      )}
+                      label="Instagram"
+                    />
+                  )}
+                  {artist.soundcloud && (
+                    <ExtLink
+                      href={maybeUrl(
+                        artist.soundcloud,
+                        "https://soundcloud.com/",
+                      )}
+                      label="Soundcloud"
+                    />
+                  )}
+                  {artist.passportFileUrl && (
+                    <ExtLink href={artist.passportFileUrl} label="Passport" />
+                  )}
+                </div>
+              )}
 
-        {/* Hotel */}
-        <LogisticsRow
-          label="Hotel"
-          status={hotel ? hotelLevel(hotel.booking.status) : "missing"}
-          badge={hotel ? hotel.booking.status : "none"}
-          detail={
-            hotel
-              ? `${hotel.hotelName} · ${hotel.booking.checkin} → ${hotel.booking.checkout}`
-              : "No booking"
-          }
-          href={`/hotels/bookings`}
-        />
+              {artist.comments && (
+                <p className="text-[13px] text-[--color-fg-subtle] whitespace-pre-wrap pt-1 border-t border-white/[0.05] mt-2">
+                  {artist.comments}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
 
-        {/* Pickups */}
-        <LogisticsRow
-          label="Ground transport"
-          status={pickups.length > 0 ? "ok" : "missing"}
-          badge={
-            pickups.length > 0
-              ? `${pickups.length} pickup${pickups.length !== 1 ? "s" : ""}`
-              : "none"
-          }
-          detail={
-            pickups.length > 0
-              ? pickups
-                  .slice(0, 2)
-                  .map(
-                    (p) =>
-                      `${format(new Date(p.pickupDt), "EEE HH:mm")} ${p.routeFrom} → ${p.routeTo}`,
-                  )
-                  .join(" / ") +
-                (pickups.length > 2 ? ` +${pickups.length - 2} more` : "")
-              : "No pickups scheduled"
-          }
-          href={`/ground`}
-        />
+        {/* Logistics checklist */}
+        <div
+          className="rounded-[--radius-lg] overflow-hidden"
+          style={{ boxShadow: "var(--shadow-card)" }}
+        >
+          <div className="px-4 py-3 border-b border-white/[0.05]">
+            <h2 className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-subtle]">
+              Logistics
+            </h2>
+          </div>
 
-        {/* Technical rider */}
-        <LogisticsRow
-          label="Technical rider"
-          status={techRider ? riderLevel(techRider.confirmed) : "missing"}
-          badge={
-            techRider ? (techRider.confirmed ? "confirmed" : "pending") : "none"
-          }
-          detail={
-            techRider
-              ? techRider.fileUrl
-                ? "File attached"
-                : "No file"
-              : "Not uploaded"
-          }
-          href={`/riders`}
-        />
+          <div className="divide-y divide-white/[0.04]">
+            <Step
+              label="Set"
+              status={set ? setLevel(set.set.status) : "missing"}
+              badge={set ? set.set.status.replace(/_/g, " ") : "not scheduled"}
+              detail={
+                set
+                  ? `${set.stage.name} · ${set.slot.date} · ${set.slot.startTime}–${set.slot.endTime}`
+                  : null
+              }
+              action={
+                set
+                  ? { label: "View lineup", href: "/lineup" }
+                  : { label: "Add to lineup", href: "/lineup" }
+              }
+            />
 
-        {/* Hospitality rider */}
-        <LogisticsRow
-          label="Hospitality rider"
-          status={hospRider ? riderLevel(hospRider.confirmed) : "missing"}
-          badge={
-            hospRider ? (hospRider.confirmed ? "confirmed" : "pending") : "none"
-          }
-          detail={
-            hospRider
-              ? hospRider.fileUrl
-                ? "File attached"
-                : "No file"
-              : "Not uploaded"
-          }
-          href={`/riders`}
-        />
+            <Step
+              label="Contract"
+              status={contract ? contractLevel(contract.status) : "missing"}
+              badge={contract ? contract.status : "none"}
+              detail={
+                contract
+                  ? contract.signedAt
+                    ? `Signed ${format(new Date(contract.signedAt), "d MMM yyyy")}`
+                    : "Unsigned"
+                  : null
+              }
+              action={{
+                label: contract ? "View" : "Add contract",
+                href: "/contracts",
+              }}
+            />
 
-        {/* Payments */}
-        <LogisticsRow
-          label="Payments"
-          status={
-            totalPayments === 0
-              ? "ok"
-              : paidCount === totalPayments
-                ? "ok"
-                : "warn"
-          }
-          badge={
-            totalPayments === 0
-              ? "all clear"
-              : `${paidCount}/${totalPayments} paid`
-          }
-          detail={
-            totalPayments === 0
-              ? "No outstanding payments"
-              : payments
-                  .filter((p) => p.status !== "paid")
-                  .slice(0, 2)
-                  .map(
-                    (p) =>
-                      `${formatCents(p.amountCents)} ${p.currency} · ${p.status}`,
-                  )
-                  .join(" / ")
-          }
-          href={`/payments`}
-        />
+            <Step
+              label="Inbound flight"
+              status={
+                inboundFlight ? flightLevel(inboundFlight.status) : "missing"
+              }
+              badge={inboundFlight ? inboundFlight.status : "not booked"}
+              detail={
+                inboundFlight
+                  ? `${[inboundFlight.airline, inboundFlight.flightNumber].filter(Boolean).join(" ")} · ${inboundFlight.fromAirport ?? "?"} → ${inboundFlight.toAirport ?? "?"}${inboundFlight.scheduledDt ? ` · ${format(new Date(inboundFlight.scheduledDt), "EEE d MMM HH:mm")}` : ""}`
+                  : null
+              }
+              action={{
+                label: inboundFlight ? "View flights" : "Add flight",
+                href: "/flights",
+              }}
+            />
+
+            <Step
+              label="Outbound flight"
+              status={
+                outboundFlight ? flightLevel(outboundFlight.status) : "missing"
+              }
+              badge={outboundFlight ? outboundFlight.status : "not booked"}
+              detail={
+                outboundFlight
+                  ? `${[outboundFlight.airline, outboundFlight.flightNumber].filter(Boolean).join(" ")} · ${outboundFlight.fromAirport ?? "?"} → ${outboundFlight.toAirport ?? "?"}${outboundFlight.scheduledDt ? ` · ${format(new Date(outboundFlight.scheduledDt), "EEE d MMM HH:mm")}` : ""}`
+                  : null
+              }
+              action={{
+                label: outboundFlight ? "View flights" : "Add flight",
+                href: "/flights",
+              }}
+            />
+
+            <Step
+              label="Hotel"
+              status={hotel ? hotelLevel(hotel.booking.status) : "missing"}
+              badge={hotel ? hotel.booking.status : "no booking"}
+              detail={
+                hotel
+                  ? `${hotel.hotelName} · ${hotel.booking.checkin} → ${hotel.booking.checkout}${hotel.booking.roomType ? ` · ${hotel.booking.roomType}` : ""}`
+                  : null
+              }
+              action={{
+                label: hotel ? "View booking" : "Add booking",
+                href: "/hotels/bookings",
+              }}
+            />
+
+            <Step
+              label="Ground transport"
+              status={pickups.length > 0 ? "ok" : "missing"}
+              badge={
+                pickups.length > 0
+                  ? `${pickups.length} pickup${pickups.length !== 1 ? "s" : ""}`
+                  : "none"
+              }
+              detail={
+                pickups.length > 0
+                  ? pickups
+                      .slice(0, 2)
+                      .map(
+                        (p) =>
+                          `${format(new Date(p.pickupDt), "EEE HH:mm")} ${p.routeFrom} → ${p.routeTo}`,
+                      )
+                      .join("  ·  ") +
+                    (pickups.length > 2 ? ` +${pickups.length - 2} more` : "")
+                  : null
+              }
+              action={{
+                label: pickups.length > 0 ? "View pickups" : "Add pickup",
+                href: "/ground",
+              }}
+            />
+
+            <Step
+              label="Technical rider"
+              status={
+                techRider ? (techRider.confirmed ? "ok" : "warn") : "missing"
+              }
+              badge={
+                techRider
+                  ? techRider.confirmed
+                    ? "confirmed"
+                    : "pending"
+                  : "not uploaded"
+              }
+              detail={techRider?.fileUrl ? "File attached" : null}
+              action={{
+                label: techRider ? "View rider" : "Add rider",
+                href: "/riders",
+              }}
+            />
+
+            <Step
+              label="Hospitality rider"
+              status={
+                hospRider ? (hospRider.confirmed ? "ok" : "warn") : "missing"
+              }
+              badge={
+                hospRider
+                  ? hospRider.confirmed
+                    ? "confirmed"
+                    : "pending"
+                  : "not uploaded"
+              }
+              detail={hospRider?.fileUrl ? "File attached" : null}
+              action={{
+                label: hospRider ? "View rider" : "Add rider",
+                href: "/riders",
+              }}
+            />
+
+            <Step
+              label="Payments"
+              status={outstandingPayments.length === 0 ? "ok" : "warn"}
+              badge={
+                outstandingPayments.length === 0
+                  ? "all clear"
+                  : `${outstandingPayments.length} outstanding`
+              }
+              detail={
+                outstandingPayments.length > 0
+                  ? outstandingPayments
+                      .slice(0, 2)
+                      .map(
+                        (p) =>
+                          `${formatCents(p.amountCents)} ${p.currency}${p.dueDate ? ` · due ${p.dueDate}` : ""}`,
+                      )
+                      .join("  ·  ")
+                  : null
+              }
+              action={{
+                label:
+                  outstandingPayments.length > 0 ? "View payments" : "Payments",
+                href: "/payments",
+              }}
+            />
+          </div>
+        </div>
       </div>
     </>
   );
 }
 
-type StatusLevel = "ok" | "warn" | "missing";
+// ── helpers ──────────────────────────────────────────────────────────────────
 
-function setStatusLevel(status: string): StatusLevel {
-  if (status === "confirmed" || status === "live" || status === "done")
-    return "ok";
-  if (status === "option") return "warn";
-  return "warn";
+type Level = "ok" | "warn" | "missing";
+
+function setLevel(s: string): Level {
+  return s === "confirmed" || s === "live" || s === "done" ? "ok" : "warn";
+}
+function contractLevel(s: string): Level {
+  return s === "signed" ? "ok" : "warn";
+}
+function flightLevel(s: string): Level {
+  return s === "confirmed" || s === "landed" || s === "departed"
+    ? "ok"
+    : "warn";
+}
+function hotelLevel(s: string): Level {
+  return s === "confirmed" || s === "checked_in" || s === "checked_out"
+    ? "ok"
+    : "warn";
 }
 
-function contractLevel(status: string): StatusLevel {
-  if (status === "signed") return "ok";
-  if (status === "sent") return "warn";
-  return "warn";
-}
-
-function flightLevel(status: string): StatusLevel {
-  if (status === "confirmed" || status === "landed" || status === "departed")
-    return "ok";
-  if (status === "booked") return "warn";
-  return "warn";
-}
-
-function hotelLevel(status: string): StatusLevel {
-  if (
-    status === "confirmed" ||
-    status === "checked_in" ||
-    status === "checked_out"
-  )
-    return "ok";
-  if (status === "pending") return "warn";
-  return "warn";
-}
-
-function riderLevel(confirmed: boolean | null): StatusLevel {
-  return confirmed ? "ok" : "warn";
-}
-
-const statusDot: Record<StatusLevel, string> = {
+const DOT: Record<Level, string> = {
   ok: "bg-[--color-brand]",
   warn: "bg-[--color-warn]",
-  missing: "bg-[--color-fg-subtle]",
+  missing: "bg-white/20",
 };
 
-const statusBadge: Record<StatusLevel, string> = {
-  ok: "bg-[--color-brand]/10 text-[--color-brand] border-[--color-brand]/20",
-  warn: "bg-[--color-warn]/10 text-[--color-warn] border-[--color-warn]/20",
-  missing: "bg-white/[0.04] text-[--color-fg-subtle] border-white/[0.06]",
+const BADGE: Record<Level, string> = {
+  ok: "text-[--color-brand]",
+  warn: "text-[--color-warn]",
+  missing: "text-[--color-fg-subtle]",
 };
 
-function LogisticsRow({
+function Step({
   label,
   status,
   badge,
   detail,
-  href,
+  action,
 }: {
   label: string;
-  status: StatusLevel;
+  status: Level;
   badge: string;
-  detail: string;
-  href: string;
+  detail: string | null;
+  action: { label: string; href: string };
 }) {
   return (
-    <Link
-      href={href as Route}
-      className="flex items-center gap-4 rounded-[--radius-md] px-4 py-3.5 hover:bg-white/[0.04] transition-colors group border border-transparent hover:border-white/[0.05]"
-    >
-      <span className={`w-2 h-2 rounded-full shrink-0 ${statusDot[status]}`} />
-      <span className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-muted] w-36 shrink-0">
+    <div className="flex items-center gap-3 px-4 py-3.5 group">
+      <span className={`w-2 h-2 rounded-full shrink-0 ${DOT[status]}`} />
+      <span className="text-mono text-[10px] uppercase tracking-[0.15em] text-[--color-fg-muted] w-32 shrink-0">
         {label}
       </span>
-      <span
-        className={`inline-flex items-center px-2 py-0.5 rounded-full border text-mono text-[10px] shrink-0 ${statusBadge[status]}`}
-      >
+      <span className={`text-mono text-[10px] shrink-0 w-24 ${BADGE[status]}`}>
         {badge}
       </span>
-      <span className="text-[13px] text-[--color-fg-subtle] truncate flex-1">
-        {detail}
+      <span className="text-[12px] text-[--color-fg-subtle] truncate flex-1 min-w-0">
+        {detail ?? ""}
       </span>
-      <span className="text-[--color-fg-subtle] opacity-0 group-hover:opacity-100 transition-opacity text-xs shrink-0">
-        &rarr;
-      </span>
-    </Link>
+      <Link
+        href={action.href as Route}
+        className="text-mono text-[10px] text-[--color-fg-subtle] hover:text-brand transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+      >
+        {action.label} &rarr;
+      </Link>
+    </div>
   );
+}
+
+function Chip({ label, muted }: { label: string; muted?: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-mono text-[9px] uppercase tracking-[0.14em] border ${
+        muted
+          ? "border-white/[0.08] text-[--color-fg-subtle]"
+          : "border-[--color-brand]/25 text-[--color-brand]"
+      }`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function ExtLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-mono text-[10px] uppercase tracking-[0.14em] text-[--color-fg-subtle] hover:text-brand transition-colors underline-offset-2 hover:underline"
+    >
+      {label}
+    </a>
+  );
+}
+
+function maybeUrl(value: string, base: string): string {
+  const v = value.trim();
+  if (/^https?:\/\//i.test(v)) return v;
+  return base + v.replace(/^@/, "");
 }
