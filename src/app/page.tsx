@@ -3,7 +3,7 @@ import { getAppSession } from "@/lib/session";
 
 export default async function HomePage() {
   const session = await getAppSession();
-  if (session) redirect("/lineup");
+  if (session) redirect("/home");
 
   return (
     <main className="min-h-screen flex items-center justify-center px-6">

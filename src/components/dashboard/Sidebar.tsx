@@ -8,7 +8,6 @@ import { signOut } from "@/lib/auth-client";
 import {
   Activity,
   AlertTriangle,
-  CalendarDays,
   Car,
   ChevronDown,
   ChevronRight,
@@ -16,6 +15,7 @@ import {
   FolderOpen,
   HardHat,
   Hotel,
+  LayoutDashboard,
   LogOut,
   Plane,
   PlaneLanding,
@@ -24,20 +24,25 @@ import {
   Ticket,
   User,
   Users,
+  CalendarDays,
   Wallet,
 } from "lucide-react";
 
-const PLANNING_ITEMS = [
+const MAIN_ITEMS = [
+  { label: "Home", href: "/home", icon: LayoutDashboard },
   { label: "Lineup", href: "/lineup", icon: CalendarDays },
   { label: "Artists", href: "/artists", icon: Users },
-  { label: "Crew", href: "/crew", icon: HardHat },
   { label: "Flights", href: "/flights", icon: Plane },
   { label: "Hotels", href: "/hotels", icon: Hotel },
   { label: "Ground", href: "/ground", icon: Car },
-  { label: "Riders", href: "/riders", icon: ScrollText },
-  { label: "Contracts", href: "/contracts", icon: FileSignature },
   { label: "Payments", href: "/payments", icon: Wallet },
   { label: "Guestlist", href: "/guestlist", icon: Ticket },
+] as const;
+
+const MORE_ITEMS = [
+  { label: "Crew", href: "/crew", icon: HardHat },
+  { label: "Riders", href: "/riders", icon: ScrollText },
+  { label: "Contracts", href: "/contracts", icon: FileSignature },
   { label: "Documents", href: "/documents", icon: FolderOpen },
 ] as const;
 
@@ -57,26 +62,25 @@ interface Props {
 export default function Sidebar({ userEmail, festivalMode }: Props) {
   const pathname = usePathname();
   const router = useRouter();
-  // Planning submenu is collapsed by default in festival mode, expanded
-  // otherwise.
-  const [planningOpen, setPlanningOpen] = useState(!festivalMode);
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(href + "/");
   }
+
+  const anyMoreActive = MORE_ITEMS.some((item) => isActive(item.href));
+  const [moreOpen, setMoreOpen] = useState(anyMoreActive);
+  const [planningOpen, setPlanningOpen] = useState(!festivalMode);
 
   async function handleSignOut() {
     await signOut();
     router.push("/sign-in");
   }
 
-  const items = festivalMode ? FESTIVAL_ITEMS : PLANNING_ITEMS;
-
   return (
     <aside className="w-[220px] shrink-0 flex flex-col h-screen border-r border-[--color-border] bg-[--color-surface]">
       {/* Wordmark */}
       <Link
-        href={(festivalMode ? "/festival/now" : "/lineup") as Route}
+        href={(festivalMode ? "/festival/now" : "/home") as Route}
         className="h-12 flex items-center px-5 border-b border-[--color-border] shrink-0"
       >
         <span className="text-[13px] font-bold tracking-tight text-[--color-fg] leading-none">
@@ -86,43 +90,29 @@ export default function Sidebar({ userEmail, festivalMode }: Props) {
           className="ml-1.5 text-[9px] font-semibold border rounded-xs px-1.25 py-0.5 leading-none uppercase tracking-[0.12em] text-brand border-[--color-brand]/40"
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          Stages
+          {festivalMode ? "Live" : "Stages"}
         </span>
       </Link>
 
       {/* Navigation */}
       <nav className="flex-1 py-3 px-2 flex flex-col gap-px overflow-y-auto">
-        {items.map(({ label, href, icon: Icon }) => {
-          const active = isActive(href);
-          return (
-            <Link
-              key={href}
-              href={href as Route}
-              className={[
-                "relative flex items-center gap-2.5 px-3 py-[7px] text-[13px] rounded-md transition-colors",
-                active
-                  ? "text-[--color-fg] bg-[--color-surface-raised]"
-                  : "text-[--color-fg-muted] hover:text-[--color-fg] hover:bg-[--color-surface-raised]/60",
-              ].join(" ")}
-            >
-              {active && (
-                <span className="absolute left-0 top-[6px] bottom-[6px] w-[2px] rounded-r-full bg-brand" />
-              )}
-              <Icon className="w-[15px] h-[15px] shrink-0" />
-              <span className="flex-1">{label}</span>
-            </Link>
-          );
-        })}
-
-        {/* In festival mode, planning modules are still reachable under a
-            collapsible "Planning" section so the operator can edit / fix
-            things if needed. */}
-        {festivalMode && (
+        {festivalMode ? (
           <>
+            {FESTIVAL_ITEMS.map(({ label, href, icon: Icon }) => (
+              <NavItem
+                key={href}
+                label={label}
+                href={href}
+                icon={Icon}
+                active={isActive(href)}
+              />
+            ))}
+
+            {/* Planning submenu — still reachable in festival mode */}
             <button
               type="button"
               onClick={() => setPlanningOpen((v) => !v)}
-              className="mt-3 flex items-center gap-2.5 px-3 py-[7px] text-[11px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-[--color-fg]"
+              className="mt-3 flex items-center gap-2.5 px-3 py-[6px] text-[11px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-[--color-fg-muted] transition-colors"
               style={{ fontFamily: "var(--font-mono)" }}
             >
               {planningOpen ? (
@@ -130,31 +120,60 @@ export default function Sidebar({ userEmail, festivalMode }: Props) {
               ) : (
                 <ChevronRight className="w-[12px] h-[12px]" />
               )}
-              <span>Planning</span>
+              Planning
             </button>
             {planningOpen &&
-              PLANNING_ITEMS.map(({ label, href, icon: Icon }) => {
-                const active = isActive(href);
-                return (
-                  <Link
-                    key={href}
-                    href={href as Route}
-                    className={[
-                      "relative flex items-center gap-2.5 pl-7 pr-3 py-[5px] text-[12px] rounded-md transition-colors",
-                      active
-                        ? "text-[--color-fg] bg-[--color-surface-raised]"
-                        : "text-[--color-fg-muted] hover:text-[--color-fg] hover:bg-[--color-surface-raised]/60",
-                    ].join(" ")}
-                  >
-                    <Icon className="w-[13px] h-[13px] shrink-0" />
-                    <span className="flex-1">{label}</span>
-                  </Link>
-                );
-              })}
+              MAIN_ITEMS.map(({ label, href, icon: Icon }) => (
+                <NavItem
+                  key={href}
+                  label={label}
+                  href={href}
+                  icon={Icon}
+                  active={isActive(href)}
+                  dense
+                />
+              ))}
+          </>
+        ) : (
+          <>
+            {MAIN_ITEMS.map(({ label, href, icon: Icon }) => (
+              <NavItem
+                key={href}
+                label={label}
+                href={href}
+                icon={Icon}
+                active={isActive(href)}
+              />
+            ))}
+
+            {/* More — Crew, Riders, Contracts, Documents */}
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              className="mt-2 flex items-center gap-2.5 px-3 py-[6px] text-[11px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-[--color-fg-muted] transition-colors"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              {moreOpen ? (
+                <ChevronDown className="w-[12px] h-[12px]" />
+              ) : (
+                <ChevronRight className="w-[12px] h-[12px]" />
+              )}
+              More
+            </button>
+            {moreOpen &&
+              MORE_ITEMS.map(({ label, href, icon: Icon }) => (
+                <NavItem
+                  key={href}
+                  label={label}
+                  href={href}
+                  icon={Icon}
+                  active={isActive(href)}
+                  dense
+                />
+              ))}
           </>
         )}
 
-        {/* Settings always visible at the bottom of the nav. */}
         <Link
           href="/settings"
           className={[
@@ -186,5 +205,42 @@ export default function Sidebar({ userEmail, festivalMode }: Props) {
         </button>
       </div>
     </aside>
+  );
+}
+
+function NavItem({
+  label,
+  href,
+  icon: Icon,
+  active,
+  dense,
+}: {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+  active: boolean;
+  dense?: boolean;
+}) {
+  return (
+    <Link
+      href={href as Route}
+      className={[
+        "relative flex items-center gap-2.5 rounded-md transition-colors",
+        dense ? "pl-7 pr-3 py-[5px] text-[12px]" : "px-3 py-[7px] text-[13px]",
+        active
+          ? "text-[--color-fg] bg-[--color-surface-raised]"
+          : "text-[--color-fg-muted] hover:text-[--color-fg] hover:bg-[--color-surface-raised]/60",
+      ].join(" ")}
+    >
+      {active && (
+        <span className="absolute left-0 top-[6px] bottom-[6px] w-[2px] rounded-r-full bg-brand" />
+      )}
+      <Icon
+        className={
+          dense ? "w-[13px] h-[13px] shrink-0" : "w-[15px] h-[15px] shrink-0"
+        }
+      />
+      <span className="flex-1">{label}</span>
+    </Link>
   );
 }
