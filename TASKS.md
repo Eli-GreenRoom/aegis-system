@@ -7,7 +7,7 @@
 
 ## Now
 
-- [ ] Phase 6 — UI simplicity sweep (7-item sidebar, real Home page, HQ density)
+- [ ] Phase 7 — Brand + copy sweep (package.json name, docs, UI strings)
 
 ## Later
 
@@ -27,6 +27,16 @@
 ---
 
 ## Done
+
+- 2026-05-14 — **Phase 6 — Home page + sidebar simplicity sweep**
+  `/home` dashboard: festival hero card (name, dates, location, T-date), 4 stat
+  cards (artists, open issues, unpaid, pickups next 6h), top-6 open issues with
+  HIGH/MED/LOW severity colour coding + direct nav links, upcoming pickups (next 6h)
+  with inline one-tap advance buttons (Dispatch / Picked up / Delivered). Sidebar
+  reduced to 8 visible items (Home + 7 modules); Crew / Riders / Contracts / Documents
+  collapsed under "More" toggle (auto-opens when on those routes). Root / redirect
+  updated to /home. Text hierarchy applied throughout: values in --color-fg, labels
+  in --color-fg-muted, metadata in --color-fg-subtle. 429 tests green.
 
 - 2026-05-14 — **Phase 5 (GREENROOM_STAGES_PLAN.md) — Festival switcher + T-date fix**
   `getActiveFestival` now checks `active_festival_id` cookie before falling back to oldest
