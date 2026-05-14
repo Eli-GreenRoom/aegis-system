@@ -28,8 +28,9 @@ const NEXT_FORWARD: Partial<Record<HotelBookingStatus, HotelBookingStatus>> = {
  */
 export async function POST(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "hotels");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "hotels.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -42,14 +43,15 @@ export async function POST(_req: NextRequest, ctx: Ctx) {
       {
         error: `Booking is already at terminal status '${existing.status}'. Use the planning UI to revise.`,
       },
-      { status: 409 }
+      { status: 409 },
     );
   }
 
   const patch: Parameters<typeof buildUpdateBooking>[1] = { status: next };
   const now = new Date();
   if (next === "checked_in" && !existing.checkedInAt) patch.checkedInAt = now;
-  if (next === "checked_out" && !existing.checkedOutAt) patch.checkedOutAt = now;
+  if (next === "checked_out" && !existing.checkedOutAt)
+    patch.checkedOutAt = now;
 
   const [rows] = await db.batch([
     buildUpdateBooking(id, patch),

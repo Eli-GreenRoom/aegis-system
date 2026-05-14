@@ -16,8 +16,9 @@ interface Ctx {
 
 export async function GET(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "lineup");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "lineup.view");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -28,8 +29,9 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "lineup");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "lineup.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -45,7 +47,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -54,7 +56,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
   const patch = setToDbPatchValues(parsed.data);
   const statusChanged =
-    "status" in patch && patch.status !== undefined && patch.status !== existing.status;
+    "status" in patch &&
+    patch.status !== undefined &&
+    patch.status !== existing.status;
 
   if (statusChanged) {
     const [rows] = await db.batch([
@@ -74,8 +78,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "lineup");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "lineup.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;

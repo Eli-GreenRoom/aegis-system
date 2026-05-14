@@ -1,9 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAppSession, requirePermission } from "@/lib/session";
-import {
-  flightPatchSchema,
-  flightToDbPatchValues,
-} from "@/lib/flights/schema";
+import { flightPatchSchema, flightToDbPatchValues } from "@/lib/flights/schema";
 import {
   buildUpdateFlight,
   deleteFlight,
@@ -19,8 +16,9 @@ interface Ctx {
 
 export async function GET(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "flights");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "flights.view");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -31,8 +29,9 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "flights");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "flights.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -48,7 +47,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -57,7 +56,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
   const patch = flightToDbPatchValues(parsed.data);
   const statusChanged =
-    "status" in patch && patch.status !== undefined && patch.status !== existing.status;
+    "status" in patch &&
+    patch.status !== undefined &&
+    patch.status !== existing.status;
 
   if (statusChanged) {
     const [rows] = await db.batch([
@@ -77,8 +78,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "flights");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "flights.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;

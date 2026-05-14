@@ -19,8 +19,9 @@ interface Ctx {
 
 export async function GET(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "contracts");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "contracts.view");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -31,8 +32,9 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "contracts");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "contracts.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -48,7 +50,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -57,7 +59,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
   const patch = contractToDbPatchValues(parsed.data);
   const statusChanged =
-    "status" in patch && patch.status !== undefined && patch.status !== existing.status;
+    "status" in patch &&
+    patch.status !== undefined &&
+    patch.status !== existing.status;
 
   if (statusChanged) {
     // Auto-stamp sentAt on draft -> sent and signedAt on sent -> signed
@@ -67,7 +71,11 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     if (patch.status === "sent" && !("sentAt" in patch) && !existing.sentAt) {
       finalPatch.sentAt = new Date();
     }
-    if (patch.status === "signed" && !("signedAt" in patch) && !existing.signedAt) {
+    if (
+      patch.status === "signed" &&
+      !("signedAt" in patch) &&
+      !existing.signedAt
+    ) {
       finalPatch.signedAt = new Date();
     }
 
@@ -88,8 +96,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "contracts");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "contracts.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;

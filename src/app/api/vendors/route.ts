@@ -5,8 +5,9 @@ import { createVendor, listVendors } from "@/lib/ground/repo";
 
 export async function GET() {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "ground");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "ground.view");
   if (denied) return denied;
   const rows = await listVendors();
   return Response.json({ vendors: rows });
@@ -14,8 +15,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "ground");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "ground.edit");
   if (denied) return denied;
 
   let body: unknown;
@@ -29,7 +31,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

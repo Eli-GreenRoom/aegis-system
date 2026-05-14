@@ -9,8 +9,9 @@ import {
 
 export async function GET(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "lineup");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "lineup.view");
   if (denied) return denied;
 
   const url = new URL(req.url);
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
   if (!slotId && !artistId) {
     return Response.json(
       { error: "Provide slotId or artistId" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -32,8 +33,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "lineup");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "lineup.edit");
   if (denied) return denied;
 
   let body: unknown;
@@ -47,7 +49,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

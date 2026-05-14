@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   const session = await getAppSession();
   if (!session)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "settings");
+  const denied = requirePermission(session, "festival.settings");
   if (denied) return denied;
 
   let body: unknown;

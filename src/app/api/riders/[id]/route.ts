@@ -1,9 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAppSession, requirePermission } from "@/lib/session";
-import {
-  riderPatchSchema,
-  riderToDbPatchValues,
-} from "@/lib/riders/schema";
+import { riderPatchSchema, riderToDbPatchValues } from "@/lib/riders/schema";
 import { deleteRider, getRider, updateRider } from "@/lib/riders/repo";
 
 interface Ctx {
@@ -12,8 +9,9 @@ interface Ctx {
 
 export async function GET(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "riders");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "riders.view");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -24,8 +22,9 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "riders");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "riders.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -41,7 +40,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -54,8 +53,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "riders");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "riders.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;

@@ -16,8 +16,9 @@ interface Ctx {
 
 export async function GET(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "guestlist");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "guestlist.view");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -28,8 +29,9 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "guestlist");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "guestlist.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -45,7 +47,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -54,15 +56,16 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
   const updated = await updateGuestlistEntry(
     id,
-    guestlistToDbPatchValues(parsed.data)
+    guestlistToDbPatchValues(parsed.data),
   );
   return Response.json({ entry: updated });
 }
 
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "guestlist");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "guestlist.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;

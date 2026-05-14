@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
   if (!session)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const denied = requirePermission(session, "artists");
+  const denied = requirePermission(session, "artists.view");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -34,7 +34,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (!session)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const denied = requirePermission(session, "artists");
+  const denied = requirePermission(session, "artists.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -79,7 +79,7 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
   if (!session)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const denied = requirePermission(session, "artists");
+  const denied = requirePermission(session, "artists.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;

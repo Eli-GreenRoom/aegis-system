@@ -29,8 +29,9 @@ const NEXT_FORWARD: Partial<Record<PickupStatus, PickupStatus>> = {
  */
 export async function POST(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "ground");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "ground.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -43,7 +44,7 @@ export async function POST(_req: NextRequest, ctx: Ctx) {
       {
         error: `Pickup is already at terminal status '${existing.status}'. Use the planning UI to revise.`,
       },
-      { status: 409 }
+      { status: 409 },
     );
   }
 

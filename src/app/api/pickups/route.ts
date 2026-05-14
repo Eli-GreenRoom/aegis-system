@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const session = await getAppSession();
   if (!session)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "ground");
+  const denied = requirePermission(session, "ground.view");
   if (denied) return denied;
 
   const festival = await getActiveFestival(session);
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   const session = await getAppSession();
   if (!session)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "ground");
+  const denied = requirePermission(session, "ground.edit");
   if (denied) return denied;
 
   let body: unknown;

@@ -31,7 +31,7 @@ export async function POST(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
   if (!session)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "flights");
+  const denied = requirePermission(session, "flights.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;

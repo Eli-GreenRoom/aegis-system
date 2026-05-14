@@ -17,8 +17,9 @@ interface Ctx {
 
 export async function GET(req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "hotels");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "hotels.view");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -36,8 +37,9 @@ export async function GET(req: NextRequest, ctx: Ctx) {
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "hotels");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "hotels.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;
@@ -53,21 +55,25 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (!parsed.success) {
     return Response.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   const existing = await getRoomBlock(id);
   if (!existing) return Response.json({ error: "Not found" }, { status: 404 });
 
-  const updated = await updateRoomBlock(id, roomBlockToDbPatchValues(parsed.data));
+  const updated = await updateRoomBlock(
+    id,
+    roomBlockToDbPatchValues(parsed.data),
+  );
   return Response.json({ roomBlock: updated });
 }
 
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
   const session = await getAppSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const denied = requirePermission(session, "hotels");
+  if (!session)
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = requirePermission(session, "hotels.edit");
   if (denied) return denied;
 
   const { id } = await ctx.params;
