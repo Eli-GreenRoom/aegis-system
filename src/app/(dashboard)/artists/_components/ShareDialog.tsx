@@ -73,13 +73,21 @@ function Dialog({
   const withoutLinks = artists.filter((a) => !a.pressKitUrl).length;
 
   return (
-    /* backdrop */
+    /* backdrop — inline styles bypass any transform/overflow stacking context */
     <div
       role="dialog"
       aria-modal="true"
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(0,0,0,0.72)" }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "0 16px",
+        background: "rgba(0,0,0,0.72)",
+      }}
     >
       {/* panel */}
       <div
