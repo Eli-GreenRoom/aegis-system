@@ -6,8 +6,8 @@ interface PageProps {
 }
 
 export const metadata = {
-  title: "Aegis Festival — Press Kit",
-  description: "Public artist press kit links for Aegis Festival.",
+  title: "GreenRoom Stages — Press Kit",
+  description: "Public artist press kit.",
 };
 
 export default async function PressPage({ searchParams }: PageProps) {
@@ -115,7 +115,7 @@ export default async function PressPage({ searchParams }: PageProps) {
         )}
 
         <footer className="mt-20 text-mono text-[10px] uppercase tracking-[0.22em] text-[--color-fg-subtle]">
-          Aegis · {festival.location ?? ""}
+          {festival.name} · {festival.location ?? ""}
         </footer>
       </div>
     </main>

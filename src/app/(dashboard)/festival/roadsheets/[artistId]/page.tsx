@@ -241,7 +241,7 @@ export default async function RoadsheetPage({
         </Section>
 
         <div className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-subtle] pt-4 border-t border-[--color-border] print:border-t-2">
-          Aegis · roadsheet · {format(new Date(), "EEE d MMM HH:mm")}
+          GreenRoom Stages · roadsheet · {format(new Date(), "EEE d MMM HH:mm")}
         </div>
       </div>
     </>
