@@ -7,10 +7,7 @@
 
 ## Now
 
-- [ ] **Phase 5 (GREENROOM_STAGES_PLAN.md) — T-date fix + topbar festival/workspace switcher**
-      Topbar T-date driven by active festival startDate. FestivalSwitcher dropdown
-      (lists festivals, sets cookie, reloads). WorkspaceSwitcher if >1 workspace.
-      Festival chip hidden when no festival exists.
+- [ ] Phase 6 — UI simplicity sweep (7-item sidebar, real Home page, HQ density)
 
 ## Later
 
@@ -30,6 +27,15 @@
 ---
 
 ## Done
+
+- 2026-05-14 — **Phase 5 (GREENROOM_STAGES_PLAN.md) — Festival switcher + T-date fix**
+  `getActiveFestival` now checks `active_festival_id` cookie before falling back to oldest
+  festival. `POST /api/festivals/active` sets the cookie (httpOnly, 1-year, workspace-scoped).
+  `FestivalContext` expanded to carry full festival object + all festivals in workspace.
+  `FestivalSwitcher` component: static name when 1 festival, dropdown when >1 (sets cookie
+  - reloads). Topbar renders switcher alongside T-date chip; T-date auto-tracks selected
+    festival's startDate. Dashboard layout fetches festival list in parallel with mode check.
+    4 new tests; 429 total. `npm run check` green.
 
 - 2026-05-14 — **Phase 4 (GREENROOM_STAGES_PLAN.md) — Festival settings page**
   Festival tab added to Settings: editable name, dates (start/end), location,
