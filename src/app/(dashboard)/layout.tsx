@@ -4,6 +4,7 @@ import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
 import { isFestivalMode } from "@/lib/festival-mode";
 import Sidebar from "@/components/dashboard/Sidebar";
+import { FestivalProvider } from "@/components/dashboard/FestivalContext";
 
 export default async function DashboardLayout({
   children,
@@ -20,9 +21,11 @@ export default async function DashboardLayout({
   const festivalMode = isFestivalMode(festival);
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar userEmail={session.user.email} festivalMode={festivalMode} />
-      <main className="flex-1 overflow-y-auto">{children}</main>
-    </div>
+    <FestivalProvider startDate={festival.startDate}>
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar userEmail={session.user.email} festivalMode={festivalMode} />
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
+    </FestivalProvider>
   );
 }
