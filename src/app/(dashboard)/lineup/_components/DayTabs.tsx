@@ -3,7 +3,8 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Suspense, useTransition } from "react";
 import type { Route } from "next";
-import { festivalDates, dateToDayLabel, type Festival } from "@/lib/festivals";
+import { festivalDates, dateToDayLabel } from "@/lib/festival-utils";
+import type { Festival } from "@/lib/festivals";
 
 interface DayTabsInnerProps {
   active: string;

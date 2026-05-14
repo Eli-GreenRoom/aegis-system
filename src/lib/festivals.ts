@@ -68,32 +68,7 @@ export async function getFestival(
   return row ?? null;
 }
 
-/**
- * Derive the festival day dates as an array of YYYY-MM-DD strings
- * spanning [startDate, endDate] inclusive.
- */
-export function festivalDates(
-  festival: Pick<Festival, "startDate" | "endDate">,
-): string[] {
-  const dates: string[] = [];
-  const start = new Date(`${festival.startDate}T00:00:00Z`);
-  const end = new Date(`${festival.endDate}T00:00:00Z`);
-  const cur = new Date(start);
-  while (cur <= end) {
-    dates.push(cur.toISOString().slice(0, 10));
-    cur.setUTCDate(cur.getUTCDate() + 1);
-  }
-  return dates;
-}
-
-/**
- * Given a YYYY-MM-DD date within a festival's range, return the human-readable
- * day label (e.g. "Friday"). Used by DayTabs.
- */
-export function dateToDayLabel(dateStr: string): string {
-  const d = new Date(`${dateStr}T12:00:00Z`);
-  return d.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
-}
+export { festivalDates, dateToDayLabel } from "@/lib/festival-utils";
 
 /**
  * Default Aegis stage definitions - used by seed.ts to populate stages
