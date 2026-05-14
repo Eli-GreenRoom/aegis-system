@@ -53,7 +53,7 @@ export default function Topbar({
           >
             {daysOut > 0 ? (
               <>
-                <span className="text-[--color-fg-subtle]">T&#8209;</span>
+                <span className="text-[--color-fg-subtle]">T-</span>
                 <span className="text-brand font-medium">{daysOut}d</span>
               </>
             ) : daysOut === 0 ? (
