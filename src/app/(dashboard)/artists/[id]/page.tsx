@@ -3,9 +3,11 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Route } from "next";
+import { format } from "date-fns";
 import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
-import { getArtist } from "@/lib/artists/repo";
+import { getArtistRoadsheet } from "@/lib/aggregators";
+import { formatCents } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -13,22 +15,38 @@ interface PageProps {
 
 export default async function ArtistDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const artist = await getArtist(id);
-  if (!artist) notFound();
+  const sheet = await getArtistRoadsheet(id);
+  if (!sheet) notFound();
 
-  const statusLabel = artist.archivedAt ? "Archived" : null;
-  const subline = [artist.agency, artist.nationality]
-    .filter(Boolean)
-    .join(" · ");
+  const {
+    artist,
+    set,
+    inboundFlight,
+    outboundFlight,
+    hotel,
+    pickups,
+    riders,
+    payments,
+    contract,
+  } = sheet;
+
+  const techRider = riders.find((r) => r.kind === "technical");
+  const hospRider = riders.find((r) => r.kind === "hospitality");
+
+  const totalPayments = payments.length;
+  const paidCount = payments.filter((p) => p.status === "paid").length;
 
   return (
     <>
       <Topbar
         title={artist.name}
-        subtitle={statusLabel ?? subline ?? undefined}
+        subtitle={
+          [artist.agency, artist.nationality].filter(Boolean).join(" · ") ||
+          undefined
+        }
         actions={
           <div className="flex items-center gap-2">
-            <Link href={`/festival/roadsheets/${artist.id}` as Route}>
+            <Link href={`/festival/roadsheets/${artist.id}`}>
               <Button variant="secondary" size="sm">
                 Roadsheet
               </Button>
@@ -40,235 +58,250 @@ export default async function ArtistDetailPage({ params }: PageProps) {
         }
       />
 
-      <div className="px-6 py-6 max-w-4xl space-y-4">
-        {/* Hero identity card */}
-        <div className="shadow-card rounded-[--radius-lg] p-5 flex items-start gap-4">
-          <div
-            className="mt-1 w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold text-black/60"
-            style={{
-              background: artist.color ?? "var(--color-surface-overlay)",
-            }}
-          >
-            {artist.name.slice(0, 2).toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-[22px] font-semibold tracking-[-0.01em] text-[--color-fg]">
-                {artist.name}
-              </h1>
-              {artist.local && <Badge label="Local" color="brand" />}
-              {artist.archivedAt && <Badge label="Archived" color="muted" />}
-            </div>
-            {artist.legalName && (
-              <p className="text-mono text-xs text-[--color-fg-muted] mt-0.5">
-                Legal: {artist.legalName}
-              </p>
-            )}
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-[--color-fg-muted]">
-              {artist.agency && <span>{artist.agency}</span>}
-              {artist.nationality && <span>{artist.nationality}</span>}
-              {artist.visaStatus && (
-                <span className="text-[--color-fg-subtle]">
-                  Visa: {artist.visaStatus}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+      <div className="px-6 py-6 max-w-2xl space-y-2">
+        {/* Set */}
+        <LogisticsRow
+          label="Set"
+          status={set ? setStatusLevel(set.set.status) : "missing"}
+          badge={set ? set.set.status : "none"}
+          detail={
+            set
+              ? `${set.stage.name} · ${set.slot.date} ${set.slot.startTime}–${set.slot.endTime}`
+              : "No set scheduled"
+          }
+          href={`/lineup`}
+        />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Contact */}
-          <Card title="Contact">
-            <Field
-              label="Artist email"
-              value={artist.email}
-              mono
-              link={artist.email ? `mailto:${artist.email}` : null}
-            />
-            <Field label="Phone" value={artist.phone} mono />
-            <Field label="Agency" value={artist.agency} />
-            <Field
-              label="Agent email"
-              value={artist.agentEmail}
-              mono
-              link={artist.agentEmail ? `mailto:${artist.agentEmail}` : null}
-            />
-          </Card>
+        {/* Contract */}
+        <LogisticsRow
+          label="Contract"
+          status={contract ? contractLevel(contract.status) : "missing"}
+          badge={contract ? contract.status : "none"}
+          detail={
+            contract
+              ? contract.signedAt
+                ? `Signed ${format(new Date(contract.signedAt), "d MMM")}`
+                : "Unsigned"
+              : "No contract"
+          }
+          href={`/contracts`}
+        />
 
-          {/* Identity */}
-          <Card title="Identity">
-            <Field label="Slug" value={artist.slug} mono />
-            <Field label="Nationality" value={artist.nationality} />
-            <Field label="Visa status" value={artist.visaStatus} />
-            <Field label="Local act" value={artist.local ? "Yes" : "No"} />
-            {artist.color && (
-              <div className="pt-2 flex items-center gap-2">
-                <span className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle]">
-                  Color
-                </span>
-                <span
-                  className="inline-block w-4 h-4 rounded-full border border-white/10"
-                  style={{ background: artist.color }}
-                />
-                <span className="text-mono text-xs text-[--color-fg-muted]">
-                  {artist.color}
-                </span>
-              </div>
-            )}
-          </Card>
+        {/* Inbound flight */}
+        <LogisticsRow
+          label="Inbound flight"
+          status={inboundFlight ? flightLevel(inboundFlight.status) : "missing"}
+          badge={inboundFlight ? inboundFlight.status : "none"}
+          detail={
+            inboundFlight
+              ? `${inboundFlight.airline ?? ""} ${inboundFlight.flightNumber ?? ""} · ${inboundFlight.fromAirport ?? "?"} → ${inboundFlight.toAirport ?? "?"}${inboundFlight.scheduledDt ? ` · ${format(new Date(inboundFlight.scheduledDt), "EEE d MMM HH:mm")}` : ""}`
+              : "Not booked"
+          }
+          href={`/flights`}
+        />
 
-          {/* Links & files */}
-          <Card title="Links & files">
-            <Field label="Instagram" value={artist.instagram} />
-            <Field label="Soundcloud" value={artist.soundcloud} />
-            <FileField label="Press kit" url={artist.pressKitUrl} />
-            <FileField label="Passport file" url={artist.passportFileUrl} />
-          </Card>
+        {/* Outbound flight */}
+        <LogisticsRow
+          label="Outbound flight"
+          status={
+            outboundFlight ? flightLevel(outboundFlight.status) : "missing"
+          }
+          badge={outboundFlight ? outboundFlight.status : "none"}
+          detail={
+            outboundFlight
+              ? `${outboundFlight.airline ?? ""} ${outboundFlight.flightNumber ?? ""} · ${outboundFlight.fromAirport ?? "?"} → ${outboundFlight.toAirport ?? "?"}${outboundFlight.scheduledDt ? ` · ${format(new Date(outboundFlight.scheduledDt), "EEE d MMM HH:mm")}` : ""}`
+              : "Not booked"
+          }
+          href={`/flights`}
+        />
 
-          {/* Quick links */}
-          <Card title="Quick links">
-            <div className="space-y-2">
-              <QuickLink
-                href={`/festival/roadsheets/${artist.id}` as Route}
-                label="Full roadsheet"
-              />
-              <QuickLink
-                href={
-                  `/flights?artistSearch=${encodeURIComponent(artist.name)}` as Route
-                }
-                label="Flights"
-              />
-              <QuickLink
-                href={
-                  `/hotels/bookings?artistSearch=${encodeURIComponent(artist.name)}` as Route
-                }
-                label="Hotel bookings"
-              />
-              <QuickLink
-                href={
-                  `/ground?artistSearch=${encodeURIComponent(artist.name)}` as Route
-                }
-                label="Ground transport"
-              />
-              <QuickLink
-                href={
-                  `/payments?artistSearch=${encodeURIComponent(artist.name)}` as Route
-                }
-                label="Payments"
-              />
-            </div>
-          </Card>
-        </div>
+        {/* Hotel */}
+        <LogisticsRow
+          label="Hotel"
+          status={hotel ? hotelLevel(hotel.booking.status) : "missing"}
+          badge={hotel ? hotel.booking.status : "none"}
+          detail={
+            hotel
+              ? `${hotel.hotelName} · ${hotel.booking.checkin} → ${hotel.booking.checkout}`
+              : "No booking"
+          }
+          href={`/hotels/bookings`}
+        />
 
-        {/* Notes */}
-        {artist.comments && (
-          <Card title="Notes">
-            <p className="text-sm text-[--color-fg] whitespace-pre-wrap leading-relaxed">
-              {artist.comments}
-            </p>
-          </Card>
-        )}
+        {/* Pickups */}
+        <LogisticsRow
+          label="Ground transport"
+          status={pickups.length > 0 ? "ok" : "missing"}
+          badge={
+            pickups.length > 0
+              ? `${pickups.length} pickup${pickups.length !== 1 ? "s" : ""}`
+              : "none"
+          }
+          detail={
+            pickups.length > 0
+              ? pickups
+                  .slice(0, 2)
+                  .map(
+                    (p) =>
+                      `${format(new Date(p.pickupDt), "EEE HH:mm")} ${p.routeFrom} → ${p.routeTo}`,
+                  )
+                  .join(" / ") +
+                (pickups.length > 2 ? ` +${pickups.length - 2} more` : "")
+              : "No pickups scheduled"
+          }
+          href={`/ground`}
+        />
+
+        {/* Technical rider */}
+        <LogisticsRow
+          label="Technical rider"
+          status={techRider ? riderLevel(techRider.confirmed) : "missing"}
+          badge={
+            techRider ? (techRider.confirmed ? "confirmed" : "pending") : "none"
+          }
+          detail={
+            techRider
+              ? techRider.fileUrl
+                ? "File attached"
+                : "No file"
+              : "Not uploaded"
+          }
+          href={`/riders`}
+        />
+
+        {/* Hospitality rider */}
+        <LogisticsRow
+          label="Hospitality rider"
+          status={hospRider ? riderLevel(hospRider.confirmed) : "missing"}
+          badge={
+            hospRider ? (hospRider.confirmed ? "confirmed" : "pending") : "none"
+          }
+          detail={
+            hospRider
+              ? hospRider.fileUrl
+                ? "File attached"
+                : "No file"
+              : "Not uploaded"
+          }
+          href={`/riders`}
+        />
+
+        {/* Payments */}
+        <LogisticsRow
+          label="Payments"
+          status={
+            totalPayments === 0
+              ? "ok"
+              : paidCount === totalPayments
+                ? "ok"
+                : "warn"
+          }
+          badge={
+            totalPayments === 0
+              ? "all clear"
+              : `${paidCount}/${totalPayments} paid`
+          }
+          detail={
+            totalPayments === 0
+              ? "No outstanding payments"
+              : payments
+                  .filter((p) => p.status !== "paid")
+                  .slice(0, 2)
+                  .map(
+                    (p) =>
+                      `${formatCents(p.amountCents)} ${p.currency} · ${p.status}`,
+                  )
+                  .join(" / ")
+          }
+          href={`/payments`}
+        />
       </div>
     </>
   );
 }
 
-function Card({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="shadow-card rounded-[--radius-lg] p-5">
-      <h2 className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-subtle] mb-4">
-        {title}
-      </h2>
-      <div className="space-y-3">{children}</div>
-    </div>
-  );
+type StatusLevel = "ok" | "warn" | "missing";
+
+function setStatusLevel(status: string): StatusLevel {
+  if (status === "confirmed" || status === "live" || status === "done")
+    return "ok";
+  if (status === "option") return "warn";
+  return "warn";
 }
 
-function Badge({ label, color }: { label: string; color: "brand" | "muted" }) {
-  const cls =
-    color === "brand"
-      ? "bg-[--color-brand]/10 text-[--color-brand] border-[--color-brand]/20"
-      : "bg-white/[0.04] text-[--color-fg-muted] border-white/[0.08]";
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-mono text-[10px] uppercase tracking-[0.14em] ${cls}`}
-    >
-      {label}
-    </span>
-  );
+function contractLevel(status: string): StatusLevel {
+  if (status === "signed") return "ok";
+  if (status === "sent") return "warn";
+  return "warn";
 }
 
-function Field({
+function flightLevel(status: string): StatusLevel {
+  if (status === "confirmed" || status === "landed" || status === "departed")
+    return "ok";
+  if (status === "booked") return "warn";
+  return "warn";
+}
+
+function hotelLevel(status: string): StatusLevel {
+  if (
+    status === "confirmed" ||
+    status === "checked_in" ||
+    status === "checked_out"
+  )
+    return "ok";
+  if (status === "pending") return "warn";
+  return "warn";
+}
+
+function riderLevel(confirmed: boolean | null): StatusLevel {
+  return confirmed ? "ok" : "warn";
+}
+
+const statusDot: Record<StatusLevel, string> = {
+  ok: "bg-[--color-brand]",
+  warn: "bg-[--color-warn]",
+  missing: "bg-[--color-fg-subtle]",
+};
+
+const statusBadge: Record<StatusLevel, string> = {
+  ok: "bg-[--color-brand]/10 text-[--color-brand] border-[--color-brand]/20",
+  warn: "bg-[--color-warn]/10 text-[--color-warn] border-[--color-warn]/20",
+  missing: "bg-white/[0.04] text-[--color-fg-subtle] border-white/[0.06]",
+};
+
+function LogisticsRow({
   label,
-  value,
-  mono,
-  link,
+  status,
+  badge,
+  detail,
+  href,
 }: {
   label: string;
-  value: string | null | undefined;
-  mono?: boolean;
-  link?: string | null;
+  status: StatusLevel;
+  badge: string;
+  detail: string;
+  href: string;
 }) {
-  if (!value) return null;
-  return (
-    <div className="flex items-baseline gap-3 min-w-0">
-      <span className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] shrink-0 w-24">
-        {label}
-      </span>
-      {link ? (
-        <a
-          href={link}
-          className={`text-brand hover:underline underline-offset-2 truncate ${mono ? "text-mono text-xs" : "text-sm"}`}
-        >
-          {value}
-        </a>
-      ) : (
-        <span
-          className={`text-[--color-fg] truncate ${mono ? "text-mono text-xs" : "text-sm"}`}
-        >
-          {value}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function FileField({ label, url }: { label: string; url: string | null }) {
-  return (
-    <div className="flex items-baseline gap-3">
-      <span className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] shrink-0 w-24">
-        {label}
-      </span>
-      {url ? (
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          className="text-brand text-mono text-xs hover:underline underline-offset-2"
-        >
-          open file
-        </a>
-      ) : (
-        <span className="text-[--color-fg-subtle] text-xs italic">none</span>
-      )}
-    </div>
-  );
-}
-
-function QuickLink({ href, label }: { href: Route; label: string }) {
   return (
     <Link
-      href={href}
-      className="flex items-center gap-2 text-sm text-[--color-fg-muted] hover:text-[--color-fg] transition-colors group"
+      href={href as Route}
+      className="flex items-center gap-4 rounded-[--radius-md] px-4 py-3.5 hover:bg-white/[0.04] transition-colors group border border-transparent hover:border-white/[0.05]"
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-[--color-fg-subtle] group-hover:bg-brand transition-colors" />
-      {label}
+      <span className={`w-2 h-2 rounded-full shrink-0 ${statusDot[status]}`} />
+      <span className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-muted] w-36 shrink-0">
+        {label}
+      </span>
+      <span
+        className={`inline-flex items-center px-2 py-0.5 rounded-full border text-mono text-[10px] shrink-0 ${statusBadge[status]}`}
+      >
+        {badge}
+      </span>
+      <span className="text-[13px] text-[--color-fg-subtle] truncate flex-1">
+        {detail}
+      </span>
+      <span className="text-[--color-fg-subtle] opacity-0 group-hover:opacity-100 transition-opacity text-xs shrink-0">
+        &rarr;
+      </span>
     </Link>
   );
 }
