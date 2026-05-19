@@ -22,6 +22,24 @@ _(nothing — all current phases done)_
 
 ## Done
 
+- 2026-05-19 — **Lineup pipeline view** (Phase D)
+  Added a kanban view to /lineup, alongside the existing calendar grid.
+  - **View toggle** (`?view=grid|pipeline`) in the lineup header.
+    Pipeline drops the day tabs (status is cross-day). New shared
+    `ViewToggle.tsx` component (Suspense-wrapped to satisfy the
+    pre-push useSearchParams sweep).
+  - **Pipeline component** (`LineupPipeline.tsx`): 6 status columns
+    (option / confirmed / not_available / live / done / withdrawn).
+    Each card = one set. Drag a card across columns to advance status;
+    optimistic UI update, PATCH `/api/sets/[id]` with `{status}` writes
+    the audit row via the existing `recordTransition` path. Revert on
+    server failure. Card shows artist + stage chip + slot date/time +
+    fee. Click navigates to the artist cockpit.
+  - **New repo function** `getLineupPipeline(festivalId)` returns all
+    sets joined with artist + slot + stage in one shape the client
+    groups by status. 3 new unit tests.
+    455 tests green (was 452).
+
 - 2026-05-19 — **Cockpit + worklist + side sheets** (planning-mode flow rebuild)
   Three connected wins shipped together:
   - **Deep links + prefill** across every creation page. `/flights/new`,

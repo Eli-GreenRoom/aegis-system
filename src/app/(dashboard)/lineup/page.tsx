@@ -6,14 +6,16 @@ import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
-import { getLineupGrid } from "@/lib/lineup/repo";
+import { getLineupGrid, getLineupPipeline } from "@/lib/lineup/repo";
 import { listArtists } from "@/lib/artists/repo";
 import { slotDateSchema } from "@/lib/lineup/schema";
 import DayTabs from "./_components/DayTabs";
 import LineupBoard from "./_components/LineupBoard";
+import LineupPipeline from "./_components/LineupPipeline";
+import ViewToggle from "./_components/ViewToggle";
 
 interface PageProps {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; view?: string }>;
 }
 
 export default async function LineupPage({ searchParams }: PageProps) {
@@ -29,6 +31,31 @@ export default async function LineupPage({ searchParams }: PageProps) {
     );
 
   const sp = await searchParams;
+  const view: "grid" | "pipeline" =
+    sp.view === "pipeline" ? "pipeline" : "grid";
+
+  if (view === "pipeline") {
+    const cards = await getLineupPipeline(festival.id);
+    return (
+      <>
+        <Topbar
+          title="Lineup"
+          subtitle={`${cards.length} set${cards.length === 1 ? "" : "s"} on ${festival.name}`}
+          actions={
+            <Link href="/settings?tab=festival">
+              <Button variant="secondary">Stages</Button>
+            </Link>
+          }
+        />
+        <div className="px-6 py-6 space-y-5">
+          <ViewToggle active="pipeline" />
+          <LineupPipeline cards={cards} />
+        </div>
+      </>
+    );
+  }
+
+  // Grid view (default)
   const dateParse = slotDateSchema.safeParse(sp.date);
   const date: string = dateParse.success ? dateParse.data : festival.startDate;
 
@@ -60,8 +87,11 @@ export default async function LineupPage({ searchParams }: PageProps) {
           </Link>
         }
       />
-      <div className="px-6 py-6">
-        <DayTabs active={date} festival={festival} />
+      <div className="px-6 py-6 space-y-5">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <DayTabs active={date} festival={festival} />
+          <ViewToggle active="grid" />
+        </div>
         <LineupBoard day={date} grid={grid} artists={artists} />
       </div>
     </>

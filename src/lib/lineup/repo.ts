@@ -286,3 +286,75 @@ export async function getLineupGrid(
     slots: slotsByStage.get(stage.id) ?? [],
   }));
 }
+
+// -- Pipeline view (kanban) ----------------------------------------------
+
+/**
+ * One row per set, denormalised with the set's artist and (if assigned)
+ * its slot + stage. Sets without a slot (orphaned) won't appear because
+ * slotId is NOT NULL on the sets table; included artists fold in even
+ * when no set exists yet (so the kanban can show "no set yet" cards in
+ * the Option column).
+ *
+ * Returned in a single shape the client groups by status.
+ */
+
+export interface PipelineCard {
+  set: SetRow;
+  artist: Pick<Artist, "id" | "name" | "slug" | "agency" | "color">;
+  slot: Pick<Slot, "id" | "date" | "startTime" | "endTime"> | null;
+  stage: Pick<Stage, "id" | "name" | "color"> | null;
+}
+
+export async function getLineupPipeline(
+  festivalId: string,
+): Promise<PipelineCard[]> {
+  // Two-table join via the slot (slot is festival-scoped). Sets always
+  // have a slot, and we filter by slot.festivalId to scope correctly.
+  const rows = await db
+    .select({
+      set: sets,
+      artist: {
+        id: artists.id,
+        name: artists.name,
+        slug: artists.slug,
+        agency: artists.agency,
+        color: artists.color,
+      },
+      slot: {
+        id: slots.id,
+        date: slots.date,
+        startTime: slots.startTime,
+        endTime: slots.endTime,
+        stageId: slots.stageId,
+      },
+    })
+    .from(sets)
+    .innerJoin(slots, eq(sets.slotId, slots.id))
+    .innerJoin(artists, eq(sets.artistId, artists.id))
+    .where(eq(slots.festivalId, festivalId))
+    .orderBy(asc(slots.date), asc(slots.startTime));
+
+  if (rows.length === 0) return [];
+
+  // Stages join — fetch all and index.
+  const allStages = await listStages(festivalId);
+  const stageById = new Map(allStages.map((s) => [s.id, s]));
+
+  return rows.map((r) => {
+    const stage = stageById.get(r.slot.stageId);
+    return {
+      set: r.set,
+      artist: r.artist,
+      slot: {
+        id: r.slot.id,
+        date: r.slot.date,
+        startTime: r.slot.startTime,
+        endTime: r.slot.endTime,
+      },
+      stage: stage
+        ? { id: stage.id, name: stage.name, color: stage.color }
+        : null,
+    };
+  });
+}
