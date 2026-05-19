@@ -42,18 +42,18 @@ export interface CockpitProgress {
 
 /**
  * Derive the artist cockpit's progress + next-action from the roadsheet
- * (no extra DB queries). Pure function — used by the artist detail page.
+ * (no extra DB queries). Pure function -- used by the artist detail page.
  *
  * Operational order (matches how an artist actually gets prepped):
- *  1. set        — must be confirmed before anything else makes sense
- *  2. contract   — signed contract before booking travel
- *  3. flight in  — book inbound first; outbound usually settles later
- *  4. hotel      — needs to land somewhere
- *  5. pickup     — needs a ride from airport
- *  6. payment    — settle balance
+ *  1. set        -- must be confirmed before anything else makes sense
+ *  2. contract   -- signed contract before booking travel
+ *  3. flight in  -- book inbound first; outbound usually settles later
+ *  4. hotel      -- needs to land somewhere
+ *  5. pickup     -- needs a ride from airport
+ *  6. payment    -- settle balance
  *
  * Outbound flight, riders, and crew are tracked separately on the progress
- * rail but not surfaced as the primary "next action" — they're rarely the
+ * rail but not surfaced as the primary "next action" -- they're rarely the
  * blocker that prevents an artist from showing up.
  */
 export function getNextAction(sheet: ArtistRoadsheet): CockpitProgress {
@@ -108,8 +108,8 @@ function buildAction(gap: CockpitGap, sheet: ArtistRoadsheet): NextAction {
         gap,
         title: "Schedule a set",
         reason:
-          "This artist isn't on the lineup yet — add a confirmed slot before booking travel.",
-        ctaLabel: "Open lineup →",
+          "This artist isn't on the lineup yet -- add a confirmed slot before booking travel.",
+        ctaLabel: "Open lineup",
         sheet: null,
         href: "/lineup",
       };
@@ -118,9 +118,9 @@ function buildAction(gap: CockpitGap, sheet: ArtistRoadsheet): NextAction {
         gap,
         title: "Send the contract",
         reason: sheet.contract
-          ? `Contract is ${sheet.contract.status} — chase to signed before booking travel.`
+          ? `Contract is ${sheet.contract.status} -- chase to signed before booking travel.`
           : "No contract on file. Draft and send before booking travel.",
-        ctaLabel: sheet.contract ? "Open contract →" : "Add contract",
+        ctaLabel: sheet.contract ? "Open contract" : "Add contract",
         sheet: sheet.contract ? null : "contract",
         href: sheet.contract ? `/contracts/${sheet.contract.id}` : null,
       };
@@ -148,7 +148,7 @@ function buildAction(gap: CockpitGap, sheet: ArtistRoadsheet): NextAction {
         title: "Schedule pickup",
         reason: sheet.inboundFlight
           ? "Inbound flight is booked. Assign a vehicle to get them from the airport."
-          : "No pickup scheduled — needed even without a flight if they're driving in.",
+          : "No pickup scheduled -- needed even without a flight if they're driving in.",
         ctaLabel: "Add pickup",
         sheet: "pickup",
         href: null,
@@ -161,8 +161,7 @@ function buildAction(gap: CockpitGap, sheet: ArtistRoadsheet): NextAction {
           sheet.payments.length === 0
             ? "No payment recorded yet."
             : `${sheet.payments.filter((p) => p.status !== "paid" && p.status !== "void").length} payment(s) outstanding.`,
-        ctaLabel:
-          sheet.payments.length === 0 ? "Add payment" : "View payments →",
+        ctaLabel: sheet.payments.length === 0 ? "Add payment" : "View payments",
         sheet: sheet.payments.length === 0 ? "payment" : null,
         href: sheet.payments.length === 0 ? null : `/artists/${artistId}`,
       };
@@ -175,8 +174,8 @@ function setReasonForTravel(
 ): string {
   if (!sheet.set) {
     return kind === "inbound"
-      ? "Confirm a set first — flight dates depend on it."
-      : "Confirm a set first — hotel dates depend on it.";
+      ? "Confirm a set first -- flight dates depend on it."
+      : "Confirm a set first -- hotel dates depend on it.";
   }
   const day = sheet.set.slot.date;
   const start = sheet.set.slot.startTime;
