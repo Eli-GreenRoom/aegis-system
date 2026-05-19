@@ -27,3 +27,10 @@ export type { ArrivalToday } from "./arrivals-today";
 
 export { getCurrentlyActiveBookings } from "./currently-active-bookings";
 export type { ActiveBooking } from "./currently-active-bookings";
+
+export { getFestivalReadiness, GAP_LABEL } from "./artist-readiness";
+export type {
+  FestivalReadiness,
+  ArtistReadiness,
+  ReadinessGap,
+} from "./artist-readiness";

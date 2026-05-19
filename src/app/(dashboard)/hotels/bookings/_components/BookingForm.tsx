@@ -19,6 +19,8 @@ interface Props {
   hotels: Hotel[];
   blocks: RoomBlock[];
   people: Person[];
+  defaultPerson?: { id: string; kind: "artist" | "crew" };
+  onSuccess?: () => void;
 }
 
 // Form-shape: credits in whole USD/EUR (display unit), not cents.
@@ -49,6 +51,8 @@ export default function BookingForm({
   hotels,
   blocks,
   people,
+  defaultPerson,
+  onSuccess,
 }: Props) {
   const router = useRouter();
   const isEdit = !!booking;
@@ -65,8 +69,8 @@ export default function BookingForm({
     defaultValues: {
       hotelId: booking?.hotelId ?? hotels[0]?.id ?? "",
       roomBlockId: booking?.roomBlockId ?? "",
-      personKind: booking?.personKind ?? "artist",
-      personId: booking?.personId ?? people[0]?.id ?? "",
+      personKind: booking?.personKind ?? defaultPerson?.kind ?? "artist",
+      personId: booking?.personId ?? defaultPerson?.id ?? people[0]?.id ?? "",
       roomType: booking?.roomType ?? "",
       checkin: booking?.checkin ?? "",
       checkout: booking?.checkout ?? "",
@@ -129,6 +133,11 @@ export default function BookingForm({
     }
 
     const body = await res.json();
+    if (onSuccess) {
+      router.refresh();
+      onSuccess();
+      return;
+    }
     router.push(`/hotels/bookings/${body.booking.id}` as Route);
     router.refresh();
   }
@@ -168,7 +177,7 @@ export default function BookingForm({
           required
         >
           <select
-            defaultValue={`${booking?.personKind ?? "artist"}:${booking?.personId ?? people[0]?.id ?? ""}`}
+            defaultValue={`${booking?.personKind ?? defaultPerson?.kind ?? "artist"}:${booking?.personId ?? defaultPerson?.id ?? people[0]?.id ?? ""}`}
             onChange={(e) => {
               const { kind, id } = setPerson(e.target.value);
               const form = e.currentTarget.form!;

@@ -7,7 +7,14 @@ import { getActiveFestival } from "@/lib/festivals";
 import { listArtists } from "@/lib/artists/repo";
 import RiderForm from "../_components/RiderForm";
 
-export default async function NewRiderPage() {
+interface PageProps {
+  searchParams: Promise<{
+    artistId?: string;
+    kind?: string;
+  }>;
+}
+
+export default async function NewRiderPage({ searchParams }: PageProps) {
   const session = await getAppSession();
   if (!session) redirect("/sign-in");
 
@@ -19,10 +26,18 @@ export default async function NewRiderPage() {
       </div>
     );
 
+  const sp = await searchParams;
   const artists = await listArtists({
     festivalId: festival.id,
     archived: "active",
   });
+
+  const defaultArtistId =
+    sp.artistId && artists.some((a) => a.id === sp.artistId)
+      ? sp.artistId
+      : undefined;
+  const defaultKind: "hospitality" | "technical" | undefined =
+    sp.kind === "hospitality" || sp.kind === "technical" ? sp.kind : undefined;
 
   if (artists.length === 0) {
     return (
@@ -44,7 +59,11 @@ export default async function NewRiderPage() {
         subtitle="Hospitality or technical, linked to one artist."
       />
       <div className="px-6 py-6">
-        <RiderForm artists={artists} />
+        <RiderForm
+          artists={artists}
+          defaultArtistId={defaultArtistId}
+          defaultKind={defaultKind}
+        />
       </div>
     </>
   );

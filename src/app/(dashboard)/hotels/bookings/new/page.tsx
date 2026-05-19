@@ -5,10 +5,17 @@ import Topbar from "@/components/dashboard/Topbar";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
 import { listHotels, listRoomBlocks } from "@/lib/hotels/repo";
-import { listPeople } from "@/lib/people";
+import { listPeople, type PersonKind } from "@/lib/people";
 import BookingForm from "../_components/BookingForm";
 
-export default async function NewBookingPage() {
+interface PageProps {
+  searchParams: Promise<{
+    personId?: string;
+    personKind?: string;
+  }>;
+}
+
+export default async function NewBookingPage({ searchParams }: PageProps) {
   const session = await getAppSession();
   if (!session) redirect("/sign-in");
 
@@ -20,11 +27,23 @@ export default async function NewBookingPage() {
       </div>
     );
 
+  const sp = await searchParams;
   const [hotels, blocks, people] = await Promise.all([
     listHotels(),
     listRoomBlocks({ festivalId: festival.id }),
     listPeople(festival.id),
   ]);
+
+  const kind: PersonKind | undefined =
+    sp.personKind === "crew" || sp.personKind === "artist"
+      ? sp.personKind
+      : undefined;
+  const defaultPerson =
+    sp.personId &&
+    kind &&
+    people.some((p) => p.id === sp.personId && p.kind === kind)
+      ? { id: sp.personId, kind }
+      : undefined;
 
   if (hotels.length === 0) {
     return (
@@ -58,7 +77,12 @@ export default async function NewBookingPage() {
         subtitle="Assign a person to a hotel for a date range."
       />
       <div className="px-6 py-6">
-        <BookingForm hotels={hotels} blocks={blocks} people={people} />
+        <BookingForm
+          hotels={hotels}
+          blocks={blocks}
+          people={people}
+          defaultPerson={defaultPerson}
+        />
       </div>
     </>
   );

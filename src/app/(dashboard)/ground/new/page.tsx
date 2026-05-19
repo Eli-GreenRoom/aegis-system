@@ -4,11 +4,18 @@ import { redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
-import { listPeople } from "@/lib/people";
+import { listPeople, type PersonKind } from "@/lib/people";
 import { listVendors } from "@/lib/ground/repo";
 import PickupForm from "../_components/PickupForm";
 
-export default async function NewPickupPage() {
+interface PageProps {
+  searchParams: Promise<{
+    personId?: string;
+    personKind?: string;
+  }>;
+}
+
+export default async function NewPickupPage({ searchParams }: PageProps) {
   const session = await getAppSession();
   if (!session) redirect("/sign-in");
 
@@ -20,10 +27,22 @@ export default async function NewPickupPage() {
       </div>
     );
 
+  const sp = await searchParams;
   const [people, vendors] = await Promise.all([
     listPeople(festival.id),
     listVendors(),
   ]);
+
+  const kind: PersonKind | undefined =
+    sp.personKind === "crew" || sp.personKind === "artist"
+      ? sp.personKind
+      : undefined;
+  const defaultPerson =
+    sp.personId &&
+    kind &&
+    people.some((p) => p.id === sp.personId && p.kind === kind)
+      ? { id: sp.personId, kind }
+      : undefined;
 
   if (people.length === 0) {
     return (
@@ -46,7 +65,11 @@ export default async function NewPickupPage() {
     <>
       <Topbar title="New pickup" subtitle="Schedule a ground transport job." />
       <div className="px-6 py-6">
-        <PickupForm people={people} vendors={vendors} />
+        <PickupForm
+          people={people}
+          vendors={vendors}
+          defaultPerson={defaultPerson}
+        />
       </div>
     </>
   );

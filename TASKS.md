@@ -7,26 +7,77 @@
 
 ## Now
 
-- [ ] Phase 7 — Brand + copy sweep (package.json name, docs, UI strings)
+_(nothing — all current phases done)_
 
 ## Later
 
-- [ ] Phase 2 — Onboarding + festival creation (sign-up → workspace → festival → dashboard)
-- [ ] Phase 3 — Team page + invites (copy-link only, no Resend yet)
-- [ ] Phase 4 — Festival settings page (editable stages, per-stage activeDates)
-- [ ] Phase 5 — T-date fix + topbar festival/workspace switcher
-- [ ] Phase 6 — UI simplicity sweep (7-item sidebar, real Home page, HQ density)
-- [ ] Phase 7 — Brand + copy sweep (package.json name, docs, UI strings)
-- [ ] Phase 8 — Repo + Vercel rename (manual, Eli does this — aegis-system → greenroom-stages)
-- [ ] Original Phase 6 — Cmd+K AI agent (deferred; sits after the structural phases)
-- [ ] Original Phase 7 — Polish + comms (Resend email, roadsheet email, audit log in UI)
-- [ ] Phase 5 polish: stage filter chips on Now/Pickups, polling /
-      pull-to-refresh, PWA install prompt, roadsheet PDF export,
-      coral-pulse animations on overdue rows.
+- [ ] **Cmd+K AI agent** — streaming agentic loop, read/write tools, palette overlay
+- [ ] **Resend email** — roadsheet email T-1 day per artist, invite emails
+- [ ] **Audit log UI** — surface transition history in Settings
+- [ ] **Repo + Vercel rename** — manual, Eli does this: `aegis-system` → `greenroom-stages`
+- [ ] **PWA icons** — add actual `icon-192.png` + `icon-512.png` to `public/` (manifest wired, icons placeholder)
+- [ ] **Contract signing** — fresh design TBD (previous approach rejected; see memory)
 
 ---
 
 ## Done
+
+- 2026-05-19 — **Cockpit + worklist + side sheets** (planning-mode flow rebuild)
+  Three connected wins shipped together:
+  - **Deep links + prefill** across every creation page. `/flights/new`,
+    `/hotels/bookings/new`, `/ground/new`, `/riders/new`, `/contracts/new`,
+    `/payments/new` all accept `?personId=&personKind=` (or `?artistId=`)
+    and preselect the artist. Six form components gained matching
+    `defaultPerson` / `defaultArtistId` props.
+  - **Home rewritten as a worklist**. Dropped the 4-stat-card grid + hero +
+    standalone pickups block. New layout: compact festival strip with a
+    lineup-readiness progress bar, top 5 open issues (severity-coded
+    deep links), and a "Pending by artist" roll-up where each missing piece
+    is a chip that deep-links to the prefilled new-X form. Live-mode
+    redirects to `/festival/now`. New aggregator
+    `src/lib/aggregators/artist-readiness.ts` returns per-artist gaps +
+    festival-wide percent.
+  - **Artist page is now a cockpit**. Old 4-card + 9-row checklist replaced
+    with: header (set time + completion ratio), pulsing "Next" hero card
+    with contextual reason text and one primary CTA, 9-row progress rail,
+    collapsible identity card. `src/lib/artists/next-action.ts` computes
+    the next gap from the roadsheet (operational order:
+    set → contract → flight → hotel → pickup → payment). Every "Add"
+    button opens a right-aligned **side sheet** with the relevant form
+    pre-populated — submit closes the panel and refreshes the page in
+    place, no navigation. New primitive
+    `src/components/ui/SideSheet.tsx` (portal, ESC, scroll lock, slide-in).
+    Six forms gained an optional `onSuccess` prop so they can close the
+    sheet instead of `router.push`.
+    452 tests green (was 439 — added 5 readiness + 8 next-action tests).
+    Deleted orphaned `src/app/(dashboard)/home/PickupAdvanceButton.tsx`.
+
+- 2026-05-19 — **Phase 5 polish**
+  - **Stage filter chips** wired into Now page: converted to server+client split
+    (`NowBoard` client component), `StageFilterChips` renders above stage grid,
+    selection persists in localStorage.
+  - **Auto-refresh (30s polling)**: `src/hooks/useAutoRefresh.ts` — polls
+    `router.refresh()` on interval, pauses when tab is hidden, resumes + fires
+    immediately on tab focus. Wired into NowBoard, PickupsBoard, ArrivalsBoard.
+  - **Coral-pulse animation**: `@keyframes coral-pulse` in globals.css,
+    `animate-coral-pulse` utility. Applied to high-severity issue rows (Now page)
+    and overdue payment rows (Payments page) — border pulses between
+    rgba(231,62,84,0.25) and rgba(231,62,84,0.75) on a 2s loop.
+  - **PWA manifest**: `public/manifest.json` (name, start_url /home, theme
+    #E5B85A, standalone display). `Viewport` export with `themeColor`. Apple
+    web-app meta tags. Enables "Add to Home Screen" on iOS/Android.
+  - **Roadsheet PDF export**: `GET /api/roadsheets/[artistId]/pdf` — renders
+    full roadsheet (set, travel, hotel, pickups, riders, contract, payments) as
+    a dark-themed A4 PDF via pdf-lib. Gold top bar, Helvetica, section dividers.
+    "Export PDF" download link added to roadsheet page topbar.
+    439 tests green.
+
+- 2026-05-19 — **Phase 7 — Brand + copy sweep**
+  One string updated: `src/app/layout.tsx` metadata description changed from
+  "Festival operations for Aegis Festival" to "Festival & live-event operations
+  platform". All other product-name strings ("GreenRoom Stages") were already
+  correct. `src/lib/branding/aegis-festival.ts` intentionally kept as-is
+  (tenant brand for export templates only). 439 tests green.
 
 - 2026-05-14 — **Phase 6 — Home page + sidebar simplicity sweep**
   `/home` dashboard: festival hero card (name, dates, location, T-date), 4 stat

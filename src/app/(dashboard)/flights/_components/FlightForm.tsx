@@ -17,6 +17,12 @@ import type { Person } from "@/lib/people";
 interface Props {
   flight?: Flight;
   people: Person[];
+  defaultPerson?: { id: string; kind: "artist" | "crew" };
+  defaultDirection?: "inbound" | "outbound";
+  /** Callback fired on successful save. If provided, replaces the default
+   *  `router.push("/flights/<id>")` redirect — used when the form is
+   *  hosted inside a side sheet that wants to close + refresh in place. */
+  onSuccess?: () => void;
 }
 
 function toDtLocal(d: Date | string | null | undefined): string {
@@ -36,12 +42,19 @@ function fromDtLocal(s: string): string {
   return d.toISOString();
 }
 
-export default function FlightForm({ flight, people }: Props) {
+export default function FlightForm({
+  flight,
+  people,
+  defaultPerson,
+  defaultDirection,
+  onSuccess,
+}: Props) {
   const router = useRouter();
   const isEdit = !!flight;
   const [serverError, setServerError] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [otherLegs, setOtherLegs] = useState<Record<string, unknown>[]>([]);
 
   const {
     register,
@@ -52,9 +65,9 @@ export default function FlightForm({ flight, people }: Props) {
   } = useForm<FlightInput>({
     resolver: zodResolver(flightInputSchema),
     defaultValues: {
-      personKind: flight?.personKind ?? "artist",
-      personId: flight?.personId ?? people[0]?.id ?? "",
-      direction: flight?.direction ?? "inbound",
+      personKind: flight?.personKind ?? defaultPerson?.kind ?? "artist",
+      personId: flight?.personId ?? defaultPerson?.id ?? people[0]?.id ?? "",
+      direction: flight?.direction ?? defaultDirection ?? "inbound",
       fromAirport: flight?.fromAirport ?? "",
       toAirport: flight?.toAirport ?? "",
       airline: flight?.airline ?? "",
@@ -101,6 +114,11 @@ export default function FlightForm({ flight, people }: Props) {
     }
 
     const body = await res.json();
+    if (onSuccess) {
+      router.refresh();
+      onSuccess();
+      return;
+    }
     router.push(`/flights/${body.flight.id}` as Route);
     router.refresh();
   }
@@ -132,7 +150,7 @@ export default function FlightForm({ flight, people }: Props) {
     label: `${p.name} (${p.kind})${p.agency ? ` - ${p.agency}` : ""}`,
   }));
 
-  function applyParsed(p: Record<string, unknown>) {
+  function applyOneLeg(p: Record<string, unknown>) {
     if (typeof p.airline === "string")
       setValue("airline", p.airline, { shouldValidate: true });
     if (typeof p.flightNumber === "string")
@@ -151,6 +169,20 @@ export default function FlightForm({ flight, people }: Props) {
       setValue("seat", p.seat, { shouldValidate: true });
     if (p.direction === "inbound" || p.direction === "outbound")
       setValue("direction", p.direction, { shouldValidate: true });
+  }
+
+  function applyParsed(raw: Record<string, unknown> | unknown[]) {
+    const legs = Array.isArray(raw)
+      ? (raw as Record<string, unknown>[])
+      : [raw as Record<string, unknown>];
+
+    // Pick the leg that matches the current direction preference (inbound first for new flights)
+    const preferred = legs.find((l) => l.direction === "inbound") ?? legs[0];
+    applyOneLeg(preferred);
+
+    // Surface any other legs so the operator can create them next
+    const rest = legs.filter((l) => l !== preferred);
+    setOtherLegs(rest);
   }
 
   return (
@@ -173,7 +205,7 @@ export default function FlightForm({ flight, people }: Props) {
           required
         >
           <select
-            defaultValue={`${flight?.personKind ?? "artist"}:${flight?.personId ?? people[0]?.id ?? ""}`}
+            defaultValue={`${flight?.personKind ?? defaultPerson?.kind ?? "artist"}:${flight?.personId ?? defaultPerson?.id ?? people[0]?.id ?? ""}`}
             onChange={(e) => {
               const { kind, id } = setPerson(e.target.value);
               // Update both hidden fields using the registered controls.
@@ -330,6 +362,29 @@ export default function FlightForm({ flight, people }: Props) {
           </Button>
         )}
       </div>
+
+      {otherLegs.length > 0 && (
+        <div className="rounded-md border border-brand/30 bg-brand/5 px-4 py-3 space-y-1">
+          <p className="text-xs font-medium text-brand">
+            {otherLegs.length} more leg{otherLegs.length > 1 ? "s" : ""} found
+            in this itinerary
+          </p>
+          {otherLegs.map((leg, i) => (
+            <p key={i} className="text-mono text-xs text-[--color-fg-muted]">
+              {String(leg.direction ?? "?")} · {String(leg.fromAirport ?? "?")}{" "}
+              → {String(leg.toAirport ?? "?")}{" "}
+              {leg.flightNumber ? `(${String(leg.flightNumber)})` : ""}
+              {leg.scheduledDt
+                ? ` · ${toDtLocal(String(leg.scheduledDt))}`
+                : ""}
+              {" — "}
+              <span className="text-[--color-fg-subtle]">
+                Save this flight first, then create another.
+              </span>
+            </p>
+          ))}
+        </div>
+      )}
 
       {aiOpen && (
         <AIParseDialog

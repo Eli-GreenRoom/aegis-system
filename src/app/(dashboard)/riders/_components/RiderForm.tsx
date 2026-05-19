@@ -15,6 +15,9 @@ import type { Rider } from "@/lib/riders/repo";
 interface Props {
   artists: Artist[];
   rider?: Rider;
+  defaultArtistId?: string;
+  defaultKind?: "hospitality" | "technical";
+  onSuccess?: () => void;
 }
 
 function toDtLocal(d: Date | string | null | undefined): string {
@@ -22,11 +25,17 @@ function toDtLocal(d: Date | string | null | undefined): string {
   const date = typeof d === "string" ? new Date(d) : d;
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-    date.getDate()
+    date.getDate(),
   )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export default function RiderForm({ artists, rider }: Props) {
+export default function RiderForm({
+  artists,
+  rider,
+  defaultArtistId,
+  defaultKind,
+  onSuccess,
+}: Props) {
   const router = useRouter();
   const isEdit = !!rider;
   const [serverError, setServerError] = useState("");
@@ -40,8 +49,8 @@ export default function RiderForm({ artists, rider }: Props) {
   } = useForm<RiderInput>({
     resolver: zodResolver(riderInputSchema),
     defaultValues: {
-      artistId: rider?.artistId ?? artists[0]?.id ?? "",
-      kind: rider?.kind ?? "hospitality",
+      artistId: rider?.artistId ?? defaultArtistId ?? artists[0]?.id ?? "",
+      kind: rider?.kind ?? defaultKind ?? "hospitality",
       fileUrl: rider?.fileUrl ?? "",
       receivedAt: toDtLocal(rider?.receivedAt ?? null),
       confirmed: rider?.confirmed ?? false,
@@ -64,6 +73,11 @@ export default function RiderForm({ artists, rider }: Props) {
       return;
     }
 
+    if (onSuccess) {
+      router.refresh();
+      onSuccess();
+      return;
+    }
     router.push("/riders");
     router.refresh();
   }

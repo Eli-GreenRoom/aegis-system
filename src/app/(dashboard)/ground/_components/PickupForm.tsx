@@ -17,6 +17,8 @@ interface Props {
   pickup?: Pickup;
   people: Person[];
   vendors: Vendor[];
+  defaultPerson?: { id: string; kind: "artist" | "crew" };
+  onSuccess?: () => void;
 }
 
 // Form-shape: pickupDt is a datetime-local string; cost in whole USD.
@@ -33,7 +35,7 @@ const formSchema = pickupInputSchema
           v === "" ||
           (typeof v === "number" && v >= 0) ||
           (typeof v === "string" && /^\d+(\.\d{1,2})?$/.test(v)),
-        { message: "must be a non-negative number with up to 2 decimals" }
+        { message: "must be a non-negative number with up to 2 decimals" },
       ),
   });
 
@@ -44,11 +46,17 @@ function toDtLocal(d: Date | string | null | undefined): string {
   const date = typeof d === "string" ? new Date(d) : d;
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-    date.getDate()
+    date.getDate(),
   )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export default function PickupForm({ pickup, people, vendors }: Props) {
+export default function PickupForm({
+  pickup,
+  people,
+  vendors,
+  defaultPerson,
+  onSuccess,
+}: Props) {
   const router = useRouter();
   const isEdit = !!pickup;
   const [serverError, setServerError] = useState("");
@@ -61,8 +69,8 @@ export default function PickupForm({ pickup, people, vendors }: Props) {
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      personKind: pickup?.personKind ?? "artist",
-      personId: pickup?.personId ?? people[0]?.id ?? "",
+      personKind: pickup?.personKind ?? defaultPerson?.kind ?? "artist",
+      personId: pickup?.personId ?? defaultPerson?.id ?? people[0]?.id ?? "",
       routeFrom: pickup?.routeFrom ?? "airport",
       routeFromDetail: pickup?.routeFromDetail ?? "",
       routeTo: pickup?.routeTo ?? "hotel",
@@ -77,7 +85,8 @@ export default function PickupForm({ pickup, people, vendors }: Props) {
         pickup?.costAmountCents != null
           ? (pickup.costAmountCents / 100).toFixed(2)
           : "",
-      costCurrency: (pickup?.costCurrency as "USD" | "EUR" | undefined) ?? "USD",
+      costCurrency:
+        (pickup?.costCurrency as "USD" | "EUR" | undefined) ?? "USD",
       status: pickup?.status ?? "scheduled",
       comments: pickup?.comments ?? "",
     },
@@ -125,6 +134,11 @@ export default function PickupForm({ pickup, people, vendors }: Props) {
     }
 
     const body = await res.json();
+    if (onSuccess) {
+      router.refresh();
+      onSuccess();
+      return;
+    }
     router.push(`/ground/${body.pickup.id}` as TypedRoute);
     router.refresh();
   }
@@ -156,14 +170,21 @@ export default function PickupForm({ pickup, people, vendors }: Props) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Person" error={errors.personKind?.message ?? errors.personId?.message} required>
+        <Field
+          label="Person"
+          error={errors.personKind?.message ?? errors.personId?.message}
+          required
+        >
           <select
-            defaultValue={`${pickup?.personKind ?? "artist"}:${pickup?.personId ?? people[0]?.id ?? ""}`}
+            defaultValue={`${pickup?.personKind ?? defaultPerson?.kind ?? "artist"}:${pickup?.personId ?? defaultPerson?.id ?? people[0]?.id ?? ""}`}
             onChange={(e) => {
               const { kind, id } = setPerson(e.target.value);
               const form = e.currentTarget.form!;
-              (form.elements.namedItem("personKind") as HTMLInputElement).value = kind;
-              (form.elements.namedItem("personId") as HTMLInputElement).value = id;
+              (
+                form.elements.namedItem("personKind") as HTMLInputElement
+              ).value = kind;
+              (form.elements.namedItem("personId") as HTMLInputElement).value =
+                id;
             }}
             className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
           >
@@ -177,8 +198,16 @@ export default function PickupForm({ pickup, people, vendors }: Props) {
           <input type="hidden" {...register("personId")} />
         </Field>
 
-        <Field label="Pickup time" error={errors.pickupDtLocal?.message} required>
-          <Input type="datetime-local" step={60} {...register("pickupDtLocal")} />
+        <Field
+          label="Pickup time"
+          error={errors.pickupDtLocal?.message}
+          required
+        >
+          <Input
+            type="datetime-local"
+            step={60}
+            {...register("pickupDtLocal")}
+          />
         </Field>
 
         <Field label="From" error={errors.routeFrom?.message} required>
@@ -206,14 +235,20 @@ export default function PickupForm({ pickup, people, vendors }: Props) {
         </Field>
 
         <Field label="From detail" error={errors.routeFromDetail?.message}>
-          <Input {...register("routeFromDetail")} placeholder="Beirut Airport, Terminal A" />
+          <Input
+            {...register("routeFromDetail")}
+            placeholder="Beirut Airport, Terminal A"
+          />
         </Field>
         <Field label="To detail" error={errors.routeToDetail?.message}>
           <Input {...register("routeToDetail")} placeholder="Byblos Sur Mer" />
         </Field>
 
         <Field label="Vehicle" error={errors.vehicleType?.message}>
-          <Input {...register("vehicleType")} placeholder="Sedan, van, mini-bus..." />
+          <Input
+            {...register("vehicleType")}
+            placeholder="Sedan, van, mini-bus..."
+          />
         </Field>
         <Field label="Vendor" error={errors.vendorId?.message}>
           <select
@@ -267,7 +302,10 @@ export default function PickupForm({ pickup, people, vendors }: Props) {
         </Field>
 
         <Field label="Linked flight ID" error={errors.linkedFlightId?.message}>
-          <Input {...register("linkedFlightId")} placeholder="(optional UUID)" />
+          <Input
+            {...register("linkedFlightId")}
+            placeholder="(optional UUID)"
+          />
         </Field>
       </div>
 

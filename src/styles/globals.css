@@ -53,6 +53,33 @@
   }
 }
 
+/* Coral pulse animation — overdue / high-severity rows */
+@keyframes coral-pulse {
+  0%,
+  100% {
+    border-color: rgba(231, 62, 84, 0.25);
+  }
+  50% {
+    border-color: rgba(231, 62, 84, 0.75);
+  }
+}
+
+@utility animate-coral-pulse {
+  animation: coral-pulse 2s ease-in-out infinite;
+}
+
+/* Side-sheet slide-in from right */
+@keyframes sidesheet-slide {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 /* Brand color utilities */
 
 @utility text-brand {

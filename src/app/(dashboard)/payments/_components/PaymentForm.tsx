@@ -15,26 +15,35 @@ import type { Invoice, Payment } from "@/lib/payments/repo";
 import type { Artist } from "@/lib/artists/repo";
 import type { Vendor } from "@/lib/ground/repo";
 
+interface Prefill {
+  invoiceId?: string;
+  description?: string;
+  amountCents?: number;
+  currency?: "USD" | "EUR";
+  dueDate?: string;
+  artistId?: string;
+}
+
 interface Props {
   payment?: Payment;
   artists: Artist[];
   vendors: Vendor[];
   invoices: Invoice[];
+  prefill?: Prefill;
+  onSuccess?: () => void;
 }
 
 // Form-shape: amount in display units (USD/EUR), not cents.
-const formSchema = paymentInputSchema
-  .omit({ amountCents: true })
-  .extend({
-    amount: z
-      .union([z.string(), z.number()])
-      .refine(
-        (v: unknown) =>
-          (typeof v === "number" && v >= 0) ||
-          (typeof v === "string" && /^\d+(\.\d{1,2})?$/.test(v) && v !== ""),
-        { message: "must be a non-negative number with up to 2 decimals" }
-      ),
-  });
+const formSchema = paymentInputSchema.omit({ amountCents: true }).extend({
+  amount: z
+    .union([z.string(), z.number()])
+    .refine(
+      (v: unknown) =>
+        (typeof v === "number" && v >= 0) ||
+        (typeof v === "string" && /^\d+(\.\d{1,2})?$/.test(v) && v !== ""),
+      { message: "must be a non-negative number with up to 2 decimals" },
+    ),
+});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -43,6 +52,8 @@ export default function PaymentForm({
   artists,
   vendors,
   invoices,
+  prefill,
+  onSuccess,
 }: Props) {
   const router = useRouter();
   const isEdit = !!payment;
@@ -57,16 +68,21 @@ export default function PaymentForm({
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      description: payment?.description ?? "",
-      artistId: payment?.artistId ?? "",
+      description: payment?.description ?? prefill?.description ?? "",
+      artistId: payment?.artistId ?? prefill?.artistId ?? "",
       vendorId: payment?.vendorId ?? "",
-      invoiceId: payment?.invoiceId ?? "",
-      dueDate: payment?.dueDate ?? "",
+      invoiceId: payment?.invoiceId ?? prefill?.invoiceId ?? "",
+      dueDate: payment?.dueDate ?? prefill?.dueDate ?? "",
       amount:
         payment?.amountCents != null
           ? (payment.amountCents / 100).toFixed(2)
-          : "",
-      currency: (payment?.currency as "USD" | "EUR" | undefined) ?? "USD",
+          : prefill?.amountCents != null
+            ? (prefill.amountCents / 100).toFixed(2)
+            : "",
+      currency:
+        (payment?.currency as "USD" | "EUR" | undefined) ??
+        prefill?.currency ??
+        "USD",
       status: payment?.status ?? "pending",
       paidAt:
         payment?.paidAt instanceof Date
@@ -113,6 +129,11 @@ export default function PaymentForm({
     }
 
     const body = await res.json();
+    if (onSuccess) {
+      router.refresh();
+      onSuccess();
+      return;
+    }
     router.push(`/payments/${body.payment.id}` as Route);
     router.refresh();
   }
@@ -121,7 +142,9 @@ export default function PaymentForm({
     if (!payment) return;
     if (!confirm("Delete this payment? This is permanent.")) return;
     setDeleting(true);
-    const res = await fetch(`/api/payments/${payment.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/payments/${payment.id}`, {
+      method: "DELETE",
+    });
     setDeleting(false);
     if (!res.ok) {
       setServerError("Couldn't delete.");
@@ -135,7 +158,11 @@ export default function PaymentForm({
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <Field label="Description" error={errors.description?.message} required>
+          <Field
+            label="Description"
+            error={errors.description?.message}
+            required
+          >
             <Input
               {...register("description")}
               placeholder="Hiroko Yamamura - deposit"

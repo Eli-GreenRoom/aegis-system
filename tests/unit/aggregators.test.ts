@@ -84,6 +84,7 @@ import {
   getOpenIssues,
   getPickupsInWindow,
   getArtistRoadsheet,
+  getFestivalReadiness,
 } from "@/lib/aggregators";
 
 const EDITION_ID = "11111111-1111-4111-8111-111111111111";
@@ -662,5 +663,163 @@ describe("getOpenIssues", () => {
     const lo = sevs.indexOf("low");
     expect(hi).toBeGreaterThanOrEqual(0);
     expect(lo).toBeGreaterThan(hi);
+  });
+});
+
+// ── getFestivalReadiness ────────────────────────────────────────────────
+
+describe("getFestivalReadiness", () => {
+  const ARTIST_A = "aaaaaaaa-aaaa-4aaa-8aaa-111111111111";
+  const ARTIST_B = "bbbbbbbb-bbbb-4bbb-8bbb-222222222222";
+
+  function seed(opts: {
+    artists: { id: string; name: string; agency: string | null }[];
+    confirmedSets: string[];
+    contracts: { artistId: string; status: string }[];
+    inboundFlights: { personId: string; personKind: string; status: string }[];
+    bookings: { personId: string; personKind: string; status: string }[];
+    pickups: { personId: string; personKind: string }[];
+    payments: { artistId: string | null; status: string }[];
+  }) {
+    pushQueryResult(opts.artists);
+    pushQueryResult(opts.confirmedSets.map((id) => ({ artistId: id })));
+    pushQueryResult(opts.contracts);
+    pushQueryResult(opts.inboundFlights);
+    pushQueryResult(opts.bookings);
+    pushQueryResult(opts.pickups);
+    pushQueryResult(opts.payments);
+  }
+
+  it("returns 100% when both artists have everything", async () => {
+    seed({
+      artists: [
+        { id: ARTIST_A, name: "Anouk", agency: "WME" },
+        { id: ARTIST_B, name: "Boris", agency: null },
+      ],
+      confirmedSets: [ARTIST_A, ARTIST_B],
+      contracts: [
+        { artistId: ARTIST_A, status: "signed" },
+        { artistId: ARTIST_B, status: "signed" },
+      ],
+      inboundFlights: [
+        { personId: ARTIST_A, personKind: "artist", status: "scheduled" },
+        { personId: ARTIST_B, personKind: "artist", status: "scheduled" },
+      ],
+      bookings: [
+        { personId: ARTIST_A, personKind: "artist", status: "booked" },
+        { personId: ARTIST_B, personKind: "artist", status: "booked" },
+      ],
+      pickups: [
+        { personId: ARTIST_A, personKind: "artist" },
+        { personId: ARTIST_B, personKind: "artist" },
+      ],
+      payments: [
+        { artistId: ARTIST_A, status: "paid" },
+        { artistId: ARTIST_B, status: "paid" },
+      ],
+    });
+
+    const out = await getFestivalReadiness(EDITION_ID);
+    expect(out.totalArtists).toBe(2);
+    expect(out.fullyPrepped).toBe(2);
+    expect(out.percent).toBe(100);
+    expect(out.byArtist.every((a) => a.gaps.length === 0)).toBe(true);
+  });
+
+  it("flags every missing piece and sorts most-missing first", async () => {
+    seed({
+      artists: [
+        { id: ARTIST_A, name: "Anouk", agency: null },
+        { id: ARTIST_B, name: "Boris", agency: null },
+      ],
+      // ARTIST_A fully prepped, ARTIST_B missing everything
+      confirmedSets: [ARTIST_A],
+      contracts: [{ artistId: ARTIST_A, status: "signed" }],
+      inboundFlights: [
+        { personId: ARTIST_A, personKind: "artist", status: "scheduled" },
+      ],
+      bookings: [
+        { personId: ARTIST_A, personKind: "artist", status: "booked" },
+      ],
+      pickups: [{ personId: ARTIST_A, personKind: "artist" }],
+      payments: [
+        { artistId: ARTIST_A, status: "paid" },
+        // ARTIST_B has one outstanding payment too
+        { artistId: ARTIST_B, status: "due" },
+      ],
+    });
+
+    const out = await getFestivalReadiness(EDITION_ID);
+    expect(out.percent).toBe(50);
+    // Boris (most missing) is first
+    expect(out.byArtist[0]!.artistId).toBe(ARTIST_B);
+    expect(out.byArtist[0]!.gaps.sort()).toEqual(
+      [
+        "set",
+        "contract",
+        "inbound_flight",
+        "hotel",
+        "pickup",
+        "payment",
+      ].sort(),
+    );
+    expect(out.byArtist[1]!.artistId).toBe(ARTIST_A);
+    expect(out.byArtist[1]!.gaps).toEqual([]);
+  });
+
+  it("respects 'not_needed' for flights and hotels", async () => {
+    seed({
+      artists: [{ id: ARTIST_A, name: "Local DJ", agency: null }],
+      confirmedSets: [ARTIST_A],
+      contracts: [{ artistId: ARTIST_A, status: "signed" }],
+      inboundFlights: [
+        { personId: ARTIST_A, personKind: "artist", status: "not_needed" },
+      ],
+      bookings: [
+        { personId: ARTIST_A, personKind: "artist", status: "not_needed" },
+      ],
+      pickups: [{ personId: ARTIST_A, personKind: "artist" }],
+      payments: [{ artistId: ARTIST_A, status: "paid" }],
+    });
+
+    const out = await getFestivalReadiness(EDITION_ID);
+    expect(out.byArtist[0]!.gaps).toEqual([]);
+    expect(out.percent).toBe(100);
+  });
+
+  it("ignores crew rows when computing artist readiness", async () => {
+    seed({
+      artists: [{ id: ARTIST_A, name: "Anouk", agency: null }],
+      confirmedSets: [ARTIST_A],
+      contracts: [{ artistId: ARTIST_A, status: "signed" }],
+      // Flight + hotel + pickup are all for crew, not the artist
+      inboundFlights: [
+        { personId: "crew-1", personKind: "crew", status: "scheduled" },
+      ],
+      bookings: [{ personId: "crew-1", personKind: "crew", status: "booked" }],
+      pickups: [{ personId: "crew-1", personKind: "crew" }],
+      payments: [{ artistId: ARTIST_A, status: "paid" }],
+    });
+
+    const out = await getFestivalReadiness(EDITION_ID);
+    expect(out.byArtist[0]!.gaps.sort()).toEqual(
+      ["inbound_flight", "hotel", "pickup"].sort(),
+    );
+  });
+
+  it("returns 0% with no artists", async () => {
+    seed({
+      artists: [],
+      confirmedSets: [],
+      contracts: [],
+      inboundFlights: [],
+      bookings: [],
+      pickups: [],
+      payments: [],
+    });
+    const out = await getFestivalReadiness(EDITION_ID);
+    expect(out.totalArtists).toBe(0);
+    expect(out.percent).toBe(0);
+    expect(out.byArtist).toEqual([]);
   });
 });

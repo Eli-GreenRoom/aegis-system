@@ -7,7 +7,11 @@ import { getActiveFestival } from "@/lib/festivals";
 import { listArtists } from "@/lib/artists/repo";
 import ContractForm from "../_components/ContractForm";
 
-export default async function NewContractPage() {
+interface PageProps {
+  searchParams: Promise<{ artistId?: string }>;
+}
+
+export default async function NewContractPage({ searchParams }: PageProps) {
   const session = await getAppSession();
   if (!session) redirect("/sign-in");
 
@@ -19,10 +23,16 @@ export default async function NewContractPage() {
       </div>
     );
 
+  const sp = await searchParams;
   const artists = await listArtists({
     festivalId: festival.id,
     archived: "active",
   });
+
+  const defaultArtistId =
+    sp.artistId && artists.some((a) => a.id === sp.artistId)
+      ? sp.artistId
+      : undefined;
 
   if (artists.length === 0) {
     return (
@@ -41,7 +51,7 @@ export default async function NewContractPage() {
     <>
       <Topbar title="New contract" subtitle="Draft -> sent -> signed." />
       <div className="px-6 py-6">
-        <ContractForm artists={artists} />
+        <ContractForm artists={artists} defaultArtistId={defaultArtistId} />
       </div>
     </>
   );

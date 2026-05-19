@@ -9,7 +9,18 @@ import { listVendors } from "@/lib/ground/repo";
 import { listInvoices } from "@/lib/payments/repo";
 import PaymentForm from "../_components/PaymentForm";
 
-export default async function NewPaymentPage() {
+interface PageProps {
+  searchParams: Promise<{
+    invoiceId?: string;
+    description?: string;
+    amountCents?: string;
+    currency?: string;
+    dueDate?: string;
+    artistId?: string;
+  }>;
+}
+
+export default async function NewPaymentPage({ searchParams }: PageProps) {
   const session = await getAppSession();
   if (!session) redirect("/sign-in");
 
@@ -21,11 +32,25 @@ export default async function NewPaymentPage() {
       </div>
     );
 
+  const sp = await searchParams;
+
   const [artists, vendors, invoices] = await Promise.all([
     listArtists({ festivalId: festival.id, archived: "active" }),
     listVendors(),
     listInvoices({ festivalId: festival.id }),
   ]);
+
+  const prefill = {
+    invoiceId: sp.invoiceId,
+    description: sp.description,
+    amountCents: sp.amountCents ? Number(sp.amountCents) : undefined,
+    currency: sp.currency as "USD" | "EUR" | undefined,
+    dueDate: sp.dueDate,
+    artistId:
+      sp.artistId && artists.some((a) => a.id === sp.artistId)
+        ? sp.artistId
+        : undefined,
+  };
 
   return (
     <>
@@ -34,7 +59,12 @@ export default async function NewPaymentPage() {
         subtitle="Track money in or out for the current edition."
       />
       <div className="px-6 py-6">
-        <PaymentForm artists={artists} vendors={vendors} invoices={invoices} />
+        <PaymentForm
+          artists={artists}
+          vendors={vendors}
+          invoices={invoices}
+          prefill={prefill}
+        />
       </div>
     </>
   );

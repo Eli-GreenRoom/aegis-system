@@ -1,16 +1,17 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Route } from "next";
-import { and, eq, inArray } from "drizzle-orm";
 import Topbar from "@/components/dashboard/Topbar";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
-import { getOpenIssues, getPickupsInWindow } from "@/lib/aggregators";
-import type { OpenIssue } from "@/lib/aggregators";
-import { db } from "@/db/client";
-import { artists, payments } from "@/db/schema";
-import type { PickupStatus } from "@/lib/ground/schema";
-import PickupAdvanceButton from "./PickupAdvanceButton";
+import { isFestivalMode } from "@/lib/festival-mode";
+import {
+  getOpenIssues,
+  getFestivalReadiness,
+  GAP_LABEL,
+  type OpenIssue,
+  type ReadinessGap,
+} from "@/lib/aggregators";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,9 @@ function issueHref(
     case "flight":
       return `/flights/${entityId}` as Route;
     case "pickup":
-      return "/ground" as Route;
+      return `/ground/${entityId}` as Route;
     case "hotel_booking":
-      return "/hotels" as Route;
+      return "/hotels/bookings" as Route;
     case "guestlist":
       return "/guestlist" as Route;
     case "payment":
@@ -36,10 +37,33 @@ function issueHref(
   }
 }
 
+function gapHref(artistId: string, gap: ReadinessGap): Route {
+  switch (gap) {
+    case "set":
+      return "/lineup" as Route;
+    case "contract":
+      return `/contracts/new?artistId=${artistId}` as Route;
+    case "inbound_flight":
+      return `/flights/new?personId=${artistId}&personKind=artist&direction=inbound` as Route;
+    case "hotel":
+      return `/hotels/bookings/new?personId=${artistId}&personKind=artist` as Route;
+    case "pickup":
+      return `/ground/new?personId=${artistId}&personKind=artist` as Route;
+    case "payment":
+      return `/payments/new?artistId=${artistId}` as Route;
+  }
+}
+
 const SEV_LABEL: Record<string, string> = {
   high: "HIGH",
   medium: "MED",
   low: "LOW",
+};
+
+const SEV_DOT: Record<string, string> = {
+  high: "bg-[--color-danger]",
+  medium: "bg-[--color-warn]",
+  low: "bg-[--color-fg-subtle]",
 };
 
 const SEV_TEXT: Record<string, string> = {
@@ -48,36 +72,6 @@ const SEV_TEXT: Record<string, string> = {
   low: "text-[--color-fg-subtle]",
 };
 
-const SEV_ROW: Record<string, string> = {
-  high: "border-[--color-danger]/15 bg-[--color-danger]/5",
-  medium: "border-[--color-warn]/15 bg-[--color-warn]/5",
-  low: "border-[--color-border] bg-[--color-surface-raised]",
-};
-
-function fmtDate(iso: string): string {
-  const [, m, d] = iso.split("-");
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  return `${parseInt(d)} ${months[parseInt(m) - 1]}`;
-}
-
-function fmtTime(dt: Date | null | undefined): string {
-  if (!dt) return "--:--";
-  return dt.toISOString().slice(11, 16);
-}
-
 export default async function DashboardHomePage() {
   const session = await getAppSession();
   if (!session) redirect("/sign-in");
@@ -85,35 +79,17 @@ export default async function DashboardHomePage() {
   const festival = await getActiveFestival(session);
   if (!festival) redirect("/onboarding/festival" as Route);
 
+  // Live mode = home is not the right surface. Send Eli straight to /now.
+  if (isFestivalMode(festival)) {
+    redirect("/festival/now" as Route);
+  }
+
   const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const in6h = new Date(now.getTime() + 6 * 60 * 60 * 1000);
 
-  const [artistRows, issues, pickups, pendingPayments] = await Promise.all([
-    db
-      .select({ id: artists.id })
-      .from(artists)
-      .where(eq(artists.festivalId, festival.id)),
-    getOpenIssues(festival.id, "all"),
-    getPickupsInWindow(festival.id, now, in6h),
-    db
-      .select({ id: payments.id, status: payments.status })
-      .from(payments)
-      .where(
-        and(
-          eq(payments.festivalId, festival.id),
-          inArray(payments.status, ["pending", "due", "overdue"]),
-        ),
-      ),
+  const [weekIssues, readiness] = await Promise.all([
+    getOpenIssues(festival.id, "week"),
+    getFestivalReadiness(festival.id),
   ]);
-
-  void today;
-
-  const highCount = issues.filter((i) => i.severity === "high").length;
-  const overdueCount = pendingPayments.filter(
-    (p) => p.status === "overdue",
-  ).length;
-  const topIssues = issues.slice(0, 6);
 
   // T-minus (UTC calendar days)
   const [fy, fm, fd] = festival.startDate.split("-").map(Number);
@@ -125,156 +101,126 @@ export default async function DashboardHomePage() {
   );
   const daysOut = Math.round((festMs - todayMs) / 86_400_000);
 
+  const topIssues = weekIssues.slice(0, 5);
+  const artistsWithGaps = readiness.byArtist.filter((a) => a.gaps.length > 0);
+  const topArtists = artistsWithGaps.slice(0, 8);
+
   return (
     <>
       <Topbar title="Home" />
 
-      <div className="px-6 py-6 space-y-6 max-w-4xl">
-        {/* Festival hero */}
-        <div className="rounded-[--radius-lg] bg-[--color-surface-raised] shadow-card px-5 py-4 flex items-center justify-between gap-4">
-          <div>
-            <div className="text-[17px] font-semibold text-[--color-fg] leading-snug">
-              {festival.name}
-            </div>
-            <div className="mt-1 text-[13px] text-[--color-fg-muted]">
-              {fmtDate(festival.startDate)} – {fmtDate(festival.endDate)}
-              {festival.location && (
-                <span className="text-[--color-fg-subtle]">
-                  {" "}
-                  · {festival.location}
-                </span>
+      <div className="px-6 py-6 space-y-7 max-w-3xl">
+        {/* Compact festival strip + progress */}
+        <section className="space-y-2.5">
+          <div className="flex items-baseline justify-between gap-4">
+            <div className="text-[15px] text-[--color-fg]">{festival.name}</div>
+            <div
+              className="text-[12px] text-[--color-fg-subtle]"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              {daysOut > 0 ? (
+                <>
+                  T-<span className="text-brand">{daysOut}d</span>
+                </>
+              ) : daysOut === 0 ? (
+                <span className="text-brand">Day 0</span>
+              ) : (
+                <>post-festival</>
               )}
             </div>
           </div>
-          <div
-            className="text-[13px] shrink-0"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
-            {daysOut > 0 ? (
-              <>
-                <span className="text-[--color-fg-subtle]">T-</span>
-                <span className="text-brand font-semibold">{daysOut}d</span>
-              </>
-            ) : daysOut === 0 ? (
-              <span className="text-brand font-semibold">Day 0</span>
-            ) : (
-              <span className="text-[--color-fg-subtle]">post-festival</span>
-            )}
+
+          <div className="space-y-1.5">
+            <div className="flex items-baseline justify-between gap-4">
+              <div
+                className="text-[11px] uppercase tracking-[0.14em] text-[--color-fg-subtle]"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                Lineup readiness
+              </div>
+              <div
+                className="text-[11px] text-[--color-fg-muted]"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                {readiness.fullyPrepped} of {readiness.totalArtists} prepped
+                <span className="text-[--color-fg-subtle]">
+                  {" "}
+                  · {readiness.percent}%
+                </span>
+              </div>
+            </div>
+            <div
+              className="h-1.5 w-full rounded-full bg-[--color-surface-raised] overflow-hidden"
+              role="progressbar"
+              aria-valuenow={readiness.percent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className="h-full bg-[--color-brand] transition-all"
+                style={{ width: `${readiness.percent}%` }}
+              />
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* Stat cards */}
-        <div className="grid grid-cols-4 gap-3">
-          <StatCard
-            value={String(artistRows.length)}
-            label="Artists"
-            href="/artists"
-          />
-          <StatCard
-            value={String(issues.length)}
-            label="Open issues"
-            hint={highCount > 0 ? `${highCount} high` : undefined}
-            hintColor="danger"
-            href="/festival/issues"
-          />
-          <StatCard
-            value={String(pendingPayments.length)}
-            label="Unpaid"
-            hint={overdueCount > 0 ? `${overdueCount} overdue` : undefined}
-            hintColor="warn"
-            href="/payments"
-          />
-          <StatCard
-            value={String(pickups.length)}
-            label="Pickups next 6h"
-            href="/ground"
-          />
-        </div>
-
-        {/* Open issues */}
-        {topIssues.length > 0 && (
-          <section>
+        {/* This week's worklist */}
+        {topIssues.length > 0 ? (
+          <section className="space-y-2">
             <SectionHeader
-              title="Open Issues"
-              count={issues.length}
+              title="This week"
+              count={weekIssues.length}
               href="/festival/issues"
             />
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {topIssues.map((issue) => (
                 <Link
                   key={issue.key}
                   href={issueHref(issue.entityType, issue.entityId)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-[--radius-md] transition-colors hover:brightness-125 ${SEV_ROW[issue.severity]}`}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-md border border-[--color-border] bg-[--color-surface] hover:bg-[--color-surface-raised] transition-colors group"
                 >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${SEV_DOT[issue.severity]}`}
+                  />
                   <span
                     className={`text-[10px] font-semibold w-8 shrink-0 ${SEV_TEXT[issue.severity]}`}
                     style={{ fontFamily: "var(--font-mono)" }}
                   >
                     {SEV_LABEL[issue.severity]}
                   </span>
-                  <span className="flex-1 text-[13px] text-[--color-fg]">
+                  <span className="flex-1 text-[13px] text-[--color-fg] truncate">
                     {issue.message}
                   </span>
-                  <span className="text-[--color-fg-subtle] text-[12px]">
+                  <span className="text-[--color-fg-subtle] group-hover:text-[--color-fg-muted] transition-colors text-[12px] shrink-0">
                     →
                   </span>
                 </Link>
               ))}
             </div>
           </section>
-        )}
+        ) : null}
 
-        {/* Upcoming pickups */}
-        {pickups.length > 0 && (
-          <section>
+        {/* Pending by artist — the "manage what's missing" view */}
+        {topArtists.length > 0 ? (
+          <section className="space-y-2">
             <SectionHeader
-              title="Upcoming Pickups"
-              count={pickups.length}
-              countSuffix="next 6h"
-              href="/ground"
+              title="Pending by artist"
+              count={artistsWithGaps.length}
+              countSuffix="artists"
+              href="/artists"
             />
-            <div className="space-y-1.5">
-              {pickups.map(({ pickup, person, vendor }) => (
-                <div
-                  key={pickup.id}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-[--radius-md] bg-[--color-surface-raised] shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
-                >
-                  <span
-                    className="text-[12px] text-[--color-fg-subtle] w-10 shrink-0"
-                    style={{ fontFamily: "var(--font-mono)" }}
-                  >
-                    {fmtTime(pickup.pickupDt)}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] text-[--color-fg] truncate">
-                      {person?.name ?? "—"}
-                    </div>
-                    <div className="text-[11px] text-[--color-fg-muted]">
-                      {[pickup.routeFrom, pickup.routeTo]
-                        .filter(Boolean)
-                        .join(" → ")}
-                      {vendor && (
-                        <span className="text-[--color-fg-subtle]">
-                          {" "}
-                          · {vendor.name}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <PickupAdvanceButton
-                    id={pickup.id}
-                    status={pickup.status as PickupStatus}
-                  />
-                </div>
+            <div className="space-y-1">
+              {topArtists.map((a) => (
+                <ArtistRow key={a.artistId} artist={a} />
               ))}
             </div>
           </section>
-        )}
+        ) : null}
 
-        {/* Empty state */}
-        {topIssues.length === 0 && pickups.length === 0 && (
+        {/* Empty state — only when everything is clear */}
+        {topIssues.length === 0 && artistsWithGaps.length === 0 && (
           <div className="text-center py-16 text-[--color-fg-subtle] text-[13px]">
-            All clear — no open issues or upcoming pickups.
+            All clear — every artist is fully prepped.
           </div>
         )}
       </div>
@@ -284,40 +230,57 @@ export default async function DashboardHomePage() {
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
-function StatCard({
-  value,
-  label,
-  hint,
-  hintColor,
-  href,
+function ArtistRow({
+  artist,
 }: {
-  value: string;
-  label: string;
-  hint?: string;
-  hintColor?: "danger" | "warn";
-  href: string;
+  artist: {
+    artistId: string;
+    artistName: string;
+    agency: string | null;
+    gaps: ReadinessGap[];
+  };
 }) {
-  const hintClass =
-    hintColor === "danger"
-      ? "text-[--color-danger]"
-      : hintColor === "warn"
-        ? "text-[--color-warn]"
-        : "text-[--color-fg-muted]";
+  // Show up to 3 inline gap chips; collapse the rest into "+N".
+  const visible = artist.gaps.slice(0, 3);
+  const overflow = artist.gaps.length - visible.length;
 
   return (
-    <Link
-      href={href as Route}
-      className="rounded-[--radius-lg] bg-[--color-surface-raised] shadow-card px-4 py-3.5 hover:brightness-110 transition-all block"
-    >
-      <div
-        className="text-[22px] font-semibold leading-none text-[--color-fg]"
-        style={{ fontFamily: "var(--font-mono)" }}
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-md border border-[--color-border] bg-[--color-surface]">
+      <Link
+        href={`/artists/${artist.artistId}` as Route}
+        className="flex-1 min-w-0 hover:text-brand transition-colors"
       >
-        {value}
+        <div className="text-[13px] text-[--color-fg] truncate">
+          {artist.artistName}
+        </div>
+        {artist.agency && (
+          <div className="text-[11px] text-[--color-fg-subtle] truncate">
+            {artist.agency}
+          </div>
+        )}
+      </Link>
+
+      <div className="flex items-center gap-1.5 shrink-0">
+        {visible.map((g) => (
+          <Link
+            key={g}
+            href={gapHref(artist.artistId, g)}
+            className="text-mono text-[10px] uppercase tracking-widest px-2 py-1 rounded border border-[--color-border-strong] text-[--color-fg-muted] hover:text-[--color-fg] hover:border-white/30 transition-colors"
+            title={`Add ${GAP_LABEL[g]} for ${artist.artistName}`}
+          >
+            {GAP_LABEL[g]}
+          </Link>
+        ))}
+        {overflow > 0 && (
+          <Link
+            href={`/artists/${artist.artistId}` as Route}
+            className="text-mono text-[10px] px-2 py-1 rounded border border-[--color-border] text-[--color-fg-subtle] hover:text-[--color-fg-muted] transition-colors"
+          >
+            +{overflow}
+          </Link>
+        )}
       </div>
-      <div className="mt-1.5 text-[12px] text-[--color-fg-muted]">{label}</div>
-      {hint && <div className={`mt-0.5 text-[11px] ${hintClass}`}>{hint}</div>}
-    </Link>
+    </div>
   );
 }
 
@@ -333,7 +296,7 @@ function SectionHeader({
   href: string;
 }) {
   return (
-    <div className="flex items-center gap-2 mb-3">
+    <div className="flex items-baseline gap-2">
       <h2
         className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[--color-fg-subtle]"
         style={{ fontFamily: "var(--font-mono)" }}

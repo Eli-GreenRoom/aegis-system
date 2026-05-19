@@ -19,6 +19,8 @@ import type { Contract } from "@/lib/contracts/repo";
 interface Props {
   contract?: Contract;
   artists: Artist[];
+  defaultArtistId?: string;
+  onSuccess?: () => void;
 }
 
 function toDtLocal(d: Date | string | null | undefined): string {
@@ -26,7 +28,7 @@ function toDtLocal(d: Date | string | null | undefined): string {
   const date = typeof d === "string" ? new Date(d) : d;
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-    date.getDate()
+    date.getDate(),
   )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
@@ -35,7 +37,12 @@ function fromDtLocal(s: string): string {
   return new Date(s).toISOString();
 }
 
-export default function ContractForm({ contract, artists }: Props) {
+export default function ContractForm({
+  contract,
+  artists,
+  defaultArtistId,
+  onSuccess,
+}: Props) {
   const router = useRouter();
   const isEdit = !!contract;
   const [serverError, setServerError] = useState("");
@@ -49,7 +56,7 @@ export default function ContractForm({ contract, artists }: Props) {
   } = useForm<ContractInput>({
     resolver: zodResolver(contractInputSchema),
     defaultValues: {
-      artistId: contract?.artistId ?? artists[0]?.id ?? "",
+      artistId: contract?.artistId ?? defaultArtistId ?? artists[0]?.id ?? "",
       status: contract?.status ?? "draft",
       sentAt: toDtLocal(contract?.sentAt ?? null),
       signedAt: toDtLocal(contract?.signedAt ?? null),
@@ -83,6 +90,11 @@ export default function ContractForm({ contract, artists }: Props) {
     }
 
     const body = await res.json();
+    if (onSuccess) {
+      router.refresh();
+      onSuccess();
+      return;
+    }
     router.push(`/contracts/${body.contract.id}` as Route);
     router.refresh();
   }
@@ -125,13 +137,13 @@ export default function ContractForm({ contract, artists }: Props) {
             className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
           >
             <option value="draft">Draft</option>
-            <option value="sent">Sent</option>
+            <option value="sent">Received</option>
             <option value="signed">Signed</option>
             <option value="void">Void</option>
           </select>
         </Field>
 
-        <Field label="Sent at" error={errors.sentAt?.message}>
+        <Field label="Received at" error={errors.sentAt?.message}>
           <Input type="datetime-local" step={60} {...register("sentAt")} />
         </Field>
         <Field label="Signed at" error={errors.signedAt?.message}>
