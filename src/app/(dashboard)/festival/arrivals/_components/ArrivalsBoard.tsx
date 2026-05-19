@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import type { ArrivalToday } from "@/lib/aggregators";
@@ -31,6 +32,7 @@ export default function ArrivalsBoard({ arrivals }: Props) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  useAutoRefresh(30_000);
 
   async function advance(id: string) {
     setError("");

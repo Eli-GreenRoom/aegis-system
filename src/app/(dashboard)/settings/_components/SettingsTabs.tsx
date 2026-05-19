@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ROLE_LABELS } from "@/lib/permissions";
 import type { PermissionMap } from "@/lib/permissions";
 import { FestivalTab } from "./FestivalTab";
+import { ProfileTab } from "./ProfileTab";
 
 interface MemberRow {
   id: string;
@@ -16,6 +17,7 @@ interface MemberRow {
   status: string;
   inviteToken: string | null;
   acceptedAt: Date | null;
+  signatureUrl?: string | null;
 }
 
 interface StageRow {
@@ -47,7 +49,7 @@ interface SettingsTabsProps {
   members: MemberRow[];
 }
 
-type Tab = "workspace" | "festival" | "team";
+type Tab = "profile" | "workspace" | "festival" | "team";
 
 export function SettingsTabs({
   workspaceName,
@@ -57,7 +59,7 @@ export function SettingsTabs({
   permissions,
   members: initialMembers,
 }: SettingsTabsProps) {
-  const [tab, setTab] = useState<Tab>("workspace");
+  const [tab, setTab] = useState<Tab>("profile");
   const [members, setMembers] = useState<MemberRow[]>(initialMembers);
 
   // Invite form state
@@ -126,6 +128,13 @@ export function SettingsTabs({
       <div className="flex gap-6 mb-8 border-b border-[--color-border]">
         <button
           type="button"
+          className={`text-sm pb-2 -mb-px ${tabBtn("profile", "Profile")}`}
+          onClick={() => setTab("profile")}
+        >
+          Profile
+        </button>
+        <button
+          type="button"
           className={`text-sm pb-2 -mb-px ${tabBtn("workspace", "Workspace")}`}
           onClick={() => setTab("workspace")}
         >
@@ -148,6 +157,20 @@ export function SettingsTabs({
           Team
         </button>
       </div>
+
+      {/* Profile tab */}
+      {tab === "profile" &&
+        (() => {
+          const me = initialMembers.find((m) => m.id === memberId);
+          return (
+            <ProfileTab
+              memberId={memberId}
+              name={me?.name ?? null}
+              email={me?.email ?? ""}
+              signatureUrl={me?.signatureUrl ?? null}
+            />
+          );
+        })()}
 
       {/* Festival tab */}
       {tab === "festival" && festival && (

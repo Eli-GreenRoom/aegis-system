@@ -2,8 +2,21 @@ import { z } from "zod";
 
 const optionalString = z.string().trim().max(500).optional().or(z.literal(""));
 const optionalText = z.string().trim().max(4000).optional().or(z.literal(""));
+function isAcceptableUrl(v: string): boolean {
+  if (!v) return true;
+  if (v.startsWith("/")) return true;
+  try {
+    new URL(v);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const optionalUrl = z
-  .union([z.literal(""), z.string().trim().url("must be a valid URL")])
+  .string()
+  .trim()
+  .refine(isAcceptableUrl, { message: "must be a valid URL" })
   .optional();
 
 const optionalUuid = z.union([z.literal(""), z.string().uuid()]).optional();

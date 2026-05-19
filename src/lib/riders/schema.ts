@@ -1,7 +1,20 @@
 import { z } from "zod";
 
+function isAcceptableUrl(v: string): boolean {
+  if (!v) return true;
+  if (v.startsWith("/")) return true;
+  try {
+    new URL(v);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const optionalUrl = z
-  .union([z.literal(""), z.string().trim().url("must be a valid URL")])
+  .string()
+  .trim()
+  .refine(isAcceptableUrl, { message: "must be a valid URL" })
   .optional();
 
 const isoDateTime = z
@@ -25,10 +38,11 @@ export const riderInputSchema = z.object({
 });
 export type RiderInput = z.infer<typeof riderInputSchema>;
 
-export const riderPatchSchema = riderInputSchema.partial().refine(
-  (v) => Object.keys(v).length > 0,
-  { message: "Body must contain at least one field" }
-);
+export const riderPatchSchema = riderInputSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Body must contain at least one field",
+  });
 export type RiderPatch = z.infer<typeof riderPatchSchema>;
 
 export interface RiderDbValues {
@@ -59,7 +73,7 @@ export function riderToDbValues(input: RiderInput): RiderDbValues {
 }
 
 export function riderToDbPatchValues(
-  input: RiderPatch
+  input: RiderPatch,
 ): Partial<RiderDbValues> {
   const out: Partial<RiderDbValues> = {};
   if ("artistId" in input && input.artistId !== undefined)

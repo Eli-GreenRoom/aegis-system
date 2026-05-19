@@ -7,7 +7,11 @@ import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
-import { listInvoices, listInvoiceIssuerKinds } from "@/lib/payments/repo";
+import {
+  listInvoices,
+  listInvoiceIssuerKinds,
+  getInvoiceSummary,
+} from "@/lib/payments/repo";
 import { formatCents } from "@/lib/utils";
 
 interface PageProps {
@@ -32,7 +36,7 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
 
   const sp = await searchParams;
 
-  const [invoices, kinds] = await Promise.all([
+  const [invoices, kinds, summary] = await Promise.all([
     listInvoices({
       festivalId: festival.id,
       search: sp.search,
@@ -40,6 +44,7 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
       issuerKind: sp.issuerKind,
     }),
     listInvoiceIssuerKinds(festival.id),
+    getInvoiceSummary(festival.id),
   ]);
 
   return (
@@ -59,6 +64,54 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
         }
       />
       <div className="px-6 py-6 space-y-6">
+        {summary.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {(["received", "approved", "paid", "rejected"] as const).map(
+              (st) => {
+                const rows = summary.filter((r) => r.status === st);
+                const totalUsd =
+                  rows.find((r) => r.currency === "USD")?.totalCents ?? 0;
+                const totalEur =
+                  rows.find((r) => r.currency === "EUR")?.totalCents ?? 0;
+                const count = rows.reduce((s, r) => s + r.count, 0);
+                const color =
+                  st === "paid"
+                    ? "text-mint border-mint/30"
+                    : st === "rejected"
+                      ? "text-coral border-coral/30"
+                      : st === "approved"
+                        ? "text-brand border-brand/30"
+                        : "text-[--color-fg-muted] border-[--color-border]";
+                return (
+                  <div
+                    key={st}
+                    className={`rounded-md border p-3 space-y-1 ${color}`}
+                  >
+                    <p className="text-mono text-[9px] uppercase tracking-[0.16em]">
+                      {st} ({count})
+                    </p>
+                    {totalUsd > 0 && (
+                      <p className="text-sm font-semibold">
+                        {formatCents(totalUsd)} USD
+                      </p>
+                    )}
+                    {totalEur > 0 && (
+                      <p className="text-sm font-semibold">
+                        {formatCents(totalEur)} EUR
+                      </p>
+                    )}
+                    {totalUsd === 0 && totalEur === 0 && (
+                      <p className="text-sm font-semibold text-[--color-fg-subtle]">
+                        —
+                      </p>
+                    )}
+                  </div>
+                );
+              },
+            )}
+          </div>
+        )}
+
         <form className="flex flex-wrap items-end gap-3">
           <Filter label="Status" name="status" value={sp.status ?? ""}>
             <option value="">Any</option>

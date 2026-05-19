@@ -190,7 +190,11 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
                   return (
                     <tr
                       key={p.id}
-                      className="border-t border-[--color-border] hover:bg-[--color-surface]/40"
+                      className={`border-t hover:bg-[--color-surface]/40 ${
+                        p.status === "overdue"
+                          ? "border-[--color-danger]/25 animate-coral-pulse"
+                          : "border-[--color-border]"
+                      }`}
                     >
                       <td className="px-4 py-2 text-[--color-fg]">
                         <Link

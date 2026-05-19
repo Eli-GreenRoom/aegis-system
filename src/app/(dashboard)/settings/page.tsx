@@ -76,6 +76,7 @@ export default async function SettingsPage() {
           status: m.status,
           inviteToken: m.inviteToken,
           acceptedAt: m.acceptedAt,
+          signatureUrl: m.signatureUrl,
         }))}
       />
     </>

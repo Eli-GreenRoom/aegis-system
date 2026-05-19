@@ -102,6 +102,35 @@ export async function deleteInvoice(id: string): Promise<Invoice | null> {
   return row ?? null;
 }
 
+export interface InvoiceSummaryRow {
+  status: string;
+  currency: string;
+  totalCents: number;
+  count: number;
+}
+
+export async function getInvoiceSummary(
+  festivalId: string,
+): Promise<InvoiceSummaryRow[]> {
+  const rows = await db
+    .select({
+      status: invoices.status,
+      currency: invoices.currency,
+      totalCents: sql<number>`coalesce(sum(${invoices.amountCents}), 0)`,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(invoices)
+    .where(eq(invoices.festivalId, festivalId))
+    .groupBy(invoices.status, invoices.currency)
+    .orderBy(asc(invoices.status), asc(invoices.currency));
+  return rows.map((r) => ({
+    status: r.status,
+    currency: r.currency,
+    totalCents: Number(r.totalCents),
+    count: Number(r.count),
+  }));
+}
+
 // -- Payments ------------------------------------------------------------
 
 export interface ListPaymentsParams {

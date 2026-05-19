@@ -166,6 +166,7 @@ export const teamMembers = pgTable(
     permissions: jsonb("permissions").notNull().default({}),
     // null = all festivals in workspace; string[] of festival UUIDs = scoped.
     festivalScope: jsonb("festival_scope"),
+    signatureUrl: text("signature_url"),
     inviteToken: text("invite_token").unique(),
     invitedAt: timestamp("invited_at").notNull().defaultNow(),
     acceptedAt: timestamp("accepted_at"),

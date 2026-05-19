@@ -18,18 +18,16 @@ interface Props {
   invoice?: Invoice;
 }
 
-const formSchema = invoiceInputSchema
-  .omit({ amountCents: true })
-  .extend({
-    amount: z
-      .union([z.string(), z.number()])
-      .refine(
-        (v: unknown) =>
-          (typeof v === "number" && v >= 0) ||
-          (typeof v === "string" && /^\d+(\.\d{1,2})?$/.test(v) && v !== ""),
-        { message: "must be a non-negative number with up to 2 decimals" }
-      ),
-  });
+const formSchema = invoiceInputSchema.omit({ amountCents: true }).extend({
+  amount: z
+    .union([z.string(), z.number()])
+    .refine(
+      (v: unknown) =>
+        (typeof v === "number" && v >= 0) ||
+        (typeof v === "string" && /^\d+(\.\d{1,2})?$/.test(v) && v !== ""),
+      { message: "must be a non-negative number with up to 2 decimals" },
+    ),
+});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -77,9 +75,7 @@ export default function InvoiceForm({ invoice }: Props) {
 
   async function onSubmit(data: FormValues) {
     setServerError("");
-    const url = isEdit
-      ? `/api/invoices/${invoice!.id}`
-      : "/api/invoices";
+    const url = isEdit ? `/api/invoices/${invoice!.id}` : "/api/invoices";
     const method = isEdit ? "PATCH" : "POST";
 
     const amountCents = Math.round(Number(data.amount) * 100);
@@ -117,7 +113,9 @@ export default function InvoiceForm({ invoice }: Props) {
     if (!invoice) return;
     if (!confirm("Delete this invoice? This is permanent.")) return;
     setDeleting(true);
-    const res = await fetch(`/api/invoices/${invoice.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/invoices/${invoice.id}`, {
+      method: "DELETE",
+    });
     setDeleting(false);
     if (!res.ok) {
       setServerError("Couldn't delete.");
@@ -144,17 +142,15 @@ export default function InvoiceForm({ invoice }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
-      {!isEdit && (
-        <div className="flex items-center justify-end">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setAiOpen(true)}
-          >
-            Parse with AI
-          </Button>
-        </div>
-      )}
+      <div className="flex items-center justify-end">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => setAiOpen(true)}
+        >
+          Parse with AI
+        </Button>
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Number" error={errors.number?.message}>
           <Input {...register("number")} placeholder="INV-001" />

@@ -43,9 +43,18 @@ export default async function RoadsheetPage({
         title={artist.name}
         subtitle={day ? `Roadsheet · ${day}` : "Roadsheet · whole festival"}
         actions={
-          <Link href={"/festival/roadsheets" as Route}>
-            <Button variant="ghost">Back</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <a
+              href={`/api/roadsheets/${artistId}/pdf${day ? `?day=${day}` : ""}`}
+              download
+              className="inline-flex items-center gap-1.5 text-mono text-[11px] uppercase tracking-[0.16em] px-3 py-2 rounded-md border border-[--color-border-strong] text-[--color-fg-muted] hover:text-[--color-fg] hover:border-brand/40 transition-colors"
+            >
+              Export PDF
+            </a>
+            <Link href={"/festival/roadsheets" as Route}>
+              <Button variant="ghost">Back</Button>
+            </Link>
+          </div>
         }
       />
       <div className="px-6 py-6 max-w-3xl space-y-8 print:max-w-none print:px-0 print:py-4">

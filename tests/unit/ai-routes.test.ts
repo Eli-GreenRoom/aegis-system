@@ -134,17 +134,19 @@ describe("POST /api/ai/parse-invoice", () => {
 
 describe("POST /api/ai/parse-flight", () => {
   it("returns parsed JSON on success", async () => {
-    mocks.flight.parseFlightText.mockResolvedValueOnce({
-      passengerName: "Hiroko",
-      airline: "Air France",
-      flightNumber: "AF137",
-      fromAirport: "CDG",
-      toAirport: "BEY",
-      scheduledDt: "2026-08-15T18:45:00Z",
-      pnr: "ABC123",
-      seat: "14A",
-      direction: "inbound",
-    });
+    mocks.flight.parseFlightText.mockResolvedValueOnce([
+      {
+        passengerName: "Hiroko",
+        airline: "Air France",
+        flightNumber: "AF137",
+        fromAirport: "CDG",
+        toAirport: "BEY",
+        scheduledDt: "2026-08-15T18:45:00Z",
+        pnr: "ABC123",
+        seat: "14A",
+        direction: "inbound",
+      },
+    ]);
     const res = await parseFlightPOST(
       jsonReq("http://test/api/ai/parse-flight", {
         text: "a long enough flight confirmation body to pass the guard",
@@ -152,7 +154,7 @@ describe("POST /api/ai/parse-flight", () => {
     );
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.parsed.flightNumber).toBe("AF137");
+    expect(body.parsed[0].flightNumber).toBe("AF137");
   });
 
   it("400 short text", async () => {

@@ -1,7 +1,20 @@
 import { z } from "zod";
 
+function isAcceptableUrl(v: string): boolean {
+  if (!v) return true;
+  if (v.startsWith("/")) return true; // proxy paths like /api/documents/id
+  try {
+    new URL(v);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const optionalUrl = z
-  .union([z.literal(""), z.string().trim().url("must be a valid URL")])
+  .string()
+  .trim()
+  .refine(isAcceptableUrl, { message: "must be a valid URL" })
   .optional();
 
 const optionalText = z.string().trim().max(4000).optional().or(z.literal(""));
@@ -29,10 +42,11 @@ export const contractInputSchema = z.object({
 });
 export type ContractInput = z.infer<typeof contractInputSchema>;
 
-export const contractPatchSchema = contractInputSchema.partial().refine(
-  (v) => Object.keys(v).length > 0,
-  { message: "Body must contain at least one field" }
-);
+export const contractPatchSchema = contractInputSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Body must contain at least one field",
+  });
 export type ContractPatch = z.infer<typeof contractPatchSchema>;
 
 export interface ContractDbValues {
@@ -67,12 +81,13 @@ export function contractToDbValues(input: ContractInput): ContractDbValues {
 }
 
 export function contractToDbPatchValues(
-  input: ContractPatch
+  input: ContractPatch,
 ): Partial<ContractDbValues> {
   const out: Partial<ContractDbValues> = {};
   if ("artistId" in input && input.artistId !== undefined)
     out.artistId = input.artistId;
-  if ("status" in input && input.status !== undefined) out.status = input.status;
+  if ("status" in input && input.status !== undefined)
+    out.status = input.status;
   if ("sentAt" in input) out.sentAt = dt(input.sentAt);
   if ("signedAt" in input) out.signedAt = dt(input.signedAt);
   if ("fileUrl" in input) out.fileUrl = emptyToNull(input.fileUrl);

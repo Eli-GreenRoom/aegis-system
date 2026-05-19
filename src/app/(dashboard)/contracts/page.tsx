@@ -75,7 +75,7 @@ export default async function ContractsPage({ searchParams }: PageProps) {
           <Filter label="Status" name="status" value={sp.status ?? ""}>
             <option value="">Any</option>
             <option value="draft">Draft</option>
-            <option value="sent">Sent</option>
+            <option value="sent">Received</option>
             <option value="signed">Signed</option>
             <option value="void">Void</option>
           </Filter>
@@ -95,7 +95,7 @@ export default async function ContractsPage({ searchParams }: PageProps) {
                 <tr>
                   <th className="text-left px-4 py-2 font-normal">Artist</th>
                   <th className="text-left px-4 py-2 font-normal">Status</th>
-                  <th className="text-left px-4 py-2 font-normal">Sent</th>
+                  <th className="text-left px-4 py-2 font-normal">Received</th>
                   <th className="text-left px-4 py-2 font-normal">Signed</th>
                   <th className="text-left px-4 py-2 font-normal">Files</th>
                   <th className="text-right px-4 py-2 font-normal w-[1%]"></th>
@@ -198,9 +198,16 @@ function Filter({
 
 const STATUS_CLASSES: Record<ContractStatus, string> = {
   draft: "border-[--color-border-strong] text-[--color-fg-muted]",
-  sent: "border-brand/40 text-brand",
+  sent: "border-brand/40 text-brand", // "Received" in UI
   signed: "border-[--color-brand]/60 text-mint",
   void: "border-[--color-danger]/40 text-coral",
+};
+
+const STATUS_LABELS: Record<ContractStatus, string> = {
+  draft: "Draft",
+  sent: "Received",
+  signed: "Signed",
+  void: "Void",
 };
 
 function ContractStatusPill({ status }: { status: ContractStatus }) {
@@ -208,7 +215,7 @@ function ContractStatusPill({ status }: { status: ContractStatus }) {
     <span
       className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${STATUS_CLASSES[status]}`}
     >
-      {status}
+      {STATUS_LABELS[status]}
     </span>
   );
 }

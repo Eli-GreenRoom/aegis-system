@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { getAppSession, requirePermission } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
-import { parseFlightText } from "@/lib/ai/parse-flight";
+import { parseFlightText, type ParsedFlightArray } from "@/lib/ai/parse-flight";
 
 const inputSchema = z.object({
   text: z.string().min(20).max(50_000),
@@ -40,7 +40,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const festival = await getActiveFestival(session);
-    const result = await parseFlightText(parsed.data.text, festival?.location);
+    const result: ParsedFlightArray = await parseFlightText(
+      parsed.data.text,
+      festival?.location,
+    );
     return Response.json({ parsed: result });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Parse failed";

@@ -21,6 +21,7 @@ export const documentEntityTypeEnum = z.enum([
   "invoice",
   "rider",
   "hotel_booking",
+  "signature",
 ]);
 export type DocumentEntityType = z.infer<typeof documentEntityTypeEnum>;
 

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Newsreader } from "next/font/google";
@@ -11,9 +11,22 @@ const newsreader = Newsreader({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#E5B85A",
+};
+
 export const metadata: Metadata = {
   title: "GreenRoom Stages",
-  description: "Festival operations for Aegis Festival",
+  description: "Festival & live-event operations platform",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "GR Stages",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({

@@ -1,9 +1,10 @@
 /**
  * Flight-confirmation parser. Takes the body of an airline confirmation
- * email or PDF text, returns the fields needed to create a flight row.
+ * email or PDF text, returns all flight legs found.
  *
- * AI never writes to the DB - the route returns parsed JSON, the
- * operator confirms each field, then submits the form normally.
+ * For a round trip, both the inbound and outbound legs are returned so
+ * the operator can create them in one pass. AI never writes to the DB -
+ * the route returns parsed JSON, the operator confirms, then submits.
  *
  * Spec: AGENT.md -6.
  */
@@ -24,27 +25,34 @@ export const parsedFlightSchema = z.object({
     .string()
     .regex(/^[A-Z]{3}$/, "must be 3 uppercase letters")
     .nullable(),
-  /** ISO 8601 datetime, e.g. 2026-08-15T14:30:00Z. Local time if no timezone
-   *  is given - the operator can adjust on the form. */
+  /** ISO 8601 datetime. Local time if no timezone given. */
   scheduledDt: z.string().nullable(),
   pnr: z.string().nullable(),
   seat: z.string().nullable(),
-  /** Best guess at direction relative to the festival in Lebanon: "inbound"
-   *  if `toAirport === BEY` or similar, else "outbound". null if ambiguous. */
+  /** Direction relative to the festival location. */
   direction: z.enum(["inbound", "outbound"]).nullable(),
 });
 export type ParsedFlight = z.infer<typeof parsedFlightSchema>;
 
+export const parsedFlightArraySchema = z
+  .array(parsedFlightSchema)
+  .min(1)
+  .max(4);
+export type ParsedFlightArray = z.infer<typeof parsedFlightArraySchema>;
+
 function buildSystemPrompt(festivalLocation?: string | null): string {
   const location = festivalLocation?.trim() || "Beirut, Lebanon (BEY)";
-  return `You extract structured data from airline confirmation emails for a festival operator.
+  return `You extract structured flight data from airline confirmation emails or booking summaries for a festival operator.
 
-The festival is in ${location}. Use this to infer flight direction:
-- "inbound" if the flight is arriving at the festival location/country
-- "outbound" if the flight is departing from the festival location/country
-- null if you cannot determine direction from the airports
+The festival is in ${location}. Use this to classify each leg:
+- "inbound"  = leg arriving at the festival location/country
+- "outbound" = leg departing from the festival location/country
+- null       = cannot determine from the airport codes
 
-Output JSON matching this exact shape:
+Return ALL legs found as a JSON array (max 4). For a round-trip confirmation return BOTH legs.
+For a one-way return a single-element array.
+
+Each element must match this exact shape:
 {
   "passengerName": string | null,
   "airline": string | null,
@@ -58,24 +66,23 @@ Output JSON matching this exact shape:
 }
 
 Rules:
-- If a field isn't present, return null. Don't guess.
-- IATA codes are exactly 3 uppercase letters. If a city is given without a code, return null.
-- For the datetime: if the email gives a local time at the origin airport, return that as ISO with no timezone offset. If a UTC offset is given, normalise to UTC.
-- Return ONLY the JSON object. No prose, no code fences, no markdown.
-- For round trips, pick the inbound leg (arriving at festival location).`;
+- If a field isn't present, use null. Never guess.
+- IATA codes are exactly 3 uppercase letters. If only a city is given, use null.
+- Datetime: use the origin airport's local time as ISO with no offset if no timezone is provided; otherwise normalise to UTC.
+- Return ONLY the JSON array. No prose, no code fences, no markdown.`;
 }
 
 export async function parseFlightText(
   text: string,
   festivalLocation?: string | null,
-): Promise<ParsedFlight> {
+): Promise<ParsedFlightArray> {
   if (!text.trim()) {
     throw new Error("Empty input");
   }
 
   const response = await anthropic.messages.create({
     model: AI_MODEL,
-    max_tokens: 512,
+    max_tokens: 1024,
     system: buildSystemPrompt(festivalLocation),
     messages: [
       {
@@ -98,7 +105,10 @@ export async function parseFlightText(
     throw new Error(`Model returned invalid JSON: ${message}`);
   }
 
-  const validated = parsedFlightSchema.safeParse(parsed);
+  // Accept both an array and a single object (legacy single-leg responses)
+  const normalised = Array.isArray(parsed) ? parsed : [parsed];
+
+  const validated = parsedFlightArraySchema.safeParse(normalised);
   if (!validated.success) {
     throw new Error(
       `Model output failed validation: ${JSON.stringify(validated.error.flatten())}`,

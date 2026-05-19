@@ -58,15 +58,23 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (!existing) return Response.json({ error: "Not found" }, { status: 404 });
 
   const patch = contractToDbPatchValues(parsed.data);
+
+  // Auto-stamp sentAt (received date) when draft file first uploaded
+  if (
+    "fileUrl" in patch &&
+    patch.fileUrl &&
+    !existing.sentAt &&
+    !("sentAt" in patch)
+  ) {
+    (patch as Record<string, unknown>).sentAt = new Date();
+  }
+
   const statusChanged =
     "status" in patch &&
     patch.status !== undefined &&
     patch.status !== existing.status;
 
   if (statusChanged) {
-    // Auto-stamp sentAt on draft -> sent and signedAt on sent -> signed
-    // when the patch hasn't already provided one. Same trust-the-clock
-    // pattern as payments paidAt and pickup transition timestamps.
     const finalPatch = { ...patch };
     if (patch.status === "sent" && !("sentAt" in patch) && !existing.sentAt) {
       finalPatch.sentAt = new Date();

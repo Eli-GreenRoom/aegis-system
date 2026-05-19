@@ -26,6 +26,7 @@ export async function uploadToBlob(
   const result = await put(pathname, body, {
     access: "private",
     contentType,
+    allowOverwrite: true,
   });
   return { url: result.url, pathname: result.pathname };
 }
