@@ -337,7 +337,7 @@ export async function getLineupPipeline(
 
   if (rows.length === 0) return [];
 
-  // Stages join — fetch all and index.
+  // Stages join -- fetch all and index.
   const allStages = await listStages(festivalId);
   const stageById = new Map(allStages.map((s) => [s.id, s]));
 
