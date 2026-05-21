@@ -21,10 +21,18 @@ const ADVANCE_LABEL: Partial<Record<PickupStatus, string>> = {
 
 const STATUS_CLASS: Record<PickupStatus, string> = {
   scheduled: "border-l-[--color-border-strong]",
-  dispatched: "border-l-brand",
-  in_transit: "border-l-[--color-stage-alt]",
+  dispatched: "border-l-[--color-amber]",
+  in_transit: "border-l-[--color-amber]",
   completed: "border-l-[--color-brand]",
   cancelled: "border-l-[--color-danger]",
+};
+
+const STATUS_PILL: Record<PickupStatus, string> = {
+  scheduled: "pill-amber",
+  dispatched: "pill-amber",
+  in_transit: "pill-amber",
+  completed: "pill-emerald",
+  cancelled: "pill-coral",
 };
 
 export default function PickupsBoard({ next2h, later }: Props) {
@@ -127,8 +135,10 @@ function Section({
                     {busyId === pickup.id ? "..." : label}
                   </Button>
                 ) : (
-                  <span className="text-mono text-[10px] uppercase tracking-[0.14em] text-[--color-fg-subtle] px-2">
-                    {pickup.status}
+                  <span
+                    className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded ${STATUS_PILL[pickup.status as PickupStatus] ?? "pill-amber"}`}
+                  >
+                    {(pickup.status as string).replace(/_/g, " ")}
                   </span>
                 )}
               </li>

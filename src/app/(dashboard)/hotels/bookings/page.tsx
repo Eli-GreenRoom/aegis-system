@@ -146,7 +146,7 @@ export default async function BookingsPage({ searchParams }: PageProps) {
                   return (
                     <tr
                       key={bk.id}
-                      className="border-t border-[--color-border] hover:bg-[--color-surface]/40"
+                      className="border-t border-[--color-border] hover:bg-[linear-gradient(90deg,var(--color-violet-glow),transparent_50%)] transition-colors"
                     >
                       <td className="px-4 py-2 text-[--color-fg]">
                         {person?.name ?? "Unknown"}
@@ -254,24 +254,23 @@ function DateInput({
   );
 }
 
-const STATUS_CLASSES: Record<string, string> = {
-  tentative: "border-[--color-border-strong] text-[--color-fg-muted]",
-  booked: "border-brand/40 text-brand",
-  checked_in: "border-[--color-brand]/60 text-mint",
-  checked_out: "border-[--color-fg-subtle]/40 text-[--color-fg-muted]",
-  no_show: "border-[--color-danger]/40 text-coral",
-  cancelled: "border-[--color-danger]/40 text-coral",
+const STATUS_PILL: Record<string, string> = {
+  tentative: "pill-amber",
+  booked: "pill-amber",
+  confirmed: "pill-violet",
+  checked_in: "pill-violet",
+  checked_out: "pill-emerald",
+  not_needed: "pill-emerald",
+  no_show: "pill-coral",
+  cancelled: "pill-coral",
 };
 
 function BookingStatusPill({ status }: { status: string }) {
   return (
     <span
-      className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${
-        STATUS_CLASSES[status] ??
-        "border-[--color-border-strong] text-[--color-fg-muted]"
-      }`}
+      className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded ${STATUS_PILL[status] ?? "pill-amber"}`}
     >
-      {status}
+      {status.replace(/_/g, " ")}
     </span>
   );
 }

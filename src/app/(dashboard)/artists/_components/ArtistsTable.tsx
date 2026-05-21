@@ -20,7 +20,7 @@ export default function ArtistsTable({ artists, statusMap }: Props) {
     <div className="shadow-card rounded-[--radius-lg] overflow-hidden">
       <table className="w-full text-sm">
         <thead className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle]">
-          <tr className="border-b border-white/[0.06]">
+          <tr className="border-b border-white/6">
             <th className="text-left px-4 py-3 font-normal">Name</th>
             <th className="text-left px-4 py-3 font-normal">Set</th>
             <th className="text-left px-4 py-3 font-normal hidden sm:table-cell">
@@ -44,7 +44,7 @@ export default function ArtistsTable({ artists, statusMap }: Props) {
             return (
               <tr
                 key={a.id}
-                className="border-t border-white/[0.04] hover:bg-white/[0.03] transition-colors"
+                className="border-t border-white/4 hover:bg-[linear-gradient(90deg,var(--color-brand-glow),transparent_50%)] transition-colors"
               >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2.5">
@@ -71,13 +71,13 @@ export default function ArtistsTable({ artists, statusMap }: Props) {
                 </td>
 
                 <td className="px-4 py-3">
-                  <StatusPill value={s?.setStatus ?? null} map={SET_MAP} />
+                  <StatusPill value={s?.setStatus ?? null} map={SET_PILL} />
                 </td>
 
                 <td className="px-4 py-3 hidden sm:table-cell">
                   <StatusPill
                     value={s?.contractStatus ?? null}
-                    map={CONTRACT_MAP}
+                    map={CONTRACT_PILL}
                   />
                 </td>
 
@@ -89,7 +89,7 @@ export default function ArtistsTable({ artists, statusMap }: Props) {
                 </td>
 
                 <td className="px-4 py-3 hidden md:table-cell">
-                  <StatusPill value={s?.hotelStatus ?? null} map={HOTEL_MAP} />
+                  <StatusPill value={s?.hotelStatus ?? null} map={HOTEL_PILL} />
                 </td>
 
                 <td className="px-4 py-3 hidden lg:table-cell">
@@ -123,35 +123,27 @@ export default function ArtistsTable({ artists, statusMap }: Props) {
 
 // ── Status pill maps ────────────────────────────────────────────────────────
 
-type PillStyle = "ok" | "warn" | "muted";
-
-const PILL: Record<PillStyle, string> = {
-  ok: "bg-[--color-brand]/10 text-[--color-brand] border-[--color-brand]/20",
-  warn: "bg-[--color-warn]/10 text-[--color-warn] border-[--color-warn]/20",
-  muted: "bg-white/[0.03] text-[--color-fg-subtle] border-white/[0.06]",
+const SET_PILL: Record<string, string> = {
+  confirmed: "pill-emerald",
+  live: "pill-emerald",
+  done: "pill-emerald",
+  option: "pill-amber",
+  not_available: "pill-coral",
+  withdrawn: "pill-coral",
 };
 
-const SET_MAP: Record<string, PillStyle> = {
-  confirmed: "ok",
-  live: "ok",
-  done: "ok",
-  option: "warn",
-  not_available: "muted",
-  withdrawn: "muted",
+const CONTRACT_PILL: Record<string, string> = {
+  signed: "pill-emerald",
+  sent: "pill-amber",
+  draft: "pill-amber",
 };
 
-const CONTRACT_MAP: Record<string, PillStyle> = {
-  signed: "ok",
-  sent: "warn",
-  draft: "warn",
-};
-
-const HOTEL_MAP: Record<string, PillStyle> = {
-  confirmed: "ok",
-  checked_in: "ok",
-  checked_out: "ok",
-  pending: "warn",
-  cancelled: "muted",
+const HOTEL_PILL: Record<string, string> = {
+  confirmed: "pill-violet",
+  checked_in: "pill-violet",
+  checked_out: "pill-emerald",
+  pending: "pill-amber",
+  cancelled: "pill-coral",
 };
 
 function StatusPill({
@@ -159,17 +151,16 @@ function StatusPill({
   map,
 }: {
   value: string | null;
-  map: Record<string, PillStyle>;
+  map: Record<string, string>;
 }) {
   if (!value) {
     return (
       <span className="text-mono text-[10px] text-[--color-fg-subtle]">-</span>
     );
   }
-  const style = map[value] ?? "muted";
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-mono text-[10px] ${PILL[style]}`}
+      className={`inline-flex items-center px-1.5 py-px rounded text-mono text-[9px] uppercase tracking-[0.14em] ${map[value] ?? "pill-amber"}`}
     >
       {value.replace(/_/g, " ")}
     </span>

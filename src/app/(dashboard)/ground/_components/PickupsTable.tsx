@@ -5,11 +5,12 @@ import type { Pickup } from "@/lib/ground/repo";
 import type { Person } from "@/lib/people";
 import { formatCents } from "@/lib/utils";
 
-const STATUS_CLASSES: Record<string, string> = {
-  scheduled: "border-[--color-border-strong] text-[--color-fg-muted]",
-  dispatched: "border-brand/40 text-brand",
-  completed: "border-[--color-brand]/40 text-mint",
-  cancelled: "border-[--color-danger]/40 text-coral",
+const STATUS_PILL: Record<string, string> = {
+  scheduled: "pill-amber",
+  dispatched: "pill-amber",
+  in_transit: "pill-amber",
+  completed: "pill-emerald",
+  cancelled: "pill-coral",
 };
 
 interface VendorRef {
@@ -54,7 +55,7 @@ export default function PickupsTable({ pickups, people, vendorsById }: Props) {
             return (
               <tr
                 key={p.id}
-                className="border-t border-[--color-border] hover:bg-[--color-surface]/40"
+                className="border-t border-[--color-border] hover:bg-[linear-gradient(90deg,var(--color-amber-glow),transparent_50%)] transition-colors"
               >
                 <td className="px-4 py-2 text-mono text-xs text-[--color-fg]">
                   {format(new Date(p.pickupDt), "EEE d MMM HH:mm")}
@@ -100,9 +101,8 @@ export default function PickupsTable({ pickups, people, vendorsById }: Props) {
                 </td>
                 <td className="px-4 py-2">
                   <span
-                    className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${
-                      STATUS_CLASSES[p.status] ??
-                      "border-[--color-border-strong] text-[--color-fg-muted]"
+                    className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded ${
+                      STATUS_PILL[p.status] ?? "pill-amber"
                     }`}
                   >
                     {p.status}

@@ -62,7 +62,7 @@ export default function GuestlistTable({ entries, artistsById }: Props) {
             {entries.map((g) => (
               <tr
                 key={g.id}
-                className="border-t border-[--color-border] hover:bg-[--color-surface]/40"
+                className="border-t border-[--color-border] hover:bg-[linear-gradient(90deg,var(--color-pink-glow),transparent_50%)] transition-colors"
               >
                 <td className="px-4 py-2 text-[--color-fg]">
                   <Link
@@ -97,10 +97,8 @@ export default function GuestlistTable({ entries, artistsById }: Props) {
                   <button
                     onClick={() => patch(g.id, { inviteSent: !g.inviteSent })}
                     disabled={busyId === g.id}
-                    className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${
-                      g.inviteSent
-                        ? "border-brand/40 text-brand"
-                        : "border-[--color-border-strong] text-[--color-fg-muted] hover:border-brand/40 hover:text-brand"
+                    className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded hover:opacity-80 transition-opacity ${
+                      g.inviteSent ? "pill-emerald" : "pill-amber"
                     }`}
                   >
                     {g.inviteSent ? "sent" : "pending"}
@@ -110,10 +108,8 @@ export default function GuestlistTable({ entries, artistsById }: Props) {
                   <button
                     onClick={() => patch(g.id, { checkedIn: !g.checkedIn })}
                     disabled={busyId === g.id}
-                    className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${
-                      g.checkedIn
-                        ? "border-[--color-brand]/60 text-mint"
-                        : "border-[--color-border-strong] text-[--color-fg-muted] hover:border-[--color-brand]/40 hover:text-mint"
+                    className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded hover:opacity-80 transition-opacity ${
+                      g.checkedIn ? "pill-emerald" : "pill-amber"
                     }`}
                   >
                     {g.checkedIn ? "yes" : "no"}
@@ -144,18 +140,18 @@ const CATEGORY_LABEL: Record<GuestCategory, string> = {
   general_admission: "GA",
 };
 
-const CATEGORY_CLASSES: Record<GuestCategory, string> = {
-  dj_guest: "border-brand/40 text-brand",
-  competition_winner: "border-[--color-brand]/40 text-mint",
-  free_list: "border-[--color-fg-subtle]/40 text-[--color-fg-muted]",
-  international: "border-[--color-stage-pool]/60 text-[--color-stage-pool]",
-  general_admission: "border-[--color-border-strong] text-[--color-fg-muted]",
+const CATEGORY_PILL: Record<GuestCategory, string> = {
+  dj_guest: "pill-pink",
+  competition_winner: "pill-pink",
+  free_list: "pill-amber",
+  international: "pill-sky",
+  general_admission: "pill-amber",
 };
 
 function CategoryPill({ category }: { category: GuestCategory }) {
   return (
     <span
-      className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${CATEGORY_CLASSES[category]}`}
+      className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded ${CATEGORY_PILL[category]}`}
     >
       {CATEGORY_LABEL[category]}
     </span>

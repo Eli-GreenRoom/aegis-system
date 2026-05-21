@@ -12,10 +12,16 @@ interface PageProps {
   searchParams: Promise<{ scope?: string }>;
 }
 
-const SEV_CLASS: Record<OpenIssue["severity"], string> = {
-  high: "border-l-[--color-danger] text-coral",
-  medium: "border-l-brand text-brand",
-  low: "border-l-[--color-fg-subtle] text-[--color-fg-muted]",
+const SEV_CARD: Record<OpenIssue["severity"], string> = {
+  high: "border-l-[--color-danger] animate-coral-pulse",
+  medium: "border-l-brand",
+  low: "border-l-[--color-fg-subtle]",
+};
+
+const SEV_PILL: Record<OpenIssue["severity"], string> = {
+  high: "pill-coral",
+  medium: "pill-amber",
+  low: "pill-amber",
 };
 
 export default async function FestivalIssuesPage({ searchParams }: PageProps) {
@@ -59,9 +65,11 @@ export default async function FestivalIssuesPage({ searchParams }: PageProps) {
             {issues.map((issue) => (
               <li
                 key={issue.key}
-                className={`flex items-start gap-3 rounded-md border border-[--color-border] border-l-4 ${SEV_CLASS[issue.severity]} bg-[--color-surface]/40 p-3`}
+                className={`flex items-start gap-3 rounded-md border border-[--color-border] border-l-4 ${SEV_CARD[issue.severity]} bg-[--color-surface]/40 p-3`}
               >
-                <span className="text-mono text-[10px] uppercase tracking-[0.16em] w-[68px] shrink-0">
+                <span
+                  className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded shrink-0 mt-0.5 ${SEV_PILL[issue.severity]}`}
+                >
                   {issue.severity}
                 </span>
                 <div className="flex-1 min-w-0">

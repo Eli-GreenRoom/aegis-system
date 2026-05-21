@@ -1,5 +1,15 @@
 export const dynamic = "force-dynamic";
 
+const INVOICE_STATUS_PILL: Record<string, string> = {
+  received: "pill-amber",
+  pending: "pill-amber",
+  approved: "pill-emerald",
+  paid: "pill-emerald",
+  disputed: "pill-coral",
+  rejected: "pill-coral",
+  void: "pill-coral",
+};
+
 import Link from "next/link";
 import type { Route } from "next";
 import { redirect } from "next/navigation";
@@ -132,7 +142,7 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
               </option>
             ))}
           </Filter>
-          <label className="flex flex-col gap-1 flex-1 min-w-[180px]">
+          <label className="flex flex-col gap-1 flex-1 min-w-45">
             <span className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle]">
               Search
             </span>
@@ -172,7 +182,7 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
                 {invoices.map((i) => (
                   <tr
                     key={i.id}
-                    className="border-t border-[--color-border] hover:bg-[--color-surface]/40"
+                    className="border-t border-[--color-border] hover:bg-[linear-gradient(90deg,var(--color-amber-glow),transparent_50%)] transition-colors"
                   >
                     <td className="px-4 py-2">
                       <Link
@@ -197,7 +207,9 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
                       {formatCents(i.amountCents)} {i.currency}
                     </td>
                     <td className="px-4 py-2">
-                      <span className="text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border border-[--color-border-strong] text-[--color-fg-muted]">
+                      <span
+                        className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded ${INVOICE_STATUS_PILL[i.status] ?? "pill-amber"}`}
+                      >
                         {i.status}
                       </span>
                     </td>

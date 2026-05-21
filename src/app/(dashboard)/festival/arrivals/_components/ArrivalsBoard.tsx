@@ -20,12 +20,22 @@ const ADVANCE_LABEL: Partial<Record<FlightStatus, string>> = {
 
 const STATUS_CLASS: Record<FlightStatus, string> = {
   not_needed: "border-l-[--color-fg-subtle]",
-  scheduled: "border-l-[--color-border-strong]",
-  boarded: "border-l-brand",
-  in_air: "border-l-[--color-stage-alt]",
+  scheduled: "border-l-[--color-sky]/60",
+  boarded: "border-l-[--color-sky]",
+  in_air: "border-l-[--color-sky]",
   landed: "border-l-[--color-brand]",
   delayed: "border-l-[--color-danger]",
   cancelled: "border-l-[--color-danger]",
+};
+
+const STATUS_PILL: Record<FlightStatus, string> = {
+  not_needed: "pill-emerald",
+  scheduled: "pill-sky",
+  boarded: "pill-sky",
+  in_air: "pill-sky",
+  landed: "pill-emerald",
+  delayed: "pill-coral",
+  cancelled: "pill-coral",
 };
 
 export default function ArrivalsBoard({ arrivals }: Props) {
@@ -93,8 +103,10 @@ export default function ArrivalsBoard({ arrivals }: Props) {
                   </div>
                 )}
               </div>
-              <span className="text-mono text-[10px] uppercase tracking-[0.14em] text-[--color-fg-subtle] px-2">
-                {flight.status}
+              <span
+                className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded ${STATUS_PILL[flight.status as FlightStatus] ?? "pill-amber"}`}
+              >
+                {(flight.status as string).replace(/_/g, " ")}
               </span>
               {label && (
                 <Button

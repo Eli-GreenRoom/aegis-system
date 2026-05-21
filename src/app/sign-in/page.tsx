@@ -37,6 +37,14 @@ export default function SignInPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 50% at 50% 0%, var(--color-brand-glow) 0%, transparent 70%)",
+        }}
+      />
       <BlueprintCorner />
       <div className="w-full max-w-sm relative">
         <div className="text-mono text-[10px] uppercase tracking-[0.22em] text-brand mb-3">
@@ -70,7 +78,12 @@ export default function SignInPage() {
 
           {error && <p className="text-sm text-coral">{error}</p>}
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full"
+            loading={loading}
+            disabled={loading}
+          >
             {loading ? "Signing in" : "Sign in"}
           </Button>
         </form>

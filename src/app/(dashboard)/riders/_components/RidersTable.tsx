@@ -72,17 +72,15 @@ export default function RidersTable({ riders, artistsById }: Props) {
             {riders.map((r) => (
               <tr
                 key={r.id}
-                className="border-t border-[--color-border] hover:bg-[--color-surface]/40"
+                className="border-t border-[--color-border] hover:bg-[linear-gradient(90deg,var(--color-brand-glow),transparent_50%)] transition-colors"
               >
                 <td className="px-4 py-2 text-[--color-fg]">
                   {artistsById.get(r.artistId) ?? "(deleted artist)"}
                 </td>
                 <td className="px-4 py-2">
                   <span
-                    className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${
-                      r.kind === "hospitality"
-                        ? "border-brand/40 text-brand"
-                        : "border-[--color-fg-subtle]/40 text-[--color-fg-muted]"
+                    className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded ${
+                      r.kind === "hospitality" ? "pill-emerald" : "pill-amber"
                     }`}
                   >
                     {r.kind}
@@ -111,10 +109,8 @@ export default function RidersTable({ riders, artistsById }: Props) {
                   <button
                     onClick={() => toggleConfirmed(r.id, !r.confirmed)}
                     disabled={busyId === r.id}
-                    className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${
-                      r.confirmed
-                        ? "border-[--color-brand]/60 text-mint"
-                        : "border-[--color-border-strong] text-[--color-fg-muted] hover:text-brand hover:border-brand/40"
+                    className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded hover:opacity-80 transition-opacity ${
+                      r.confirmed ? "pill-emerald" : "pill-amber"
                     }`}
                   >
                     {r.confirmed ? "confirmed" : "pending"}

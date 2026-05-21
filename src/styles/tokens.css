@@ -1,46 +1,89 @@
-/* GreenRoom Stages — design tokens
- * App chrome uses the GreenRoom HQ palette. Aegis Festival brand colors
- * are tenant identity only — see src/lib/branding/aegis-festival.ts.
+/* GreenRoom Stages — design tokens · v2 "Festival Console"
  *
- * Eye-friendly choices:
- *   - Background is `#0A0A0B` (near-black with a hair of warmth)
- *   - Text is `#FAFAFA` not pure white — reduces halation on OLED
- *   - Borders are very low-alpha white so they sit above surface without
- *     competing with data
+ * Same token names as v1 (so no component file changes are required), new
+ * values. Aim: a darker-but-cooler canvas with six functional accents that
+ * each map to a real product meaning. See docs/BRAND.md and the design
+ * study PDF for the full rationale.
+ *
+ * Eye-friendly choices preserved from v1:
+ *   - Text is `#F5F7FB` not pure white — reduces halation on OLED
+ *   - Borders sit very low-alpha so they don't compete with data
+ *   - Canvas is dark but cooler than v1 (#0B0E16 vs #0A0A0B) so accents pop
+ *
+ * Accent semantics (do not break this mapping):
+ *   emerald → brand · success · paid · confirmed
+ *   amber   → warn · pending · Main Stage · money
+ *   coral   → danger · overdue · withdrawn · live-pulse
+ *   sky     → info · flights & travel module · Alternative Stage
+ *   violet  → hotels & lodging module · Select Pool stage
+ *   pink    → guestlist module · Collectives stage
  */
 
 @theme {
   /* ── Brand accent (GreenRoom HQ emerald) ────────────────────────── */
   --color-brand: #34d399;
-  --color-brand-fg: #0a0a0b;
+  --color-brand-fg: #062018;
+  --color-brand-soft: #67f0c0;
 
-  /* ── Surfaces (neutral dark) ───────────────────────────────────── */
-  --color-bg: #0a0a0b;
-  --color-surface: #111113;
-  --color-surface-raised: #1a1a1d;
-  --color-surface-overlay: #222226;
+  /* ── Surfaces · cool dark ──────────────────────────────────────── */
+  --color-bg: #0b0e16;
+  --color-bg-subtle: #131826;
+  --color-bg-muted: #181f30;
+  --color-surface: #181f30;
+  --color-surface-raised: #1e2740;
+  --color-surface-overlay: #232e4e;
 
   /* ── Text on dark ──────────────────────────────────────────────── */
-  --color-fg: #fafafa;
-  --color-fg-muted: #a1a1aa;
-  --color-fg-subtle: #52525b;
+  --color-fg: #f5f7fb;
+  --color-fg-muted: #a8b0c7;
+  --color-fg-subtle: #6b7390;
 
   /* ── Borders ───────────────────────────────────────────────────── */
-  --color-border: rgba(250, 250, 250, 0.08);
-  --color-border-subtle: rgba(250, 250, 250, 0.05);
-  --color-border-strong: rgba(250, 250, 250, 0.18);
+  --color-border: rgba(255, 255, 255, 0.07);
+  --color-border-subtle: rgba(255, 255, 255, 0.04);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+  --color-border-brand: rgba(52, 211, 153, 0.32);
 
   /* ── Status ─────────────────────────────────────────────────────── */
   --color-success: var(--color-brand);
-  --color-warn: #fbbf24;
-  --color-danger: #f87171;
-  --color-info: #7c9eff;
+  --color-warn: #ffb546;
+  --color-danger: #ff6b7a;
+  --color-info: #7db9ff;
 
-  /* ── Stages (used on chips/badges only) ─────────────────────────── */
-  --color-stage-main: #e5b85a;
-  --color-stage-alt: #7c9eff;
-  --color-stage-pool: #a78bfa;
-  --color-stage-coll: #f472b6;
+  /* ── Functional accents · v2 ────────────────────────────────────── */
+  --color-amber: #ffb546;
+  --color-amber-glow: rgba(255, 181, 70, 0.22);
+  --color-coral: #ff6b7a;
+  --color-coral-glow: rgba(255, 107, 122, 0.25);
+  --color-sky: #7db9ff;
+  --color-sky-glow: rgba(125, 185, 255, 0.22);
+  --color-violet: #b69cff;
+  --color-violet-glow: rgba(182, 156, 255, 0.22);
+  --color-pink: #ff9dd0;
+  --color-pink-glow: rgba(255, 157, 208, 0.22);
+  --color-brand-glow: rgba(52, 211, 153, 0.22);
+
+  /* ── Stage seed defaults ────────────────────────────────────────
+   * Stages are data: each row in the `stages` table carries its own
+   * `color` hex. These tokens are SEED DEFAULTS used by the festival
+   * onboarding flow (`src/lib/festivals.ts` → `DEFAULT_STAGE_SEEDS`)
+   * — the operator can change any of them in Settings → Festival →
+   * Stages, and can add or remove stages freely.
+   *
+   * The chrome never reads these directly. It reads `stage.color` from
+   * the row and sets it as `--stage-color` inline on the element. The
+   * `stage-wash`, `stage-tint`, `stage-pill`, `stage-glow`, `stage-text`,
+   * `stage-bar` utilities in globals.css derive every variant via
+   * `color-mix()` from that one variable.
+   *
+   * Aegis Festival's tenant defaults happen to align with the v2
+   * functional palette (amber/sky/violet/pink). Other festivals can use
+   * whatever palette suits them.
+   */
+  --color-stage-main: #ffb546;
+  --color-stage-alt: #7db9ff;
+  --color-stage-pool: #b69cff;
+  --color-stage-coll: #ff9dd0;
 
   /* ── Radius ─────────────────────────────────────────────────────── */
   --radius-sm: 6px;
@@ -49,12 +92,35 @@
 
   /* ── Shadows ────────────────────────────────────────────────────── */
   --shadow-card:
-    0 0 0 1px rgba(255, 255, 255, 0.07), 0 4px 24px rgba(0, 0, 0, 0.45);
+    0 0 0 1px rgba(255, 255, 255, 0.05), 0 4px 24px rgba(0, 0, 0, 0.45);
   --shadow-elevated:
-    0 0 0 1px rgba(255, 255, 255, 0.1), 0 8px 40px rgba(0, 0, 0, 0.6);
+    0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 40px rgba(0, 0, 0, 0.6);
+  --shadow-brand:
+    0 6px 18px rgba(52, 211, 153, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+
+  /* ── Gradients ──────────────────────────────────────────────────── */
+  --gradient-brand: linear-gradient(135deg, #34d399 0%, #67f0c0 100%);
+  --gradient-hero: linear-gradient(
+    135deg,
+    #f5f7fb 0%,
+    #34d399 50%,
+    #ffb546 100%
+  );
+  --gradient-live-strip: linear-gradient(
+    90deg,
+    #34d399 0%,
+    #ffb546 50%,
+    #ff6b7a 100%
+  );
+
+  /* Stage tints are derived at runtime via `color-mix()` from
+   * `--stage-color` set inline. See `stage-wash` / `stage-tint` /
+   * `stage-pill` utilities in `src/styles/globals.css`. No precomputed
+   * per-stage gradient tokens — supports an arbitrary number of stages
+   * with arbitrary operator-chosen colors. */
 
   /* ── Fonts ─────────────────────────────────────────────────────── */
-  /* Geist Sans: body/UI. Geist Mono: numbers/dates/IDs. Newsreader: wordmark + H1 only. */
+  /* Geist Sans: body/UI. Geist Mono: numbers/dates/IDs. Newsreader: wordmark + H1 + hero numbers. */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-newsreader);

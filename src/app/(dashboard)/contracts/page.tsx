@@ -105,7 +105,7 @@ export default async function ContractsPage({ searchParams }: PageProps) {
                 {contracts.map((c) => (
                   <tr
                     key={c.id}
-                    className="border-t border-[--color-border] hover:bg-[--color-surface]/40"
+                    className="border-t border-[--color-border] hover:bg-[linear-gradient(90deg,var(--color-brand-glow),transparent_50%)] transition-colors"
                   >
                     <td className="px-4 py-2 text-[--color-fg]">
                       <Link
@@ -196,11 +196,11 @@ function Filter({
   );
 }
 
-const STATUS_CLASSES: Record<ContractStatus, string> = {
-  draft: "border-[--color-border-strong] text-[--color-fg-muted]",
-  sent: "border-brand/40 text-brand", // "Received" in UI
-  signed: "border-[--color-brand]/60 text-mint",
-  void: "border-[--color-danger]/40 text-coral",
+const STATUS_PILL: Record<ContractStatus, string> = {
+  draft: "pill-amber",
+  sent: "pill-amber",
+  signed: "pill-emerald",
+  void: "pill-coral",
 };
 
 const STATUS_LABELS: Record<ContractStatus, string> = {
@@ -213,7 +213,7 @@ const STATUS_LABELS: Record<ContractStatus, string> = {
 function ContractStatusPill({ status }: { status: ContractStatus }) {
   return (
     <span
-      className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${STATUS_CLASSES[status]}`}
+      className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded ${STATUS_PILL[status]}`}
     >
       {STATUS_LABELS[status]}
     </span>

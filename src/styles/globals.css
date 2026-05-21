@@ -53,14 +53,14 @@
   }
 }
 
-/* Coral pulse animation — overdue / high-severity rows */
+/* ── Coral pulse animation — overdue / high-severity rows ───────────── */
 @keyframes coral-pulse {
   0%,
   100% {
-    border-color: rgba(231, 62, 84, 0.25);
+    border-color: rgba(255, 107, 122, 0.28);
   }
   50% {
-    border-color: rgba(231, 62, 84, 0.75);
+    border-color: rgba(255, 107, 122, 0.78);
   }
 }
 
@@ -68,7 +68,25 @@
   animation: coral-pulse 2s ease-in-out infinite;
 }
 
-/* Side-sheet slide-in from right */
+/* ── Live-strip shimmer · used on the topbar in festival mode ───────── */
+@keyframes live-strip-shimmer {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@utility live-strip {
+  height: 2px;
+  background: var(--gradient-live-strip);
+  box-shadow: 0 0 14px rgba(255, 107, 122, 0.32);
+  animation: live-strip-shimmer 3.5s ease-in-out infinite;
+}
+
+/* ── Side-sheet slide-in from right ─────────────────────────────────── */
 @keyframes sidesheet-slide {
   from {
     transform: translateX(16px);
@@ -80,7 +98,7 @@
   }
 }
 
-/* Brand color utilities */
+/* ── Brand color utilities ──────────────────────────────────────────── */
 
 @utility text-brand {
   color: var(--color-brand);
@@ -94,7 +112,7 @@
   border-color: var(--color-brand);
 }
 
-/* Status color utilities */
+/* ── Status / accent color utilities ────────────────────────────────── */
 
 @utility text-coral {
   color: var(--color-danger);
@@ -112,7 +130,23 @@
   color: var(--color-danger);
 }
 
-/* Shadow utilities */
+@utility text-amber {
+  color: var(--color-amber);
+}
+
+@utility text-sky {
+  color: var(--color-sky);
+}
+
+@utility text-violet-accent {
+  color: var(--color-violet);
+}
+
+@utility text-pink-accent {
+  color: var(--color-pink);
+}
+
+/* ── Shadow utilities ───────────────────────────────────────────────── */
 
 @utility shadow-card {
   box-shadow: var(--shadow-card);
@@ -122,7 +156,11 @@
   box-shadow: var(--shadow-elevated);
 }
 
-/* Typography utilities */
+@utility shadow-brand {
+  box-shadow: var(--shadow-brand);
+}
+
+/* ── Typography utilities ───────────────────────────────────────────── */
 
 @utility text-mono {
   font-family: var(--font-mono);
@@ -133,4 +171,243 @@
   font-family: var(--font-display);
   font-weight: 500;
   letter-spacing: -0.01em;
+}
+
+@utility text-hero-gradient {
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.018em;
+}
+
+/* ── Tinted surface utilities — v2 cards wear module color ───────────
+ *
+ * Use these for stat cards, hero "next action" panels, status-keyed
+ * cards. They replace the silent #181F30 card with a top-down colored
+ * wash that fades back into the surface, giving depth without a heavy
+ * border.
+ * ──────────────────────────────────────────────────────────────────── */
+
+@utility tinted-emerald {
+  background: linear-gradient(
+    160deg,
+    rgba(52, 211, 153, 0.12) 0%,
+    var(--color-surface) 60%
+  );
+  border-color: rgba(52, 211, 153, 0.22);
+}
+
+@utility tinted-amber {
+  background: linear-gradient(
+    160deg,
+    rgba(255, 181, 70, 0.12) 0%,
+    var(--color-surface) 60%
+  );
+  border-color: rgba(255, 181, 70, 0.22);
+}
+
+@utility tinted-coral {
+  background: linear-gradient(
+    160deg,
+    rgba(255, 107, 122, 0.1) 0%,
+    var(--color-surface) 60%
+  );
+  border-color: rgba(255, 107, 122, 0.22);
+}
+
+@utility tinted-sky {
+  background: linear-gradient(
+    160deg,
+    rgba(125, 185, 255, 0.1) 0%,
+    var(--color-surface) 60%
+  );
+  border-color: rgba(125, 185, 255, 0.22);
+}
+
+@utility tinted-violet {
+  background: linear-gradient(
+    160deg,
+    rgba(182, 156, 255, 0.1) 0%,
+    var(--color-surface) 60%
+  );
+  border-color: rgba(182, 156, 255, 0.22);
+}
+
+@utility tinted-pink {
+  background: linear-gradient(
+    160deg,
+    rgba(255, 157, 208, 0.1) 0%,
+    var(--color-surface) 60%
+  );
+  border-color: rgba(255, 157, 208, 0.22);
+}
+
+/* ── Stage utilities — data-driven from stage.color ──────────────────
+ *
+ * Stage hex values live on the `stages` table and are user-editable in
+ * Settings. The chrome reads them at runtime via a `--stage-color` CSS
+ * variable set INLINE on the element:
+ *
+ *   <div
+ *     className="stage-wash"
+ *     style={{ "--stage-color": stage.color } as React.CSSProperties}
+ *   />
+ *
+ * `color-mix()` (CSS Color Module 5, supported by every modern browser
+ * and Tailwind v4) derives low-alpha tints, borders, and pill fills at
+ * runtime — no precomputed values, no per-stage utility classes, no
+ * limit on how many stages a festival can have.
+ *
+ * If a stage has no color set, fall back to `var(--color-fg-muted)` —
+ * the chrome stays readable, no theme breakage.
+ * ──────────────────────────────────────────────────────────────────── */
+
+@utility stage-wash {
+  /* Lineup column / Now-board stage card top-down wash. */
+  background: linear-gradient(
+    180deg,
+    color-mix(
+        in srgb,
+        var(--stage-color, var(--color-fg-muted)) 16%,
+        transparent
+      )
+      0%,
+    var(--color-surface) 60%
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--stage-color, var(--color-fg-muted)) 32%,
+    transparent
+  );
+}
+
+@utility stage-tint {
+  /* Card / panel wearing the stage color as ambient tint, not a top-down
+   * wash. Use on small stage chips or set tiles inside a column. */
+  background: color-mix(
+    in srgb,
+    var(--stage-color, var(--color-fg-muted)) 14%,
+    var(--color-surface)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--stage-color, var(--color-fg-muted)) 35%,
+    transparent
+  );
+}
+
+@utility stage-pill {
+  /* Status / stage chip pill. Use on labels that name the stage. */
+  background: color-mix(
+    in srgb,
+    var(--stage-color, var(--color-fg-muted)) 14%,
+    transparent
+  );
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--stage-color, var(--color-fg-muted)) 35%,
+      transparent
+    );
+  color: color-mix(
+    in srgb,
+    var(--stage-color, var(--color-fg-muted)) 70%,
+    var(--color-fg)
+  );
+}
+
+@utility stage-glow {
+  /* Soft outer glow in the stage color. Use on the active set card. */
+  box-shadow: 0 0 24px
+    color-mix(
+      in srgb,
+      var(--stage-color, var(--color-fg-muted)) 22%,
+      transparent
+    );
+}
+
+@utility stage-text {
+  /* Inline text in the stage color — column headers, "→ NEXT" labels. */
+  color: var(--stage-color, var(--color-fg-muted));
+}
+
+@utility stage-bar {
+  /* 2px solid bar in the stage color. Use on the active-set indicator. */
+  background-color: var(--stage-color, var(--color-fg-muted));
+}
+
+/* ── Glow utilities — for active items, urgency, festival-day live ─── */
+
+@utility glow-brand {
+  box-shadow: 0 0 24px var(--color-brand-glow);
+}
+
+@utility glow-amber {
+  box-shadow: 0 0 24px var(--color-amber-glow);
+}
+
+@utility glow-coral {
+  box-shadow: 0 0 24px var(--color-coral-glow);
+}
+
+@utility glow-sky {
+  box-shadow: 0 0 24px var(--color-sky-glow);
+}
+
+@utility glow-violet {
+  box-shadow: 0 0 24px var(--color-violet-glow);
+}
+
+@utility glow-pink {
+  box-shadow: 0 0 24px var(--color-pink-glow);
+}
+
+/* ── Primary CTA gradient button base ───────────────────────────────── */
+
+@utility btn-gradient-brand {
+  background: var(--gradient-brand);
+  color: var(--color-brand-fg);
+  box-shadow: var(--shadow-brand);
+}
+
+/* ── Status pill bases — colored fill instead of grey+colored-text ──── */
+
+@utility pill-emerald {
+  background: rgba(52, 211, 153, 0.14);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #67f0c0;
+}
+
+@utility pill-amber {
+  background: rgba(255, 181, 70, 0.14);
+  border: 1px solid rgba(255, 181, 70, 0.35);
+  color: #ffd08a;
+}
+
+@utility pill-coral {
+  background: rgba(255, 107, 122, 0.14);
+  border: 1px solid rgba(255, 107, 122, 0.35);
+  color: #ff9ca8;
+}
+
+@utility pill-sky {
+  background: rgba(125, 185, 255, 0.14);
+  border: 1px solid rgba(125, 185, 255, 0.35);
+  color: #b8d5ff;
+}
+
+@utility pill-violet {
+  background: rgba(182, 156, 255, 0.14);
+  border: 1px solid rgba(182, 156, 255, 0.35);
+  color: #d6c8ff;
+}
+
+@utility pill-pink {
+  background: rgba(255, 157, 208, 0.14);
+  border: 1px solid rgba(255, 157, 208, 0.35);
+  color: #ffc7e5;
 }

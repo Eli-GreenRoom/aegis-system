@@ -3,13 +3,14 @@ import type { Flight } from "@/lib/flights/repo";
 import type { Person } from "@/lib/people";
 import { format } from "date-fns";
 
-const STATUS_CLASSES: Record<string, string> = {
-  scheduled: "border-[--color-border-strong] text-[--color-fg-muted]",
-  boarded: "border-brand/40 text-brand",
-  in_air: "border-brand/40 text-brand",
-  landed: "border-[--color-brand]/40 text-mint",
-  delayed: "border-[--color-danger]/40 text-coral",
-  cancelled: "border-[--color-danger]/40 text-coral",
+const STATUS_PILL: Record<string, string> = {
+  scheduled: "pill-amber",
+  boarded: "pill-sky",
+  in_air: "pill-sky",
+  landed: "pill-emerald",
+  delayed: "pill-coral",
+  cancelled: "pill-coral",
+  not_needed: "pill-emerald",
 };
 
 interface Props {
@@ -46,7 +47,7 @@ export default function FlightsTable({ flights, people }: Props) {
             return (
               <tr
                 key={f.id}
-                className="border-t border-[--color-border] hover:bg-[--color-surface]/40"
+                className="border-t border-[--color-border] hover:bg-[linear-gradient(90deg,var(--color-sky-glow),transparent_50%)] transition-colors"
               >
                 <td className="px-4 py-2">
                   <Link
@@ -80,12 +81,11 @@ export default function FlightsTable({ flights, people }: Props) {
                 </td>
                 <td className="px-4 py-2">
                   <span
-                    className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${
-                      STATUS_CLASSES[f.status] ??
-                      "border-[--color-border-strong] text-[--color-fg-muted]"
+                    className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded ${
+                      STATUS_PILL[f.status] ?? "pill-amber"
                     }`}
                   >
-                    {f.status.replace("_", " ")}
+                    {f.status.replace(/_/g, " ")}
                   </span>
                 </td>
                 <td className="px-4 py-2 text-right">

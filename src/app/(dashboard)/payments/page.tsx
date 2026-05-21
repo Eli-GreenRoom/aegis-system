@@ -141,7 +141,7 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
               </option>
             ))}
           </Filter>
-          <label className="flex flex-col gap-1 flex-1 min-w-[180px]">
+          <label className="flex flex-col gap-1 flex-1 min-w-45">
             <span className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle]">
               Search
             </span>
@@ -190,7 +190,7 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
                   return (
                     <tr
                       key={p.id}
-                      className={`border-t hover:bg-[--color-surface]/40 ${
+                      className={`border-t transition-colors hover:bg-[linear-gradient(90deg,var(--color-amber-glow),transparent_50%)] ${
                         p.status === "overdue"
                           ? "border-[--color-danger]/25 animate-coral-pulse"
                           : "border-[--color-border]"
@@ -303,7 +303,7 @@ function Filter({
       <select
         name={name}
         defaultValue={value}
-        className="rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] min-w-[140px]"
+        className="rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] min-w-35"
       >
         {children}
       </select>
@@ -311,18 +311,18 @@ function Filter({
   );
 }
 
-const STATUS_CLASSES: Record<PaymentStatus, string> = {
-  pending: "border-[--color-border-strong] text-[--color-fg-muted]",
-  due: "border-brand/40 text-brand",
-  paid: "border-[--color-brand]/60 text-mint",
-  overdue: "border-[--color-danger]/40 text-coral",
-  void: "border-[--color-fg-subtle]/40 text-[--color-fg-subtle]",
+const STATUS_PILL: Record<PaymentStatus, string> = {
+  pending: "pill-amber",
+  due: "pill-amber",
+  paid: "pill-emerald",
+  overdue: "pill-coral",
+  void: "pill-amber",
 };
 
 function PaymentStatusPill({ status }: { status: PaymentStatus }) {
   return (
     <span
-      className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${STATUS_CLASSES[status]}`}
+      className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded ${STATUS_PILL[status]}`}
     >
       {status}
     </span>

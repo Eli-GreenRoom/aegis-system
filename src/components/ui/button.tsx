@@ -7,11 +7,12 @@ type Size = "default" | "sm" | "xs";
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
+  loading?: boolean;
 }
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-brand text-[--color-brand-fg] hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--color-brand]/50 disabled:opacity-50",
+    "btn-gradient-brand text-[--color-brand-fg] hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--color-brand]/50 disabled:opacity-50",
   secondary:
     "bg-[--color-surface-raised] border border-white/[0.12] text-[--color-fg] hover:bg-[--color-surface-overlay] hover:border-white/[0.18] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:opacity-50",
   ghost:
@@ -27,9 +28,21 @@ const sizeClasses: Record<Size, string> = {
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "default", ...props }, ref) => (
+  (
+    {
+      className,
+      variant = "primary",
+      size = "default",
+      loading,
+      disabled,
+      children,
+      ...props
+    },
+    ref,
+  ) => (
     <button
       ref={ref}
+      disabled={disabled || loading}
       className={cn(
         "inline-flex items-center justify-center rounded-[--radius-md] font-medium transition-all disabled:cursor-not-allowed select-none",
         variantClasses[variant],
@@ -37,7 +50,30 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className,
       )}
       {...props}
-    />
+    >
+      {loading && (
+        <svg
+          className="animate-spin -ml-0.5 mr-1.5 w-3.5 h-3.5"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
+        </svg>
+      )}
+      {children}
+    </button>
   ),
 );
 Button.displayName = "Button";

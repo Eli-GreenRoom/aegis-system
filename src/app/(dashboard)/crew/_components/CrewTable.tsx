@@ -29,7 +29,7 @@ export default function CrewTable({ crew }: { crew: CrewMember[] }) {
             return (
               <tr
                 key={c.id}
-                className="border-t border-[--color-border] hover:bg-[--color-surface]/40"
+                className="border-t border-[--color-border] hover:bg-[linear-gradient(90deg,var(--color-brand-glow),transparent_50%)] transition-colors"
               >
                 <td className="px-4 py-2">
                   <Link

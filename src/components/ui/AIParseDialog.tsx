@@ -91,10 +91,13 @@ export default function AIParseDialog({
             <div className="flex items-center gap-2">
               <Button
                 type="button"
+                variant="secondary"
                 onClick={runParse}
-                disabled={busy || text.trim().length < 20}
+                loading={busy}
+                disabled={text.trim().length < 20}
+                className="border-[--color-sky]/40 text-[--color-sky] hover:bg-[--color-sky]/10 hover:border-[--color-sky]/60"
               >
-                {busy ? "Parsing..." : "Parse"}
+                {busy ? "Parsing..." : "Parse with AI"}
               </Button>
               <Button
                 type="button"
@@ -112,8 +115,9 @@ export default function AIParseDialog({
         ) : (
           <>
             <p className="text-xs text-[--color-fg-muted]">
-              Review the extracted fields. Click <span className="text-brand">Apply</span> to
-              fill the form below; you can still edit anything before saving.
+              Review the extracted fields. Click{" "}
+              <span className="text-brand">Apply</span> to fill the form below;
+              you can still edit anything before saving.
             </p>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               {Object.entries(parsed).map(([k, v]) => (
@@ -149,11 +153,7 @@ export default function AIParseDialog({
               >
                 Re-parse
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onClose}
-              >
+              <Button type="button" variant="ghost" onClick={onClose}>
                 Cancel
               </Button>
             </div>
