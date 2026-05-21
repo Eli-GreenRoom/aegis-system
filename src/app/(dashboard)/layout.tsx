@@ -27,7 +27,9 @@ export default async function DashboardLayout({
     <FestivalProvider festival={festival} festivals={festivalList}>
       <div className="flex h-screen overflow-hidden">
         <Sidebar userEmail={session.user.email} festivalMode={festivalMode} />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 min-w-0 overflow-y-auto pb-16 md:pb-0">
+          {children}
+        </main>
       </div>
     </FestivalProvider>
   );

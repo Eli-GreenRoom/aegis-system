@@ -58,7 +58,7 @@ export default function FestivalSwitcher() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 z-50 min-w-[180px] rounded-md border border-[--color-border] bg-[--color-surface] shadow-lg overflow-hidden">
+          <div className="absolute right-0 top-full mt-1 z-50 min-w-40 rounded-md border border-[--color-border] bg-[--color-surface] shadow-lg overflow-hidden">
             {festivals.map((f) => (
               <button
                 key={f.id}

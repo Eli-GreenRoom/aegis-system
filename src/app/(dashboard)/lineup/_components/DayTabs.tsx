@@ -31,7 +31,7 @@ function DayTabsInner({ active, festival }: DayTabsInnerProps) {
   }
 
   return (
-    <div className="flex items-center gap-1 mb-5">
+    <div className="flex items-center gap-1 mb-5 overflow-x-auto pb-1 scrollbar-none">
       {dates.map((date) => {
         const isActive = active === date;
         return (

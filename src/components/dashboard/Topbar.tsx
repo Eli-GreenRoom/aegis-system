@@ -44,7 +44,7 @@ export default function Topbar({
 
   return (
     <header className="sticky top-0 z-10 shrink-0 flex flex-col bg-[--color-bg]/80 backdrop-blur-xl border-b border-white/5">
-      <div className="h-14 flex items-center px-6 gap-6">
+      <div className="h-14 flex items-center px-4 md:px-6 gap-4 md:gap-6">
         <div className="flex-1 min-w-0">
           <h1 className="text-[15px] font-semibold text-[--color-fg] leading-none tracking-[-0.01em] truncate">
             {title}
@@ -63,7 +63,7 @@ export default function Topbar({
 
           {daysOut !== null && (
             <div
-              className="text-[11px] text-[--color-fg-subtle]"
+              className="hidden sm:block text-[11px] text-[--color-fg-subtle]"
               style={{ fontFamily: "var(--font-mono)" }}
             >
               {daysOut > 0 ? (
