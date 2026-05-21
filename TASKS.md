@@ -7,10 +7,7 @@
 
 ## Now
 
-- [ ] **Design v2 Phase 4.5** — Mobile responsiveness on planning
-      routes: bottom-nav sidebar, table→card primitive, filter
-      bottom-sheet, lineup accordion, full-screen side sheet on
-      mobile (spec in `DESIGN_V2_PLAN.md` §Phase 4.5).
+_(nothing — pick from Later)_
 
 ## Later
 
@@ -26,6 +23,15 @@
 ---
 
 ## Done
+
+- 2026-05-21 — **Design v2 Phase 4.5** — Mobile responsiveness
+  - Sidebar: mobile bottom-nav bar (4 primary items + "More" slide-up drawer);
+    desktop rail unchanged. `safe-area-inset-bottom` padding for iOS.
+  - `layout.tsx`: `min-w-0` prevents horizontal overflow; `pb-16 md:pb-0` clears nav.
+  - Topbar: `px-4 md:px-6` tighter mobile padding; T-date chip hidden on xs.
+  - FestivalSwitcher: `min-w-[180px]` → `min-w-40` canonical class.
+  - DayTabs: `overflow-x-auto` wrapper for narrow-phone horizontal scroll.
+  - 465 tests green.
 
 - 2026-05-21 — **Design v2 Phase 5** — QA pass + audit history + docs sync
   - `getAuditHistory(entityType, entityId)` added to `src/lib/audit.ts`; 3 new tests.
@@ -63,7 +69,7 @@
     pickup=amber); `AllClearCard` uses `tinted-emerald`; `Row` dots promoted
     to full-height 2px bars.
   - NowBoard: stage cards use `stage-wash` + radial glow blob + `transition-
-  colors duration-1000`; "Now" artist name promoted to Newsreader 28pt;
+colors duration-1000`; "Now" artist name promoted to Newsreader 28pt;
     cancelled pickups get `tinted-coral` highlight.
     462 tests green (unchanged).
 
