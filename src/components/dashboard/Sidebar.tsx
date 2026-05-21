@@ -86,12 +86,21 @@ export default function Sidebar({ userEmail, festivalMode }: Props) {
         <span className="text-[13px] font-bold tracking-tight text-[--color-fg] leading-none">
           Green<span className="text-brand">[Room]</span>
         </span>
-        <span
-          className="ml-1.5 text-[9px] font-semibold border rounded-xs px-1.25 py-0.5 leading-none uppercase tracking-[0.12em] text-brand border-[--color-brand]/40"
-          style={{ fontFamily: "var(--font-mono)" }}
-        >
-          {festivalMode ? "Live" : "Stages"}
-        </span>
+        {festivalMode ? (
+          <span
+            className="ml-1.5 text-[9px] font-semibold rounded-xs px-1.25 py-0.5 leading-none uppercase tracking-[0.12em] pill-coral glow-coral"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
+            Live
+          </span>
+        ) : (
+          <span
+            className="ml-1.5 text-[9px] font-semibold border rounded-xs px-1.25 py-0.5 leading-none uppercase tracking-[0.12em] text-brand border-[--color-brand]/40"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
+            Stages
+          </span>
+        )}
       </Link>
 
       {/* Navigation */}
@@ -182,6 +191,7 @@ export default function Sidebar({ userEmail, festivalMode }: Props) {
               ? "text-[--color-fg] bg-white/[0.06]"
               : "text-[--color-fg-muted] hover:text-[--color-fg] hover:bg-white/[0.04]",
           ].join(" ")}
+          aria-current={isActive("/settings") ? "page" : undefined}
         >
           <Settings className="w-[15px] h-[15px] shrink-0" />
           <span className="flex-1">Settings</span>
@@ -228,12 +238,12 @@ function NavItem({
         "relative flex items-center gap-2.5 rounded-md transition-colors",
         dense ? "pl-7 pr-3 py-[5px] text-[12px]" : "px-3 py-[7px] text-[13px]",
         active
-          ? "text-[--color-fg] bg-white/[0.06]"
+          ? "text-[--color-fg] bg-[linear-gradient(90deg,rgba(52,211,153,0.16),transparent_60%)] shadow-[0_0_6px_var(--color-brand-glow)]"
           : "text-[--color-fg-muted] hover:text-[--color-fg] hover:bg-white/[0.04]",
       ].join(" ")}
     >
       {active && (
-        <span className="absolute left-0 top-[6px] bottom-[6px] w-[2px] rounded-r-full bg-brand" />
+        <span className="absolute left-0 top-[6px] bottom-[6px] w-[2px] rounded-r-full bg-brand shadow-[0_0_6px_var(--color-brand-glow)]" />
       )}
       <Icon
         className={

@@ -7,10 +7,22 @@
 
 ## Now
 
-_(nothing — all current phases done)_
+- [ ] **Design v2 Phase 3** — Lineup + Cockpit + Festival-day Now
+      wear v2 with **data-driven stage colors** (spec in
+      `DESIGN_V2_PLAN.md` §Phase 3).
+- [ ] **Design v2 Phase 4** — Forms + tables + status pills wear v2
+      (broad surface; spec in `DESIGN_V2_PLAN.md` §Phase 4).
+- [ ] **Design v2 Phase 4.5** — Mobile responsiveness on planning
+      routes: bottom-nav sidebar, table→card primitive, filter
+      bottom-sheet, lineup accordion, full-screen side sheet on
+      mobile (spec in `DESIGN_V2_PLAN.md` §Phase 4.5).
+- [ ] **Design v2 Phase 5** — QA pass + docs sync (visual + UX +
+      mobile checklist in `DESIGN_V2_PLAN.md` §Phase 5).
 
 ## Later
 
+- [ ] **Consume `?gaps=1` filter on /artists** — "Pending by artist" View all now passes the param; /artists needs to read it and pre-filter to artists with gaps (Phase 2 audit follow-up).
+- [ ] **Sidebar mobile collapse → bottom nav** — Phase 4.5 scope. At 390px the 220px rail consumes 56% viewport; bottom-nav spec in `DESIGN_V2_PLAN.md` §Phase 4.5.
 - [ ] **Cmd+K AI agent** — streaming agentic loop, read/write tools, palette overlay
 - [ ] **Resend email** — roadsheet email T-1 day per artist, invite emails
 - [ ] **Audit log UI** — surface transition history in Settings
@@ -21,6 +33,46 @@ _(nothing — all current phases done)_
 ---
 
 ## Done
+
+- 2026-05-21 — **Design v2 Phase 2** — Sidebar + Topbar + Home wear v2
+  UX audit findings:
+  - Sidebar: no mobile collapse exists (220px rail = 56% of 390px viewport).
+    Filed as Later (Phase 4.5 scope).
+  - Topbar: live strip was wired in globals.css but never rendered — added.
+    Festival mode computed inline from `festival` object already in context.
+  - Home: error boundary missing — added `home/error.tsx`. Loading skeleton
+    missing — added `home/loading.tsx`. "Pending by artist" View-all did not
+    pass `?gaps=1` — fixed. Consuming the param on /artists filed as Later.
+    Visual changes landed:
+  - Sidebar active item: brand-green left-to-transparent wash +
+    `shadow-[0_0_6px_var(--color-brand-glow)]` on the 2px bar.
+  - Sidebar "Live" badge: `pill-coral glow-coral` (vs "Stages" which stays
+    the plain brand border pill).
+  - Topbar: wraps in a flex-col container; `live-strip` rendered as the last
+    child when `festivalMode === true`.
+  - Home: T-minus promoted to Newsreader 32pt `text-hero-gradient` number.
+    Three tinted stat cards (Readiness/emerald, High Issues/coral,
+    Unpaid/amber). Severity dots replaced by full-height 2px severity bars
+    with per-severity hover wash. Gap chips use `GAP_PILL` module-colored
+    utilities. Radial gradient backdrop on "All clear" empty state.
+    New: `GAP_PILL` in `artist-readiness.ts`. `getUnpaidTotal()` in
+    `payments/repo.ts`. 7 new tests in `home-stats.test.ts`.
+    462 tests green (was 455).
+
+- 2026-05-21 — **Design v2 Phase 1** — tokens + utilities
+  Full v2 palette landed in `src/styles/tokens.css`: cooler bg
+  `#0B0E16`, six functional accents (emerald · amber · coral · sky ·
+  violet · pink) each bound to a product meaning, stage hex values
+  aligned to the v2 functional set, gradient + tint + glow tokens,
+  brand-soft `#67F0C0` for the gradient button base. New utilities
+  in `src/styles/globals.css`: surface tints (`tinted-emerald` etc.),
+  stage washes (`wash-stage-main` etc.), status pills (`pill-emerald`
+  etc.), glows (`glow-brand` etc.), gradient text (`text-hero-gradient`),
+  `live-strip` (2px animated gradient bar for the topbar in festival
+  mode), `btn-gradient-brand`, `shadow-brand`. All v1 utility/token
+  names preserved (token-only diff). Spec + rollout in
+  `DESIGN_V2_PLAN.md`. Visual study in `design-study.html`. AGENT.md
+  §3 and docs/BRAND.md refreshed to v2.
 
 - 2026-05-19 — **Lineup pipeline view** (Phase D)
   Added a kanban view to /lineup, alongside the existing calendar grid.
@@ -441,3 +493,13 @@ entity, diff })` — returns an unawaited Drizzle insert builder so the
   timestamps, hotel block gets `label`, crew gets passport/visa/
   nationality parity, visa moves to enum, flights gain `delay_minutes`).
   Aggregators added as Phase 2.9.
+- 2026-05-21 — Design v2 "Festival Console". Move from a single-emerald
+  blueprint to six functional accents (emerald · amber · coral · sky ·
+  violet · pink). Stage colors elevated from chip-data to wayfinding,
+  and made **data-driven** — chrome reads `stage.color` at runtime via
+  `--stage-color` CSS variable + `color-mix()` utilities; no four-stage
+  enum in code. Newsreader promoted from wordmark-only to hero data
+  carrier. Token _names_ preserved so the swap is non-breaking; rollout
+  phased 1–5 (with Phase 4.5 mobile-responsiveness pass) in
+  `DESIGN_V2_PLAN.md`. Each phase ships v2 visual + a structured UX
+  audit in the same commit.

@@ -9,9 +9,11 @@ import {
   getOpenIssues,
   getFestivalReadiness,
   GAP_LABEL,
+  GAP_PILL,
   type OpenIssue,
   type ReadinessGap,
 } from "@/lib/aggregators";
+import { getUnpaidTotal } from "@/lib/payments/repo";
 
 export const dynamic = "force-dynamic";
 
@@ -60,8 +62,8 @@ const SEV_LABEL: Record<string, string> = {
   low: "LOW",
 };
 
-const SEV_DOT: Record<string, string> = {
-  high: "bg-[--color-danger]",
+const SEV_BAR: Record<string, string> = {
+  high: "bg-[--color-danger] shadow-[0_0_8px_var(--color-coral-glow)]",
   medium: "bg-[--color-warn]",
   low: "bg-[--color-fg-subtle]",
 };
@@ -71,6 +73,19 @@ const SEV_TEXT: Record<string, string> = {
   medium: "text-[--color-warn]",
   low: "text-[--color-fg-subtle]",
 };
+
+const SEV_HOVER: Record<string, string> = {
+  high: "hover:bg-[rgba(255,107,122,0.06)]",
+  medium: "hover:bg-[rgba(255,181,70,0.06)]",
+  low: "hover:bg-[--color-surface-raised]",
+};
+
+function formatCents(cents: number): string {
+  return (cents / 100).toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}
 
 export default async function DashboardHomePage() {
   const session = await getAppSession();
@@ -86,9 +101,10 @@ export default async function DashboardHomePage() {
 
   const now = new Date();
 
-  const [weekIssues, readiness] = await Promise.all([
+  const [weekIssues, readiness, unpaidTotal] = await Promise.all([
     getOpenIssues(festival.id, "week"),
     getFestivalReadiness(festival.id),
+    getUnpaidTotal(festival.id),
   ]);
 
   // T-minus (UTC calendar days)
@@ -105,50 +121,76 @@ export default async function DashboardHomePage() {
   const artistsWithGaps = readiness.byArtist.filter((a) => a.gaps.length > 0);
   const topArtists = artistsWithGaps.slice(0, 8);
 
+  const highIssueCount = weekIssues.filter((i) => i.severity === "high").length;
+
+  // Unpaid display: prefer EUR if non-zero, otherwise USD
+  const unpaidDisplay =
+    unpaidTotal.EUR > 0
+      ? `€${formatCents(unpaidTotal.EUR)}`
+      : unpaidTotal.USD > 0
+        ? `$${formatCents(unpaidTotal.USD)}`
+        : null;
+
+  const allClear = topIssues.length === 0 && artistsWithGaps.length === 0;
+
   return (
     <>
       <Topbar title="Home" />
 
       <div className="px-6 py-6 space-y-7 max-w-3xl">
-        {/* Compact festival strip + progress */}
-        <section className="space-y-2.5">
-          <div className="flex items-baseline justify-between gap-4">
+        {/* Festival strip: name + hero T-minus */}
+        <section className="space-y-4">
+          <div className="flex items-start justify-between gap-4">
             <div className="text-[15px] text-[--color-fg]">{festival.name}</div>
-            <div
-              className="text-[12px] text-[--color-fg-subtle]"
-              style={{ fontFamily: "var(--font-mono)" }}
-            >
+
+            {/* Hero T-minus — Newsreader gradient number */}
+            <div className="shrink-0 text-right">
               {daysOut > 0 ? (
-                <>
-                  T-<span className="text-brand">{daysOut}d</span>
-                </>
+                <div className="text-hero-gradient text-[32pt] leading-none">
+                  T&minus;{daysOut}d
+                </div>
               ) : daysOut === 0 ? (
-                <span className="text-brand">Day 0</span>
+                <div className="text-hero-gradient text-[32pt] leading-none">
+                  Day 0
+                </div>
               ) : (
-                <>post-festival</>
+                <div
+                  className="text-[13px] text-[--color-fg-subtle]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  post-festival
+                </div>
               )}
             </div>
           </div>
 
+          {/* Three tinted stat cards */}
+          <div className="grid grid-cols-3 gap-3">
+            <StatCard
+              label="Readiness"
+              value={`${readiness.percent}%`}
+              sub={`${readiness.fullyPrepped} of ${readiness.totalArtists}`}
+              tint="tinted-emerald"
+              valueColor="text-brand"
+            />
+            <StatCard
+              label="High Issues"
+              value={String(highIssueCount)}
+              tint={highIssueCount > 0 ? "tinted-coral" : "tinted-emerald"}
+              valueColor={
+                highIssueCount > 0 ? "text-[--color-danger]" : "text-brand"
+              }
+            />
+            <StatCard
+              label="Unpaid"
+              value={unpaidDisplay ?? "—"}
+              tint={unpaidDisplay ? "tinted-amber" : "tinted-emerald"}
+              valueColor={unpaidDisplay ? "text-[--color-amber]" : "text-brand"}
+            />
+          </div>
+
+          {/* Readiness progress bar */}
           <div className="space-y-1.5">
-            <div className="flex items-baseline justify-between gap-4">
-              <div
-                className="text-[11px] uppercase tracking-[0.14em] text-[--color-fg-subtle]"
-                style={{ fontFamily: "var(--font-mono)" }}
-              >
-                Lineup readiness
-              </div>
-              <div
-                className="text-[11px] text-[--color-fg-muted]"
-                style={{ fontFamily: "var(--font-mono)" }}
-              >
-                {readiness.fullyPrepped} of {readiness.totalArtists} prepped
-                <span className="text-[--color-fg-subtle]">
-                  {" "}
-                  · {readiness.percent}%
-                </span>
-              </div>
-            </div>
             <div
               className="h-1.5 w-full rounded-full bg-[--color-surface-raised] overflow-hidden"
               role="progressbar"
@@ -165,25 +207,35 @@ export default async function DashboardHomePage() {
         </section>
 
         {/* This week's worklist */}
-        {topIssues.length > 0 ? (
+        {topIssues.length > 0 && (
           <section className="space-y-2">
             <SectionHeader
               title="This week"
               count={weekIssues.length}
               href="/festival/issues"
             />
-            <div className="space-y-1">
+            <div className="space-y-px">
               {topIssues.map((issue) => (
                 <Link
                   key={issue.key}
                   href={issueHref(issue.entityType, issue.entityId)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-md border border-[--color-border] bg-[--color-surface] hover:bg-[--color-surface-raised] transition-colors group"
+                  className={[
+                    "flex items-center gap-3 px-3 py-2.5 rounded-md border border-[--color-border] bg-[--color-surface] transition-colors group",
+                    SEV_HOVER[issue.severity],
+                  ].join(" ")}
                 >
+                  {/* 2px severity bar replaces dot */}
                   <span
-                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${SEV_DOT[issue.severity]}`}
+                    className={[
+                      "w-0.5 self-stretch shrink-0 rounded-sm",
+                      SEV_BAR[issue.severity],
+                    ].join(" ")}
                   />
                   <span
-                    className={`text-[10px] font-semibold w-8 shrink-0 ${SEV_TEXT[issue.severity]}`}
+                    className={[
+                      "text-[10px] font-semibold w-8 shrink-0",
+                      SEV_TEXT[issue.severity],
+                    ].join(" ")}
                     style={{ fontFamily: "var(--font-mono)" }}
                   >
                     {SEV_LABEL[issue.severity]}
@@ -192,22 +244,22 @@ export default async function DashboardHomePage() {
                     {issue.message}
                   </span>
                   <span className="text-[--color-fg-subtle] group-hover:text-[--color-fg-muted] transition-colors text-[12px] shrink-0">
-                    →
+                    &rarr;
                   </span>
                 </Link>
               ))}
             </div>
           </section>
-        ) : null}
+        )}
 
-        {/* Pending by artist — the "manage what's missing" view */}
-        {topArtists.length > 0 ? (
+        {/* Pending by artist */}
+        {topArtists.length > 0 && (
           <section className="space-y-2">
             <SectionHeader
               title="Pending by artist"
               count={artistsWithGaps.length}
               countSuffix="artists"
-              href="/artists"
+              href={"/artists?gaps=1" as Route}
             />
             <div className="space-y-1">
               {topArtists.map((a) => (
@@ -215,12 +267,21 @@ export default async function DashboardHomePage() {
               ))}
             </div>
           </section>
-        ) : null}
+        )}
 
         {/* Empty state — only when everything is clear */}
-        {topIssues.length === 0 && artistsWithGaps.length === 0 && (
-          <div className="text-center py-16 text-[--color-fg-subtle] text-[13px]">
-            All clear — every artist is fully prepped.
+        {allClear && (
+          <div className="relative">
+            <div
+              className="absolute inset-0 pointer-events-none rounded-lg"
+              style={{
+                background:
+                  "radial-gradient(40% 60% at 50% 50%, var(--color-brand-glow), transparent 60%)",
+              }}
+            />
+            <div className="relative text-center py-16 text-[--color-fg-subtle] text-[13px]">
+              All clear &mdash; every artist is fully prepped.
+            </div>
           </div>
         )}
       </div>
@@ -229,6 +290,48 @@ export default async function DashboardHomePage() {
 }
 
 // ── Sub-components ──────────────────────────────────────────────────────────
+
+function StatCard({
+  label,
+  value,
+  sub,
+  tint,
+  valueColor,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tint: string;
+  valueColor: string;
+}) {
+  return (
+    <div
+      className={["rounded-md border p-3 flex flex-col gap-1", tint].join(" ")}
+    >
+      <div
+        className="text-[10px] uppercase tracking-[0.14em] text-[--color-fg-subtle]"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        {label}
+      </div>
+      <div
+        className={["text-display text-[22pt] leading-none", valueColor].join(
+          " ",
+        )}
+      >
+        {value}
+      </div>
+      {sub && (
+        <div
+          className="text-[10px] text-[--color-fg-subtle]"
+          style={{ fontFamily: "var(--font-mono)" }}
+        >
+          {sub}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ArtistRow({
   artist,
@@ -240,7 +343,6 @@ function ArtistRow({
     gaps: ReadinessGap[];
   };
 }) {
-  // Show up to 3 inline gap chips; collapse the rest into "+N".
   const visible = artist.gaps.slice(0, 3);
   const overflow = artist.gaps.length - visible.length;
 
@@ -265,7 +367,10 @@ function ArtistRow({
           <Link
             key={g}
             href={gapHref(artist.artistId, g)}
-            className="text-mono text-[10px] uppercase tracking-widest px-2 py-1 rounded border border-[--color-border-strong] text-[--color-fg-muted] hover:text-[--color-fg] hover:border-white/30 transition-colors"
+            className={[
+              "text-mono text-[10px] uppercase tracking-widest px-2 py-1 rounded",
+              GAP_PILL[g],
+            ].join(" ")}
             title={`Add ${GAP_LABEL[g]} for ${artist.artistName}`}
           >
             {GAP_LABEL[g]}
@@ -293,7 +398,7 @@ function SectionHeader({
   title: string;
   count?: number;
   countSuffix?: string;
-  href: string;
+  href: Route;
 }) {
   return (
     <div className="flex items-baseline gap-2">
@@ -305,15 +410,15 @@ function SectionHeader({
       </h2>
       {count !== undefined && (
         <span className="text-[11px] text-[--color-fg-subtle]">
-          · {count}
+          &middot; {count}
           {countSuffix ? ` ${countSuffix}` : ""}
         </span>
       )}
       <Link
-        href={href as Route}
+        href={href}
         className="ml-auto text-[11px] text-[--color-fg-subtle] hover:text-[--color-fg-muted] transition-colors"
       >
-        View all →
+        View all &rarr;
       </Link>
     </div>
   );

@@ -278,3 +278,35 @@ export async function getPaymentsSummary(
 
   return { countsByStatus, totalsByStatus };
 }
+
+export interface UnpaidTotal {
+  USD: number;
+  EUR: number;
+}
+
+/**
+ * Sum of amountCents for payments with status "pending", "due", or "overdue"
+ * for the given festival. Used by the home stat card.
+ */
+export async function getUnpaidTotal(festivalId: string): Promise<UnpaidTotal> {
+  const rows = await db
+    .select({
+      currency: payments.currency,
+      total: sql<number>`coalesce(sum(${payments.amountCents}), 0)::int`,
+    })
+    .from(payments)
+    .where(
+      and(
+        eq(payments.festivalId, festivalId),
+        sql`${payments.status} in ('pending', 'due', 'overdue')`,
+      ),
+    )
+    .groupBy(payments.currency);
+
+  const result: UnpaidTotal = { USD: 0, EUR: 0 };
+  for (const r of rows) {
+    if (r.currency === "USD") result.USD = Number(r.total);
+    if (r.currency === "EUR") result.EUR = Number(r.total);
+  }
+  return result;
+}

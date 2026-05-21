@@ -242,3 +242,13 @@ export const GAP_LABEL: Record<ReadinessGap, string> = {
   pickup: "pickup",
   payment: "payment",
 };
+
+/** CSS utility class for each gap's pill — maps module color to gap type. */
+export const GAP_PILL: Record<ReadinessGap, string> = {
+  set: "pill-amber",
+  contract: "pill-emerald",
+  inbound_flight: "pill-sky",
+  hotel: "pill-violet",
+  pickup: "pill-amber",
+  payment: "pill-emerald",
+};
