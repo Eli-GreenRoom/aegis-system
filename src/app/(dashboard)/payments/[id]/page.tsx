@@ -8,6 +8,7 @@ import { listArtists } from "@/lib/artists/repo";
 import { listVendors } from "@/lib/ground/repo";
 import { getPayment, listInvoices } from "@/lib/payments/repo";
 import PaymentForm from "../_components/PaymentForm";
+import AuditHistory from "@/components/ui/AuditHistory";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -48,6 +49,7 @@ export default async function PaymentDetailPage({ params }: PageProps) {
           vendors={vendors}
           invoices={invoices}
         />
+        <AuditHistory entityType="payment" entityId={payment.id} />
       </div>
     </>
   );

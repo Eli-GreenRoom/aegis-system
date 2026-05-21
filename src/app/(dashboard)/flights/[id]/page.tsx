@@ -7,6 +7,7 @@ import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
 import { getFlight } from "@/lib/flights/repo";
 import { getPerson } from "@/lib/people";
+import AuditHistory from "@/components/ui/AuditHistory";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -109,6 +110,7 @@ export default async function FlightDetailPage({ params }: PageProps) {
             </div>
           )}
         </dl>
+        <AuditHistory entityType="flight" entityId={flight.id} />
       </div>
     </>
   );

@@ -15,6 +15,7 @@ import ContractForm from "../_components/ContractForm";
 import SignContractDialog from "../_components/SignContractDialog";
 import type { ContractStatus } from "@/lib/contracts/schema";
 import { format } from "date-fns";
+import AuditHistory from "@/components/ui/AuditHistory";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -27,11 +28,11 @@ const STATUS_LABELS: Record<ContractStatus, string> = {
   void: "Void",
 };
 
-const STATUS_CLASSES: Record<ContractStatus, string> = {
-  draft: "border-[--color-border-strong] text-[--color-fg-muted]",
-  sent: "border-brand/40 text-brand",
-  signed: "border-mint/40 text-mint",
-  void: "border-coral/40 text-coral",
+const STATUS_PILL: Record<ContractStatus, string> = {
+  draft: "pill-amber",
+  sent: "pill-amber",
+  signed: "pill-emerald",
+  void: "pill-coral",
 };
 
 export default async function ContractDetailPage({ params }: PageProps) {
@@ -80,7 +81,7 @@ export default async function ContractDetailPage({ params }: PageProps) {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <span
-                className={`text-mono text-[9px] uppercase tracking-[0.14em] px-2 py-0.5 rounded-md border ${STATUS_CLASSES[contract.status as ContractStatus]}`}
+                className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded ${STATUS_PILL[contract.status as ContractStatus] ?? "pill-amber"}`}
               >
                 {STATUS_LABELS[contract.status as ContractStatus] ??
                   contract.status}
@@ -142,6 +143,7 @@ export default async function ContractDetailPage({ params }: PageProps) {
         </div>
 
         <ContractForm contract={contract} artists={artists} />
+        <AuditHistory entityType="contract" entityId={contract.id} />
       </div>
     </>
   );

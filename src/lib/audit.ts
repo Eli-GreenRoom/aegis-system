@@ -14,6 +14,7 @@
 
 import { db } from "@/db/client";
 import { auditEvents } from "@/db/schema";
+import { eq, and, desc } from "drizzle-orm";
 
 export type AuditEntityType =
   | "artist"
@@ -51,6 +52,34 @@ export interface AuditDiff {
  *   });
  *   const [[updated], _] = await client.batch([updateQ, auditQ]);
  */
+export interface AuditEvent {
+  id: string;
+  actorId: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  diff: unknown;
+  createdAt: Date;
+}
+
+export async function getAuditHistory(
+  entityType: AuditEntityType,
+  entityId: string,
+  limit = 50,
+): Promise<AuditEvent[]> {
+  return db
+    .select()
+    .from(auditEvents)
+    .where(
+      and(
+        eq(auditEvents.entityType, entityType),
+        eq(auditEvents.entityId, entityId),
+      ),
+    )
+    .orderBy(desc(auditEvents.createdAt))
+    .limit(limit);
+}
+
 export function recordTransition(
   client: Db,
   args: {

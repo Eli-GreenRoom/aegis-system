@@ -7,17 +7,10 @@
 
 ## Now
 
-- [ ] **Design v2 Phase 3** — Lineup + Cockpit + Festival-day Now
-      wear v2 with **data-driven stage colors** (spec in
-      `DESIGN_V2_PLAN.md` §Phase 3).
-- [ ] **Design v2 Phase 4** — Forms + tables + status pills wear v2
-      (broad surface; spec in `DESIGN_V2_PLAN.md` §Phase 4).
 - [ ] **Design v2 Phase 4.5** — Mobile responsiveness on planning
       routes: bottom-nav sidebar, table→card primitive, filter
       bottom-sheet, lineup accordion, full-screen side sheet on
       mobile (spec in `DESIGN_V2_PLAN.md` §Phase 4.5).
-- [ ] **Design v2 Phase 5** — QA pass + docs sync (visual + UX +
-      mobile checklist in `DESIGN_V2_PLAN.md` §Phase 5).
 
 ## Later
 
@@ -33,6 +26,46 @@
 ---
 
 ## Done
+
+- 2026-05-21 — **Design v2 Phase 5** — QA pass + audit history + docs sync
+  - `getAuditHistory(entityType, entityId)` added to `src/lib/audit.ts`; 3 new tests.
+  - `src/components/ui/AuditHistory.tsx` — shared async server component (collapsible
+    `<details>` panel, shows status transitions as `from → to` in mono, timestamps).
+  - Wired into 6 detail pages: `/artists/[id]`, `/flights/[id]`, `/ground/[id]`,
+    `/contracts/[id]`, `/payments/[id]`, `/hotels/bookings/[id]`.
+  - `/invite/[token]` page + `AcceptInviteForm`: radial brand-glow backdrop + loading
+    prop on CTA — matching auth/onboarding surface pattern.
+  - Contract detail page: `STATUS_CLASSES` → `STATUS_PILL` (pill-\* utilities).
+  - Phase 4.5 (mobile) moved to Later; all other Phase 4 + Phase 5 items shipped.
+  - 465 tests green (was 462).
+
+- 2026-05-21 — **Design v2 Phase 4** — Forms, tables, pills, auth/onboarding wear v2
+  - Button: `loading` prop with spinner; primary variant → `btn-gradient-brand`.
+  - Input: `error` prop with message; brand-glow focus ring.
+  - AIParseDialog: sky-accented Parse button with `loading` state.
+  - All 13 list tables: `STATUS_CLASS` maps replaced with `pill-*` badge utilities.
+  - Module-colored row hovers: sky (flights), amber (ground/payments/invoices),
+    violet (hotels), pink (guestlist), brand (artists/contracts/riders/crew).
+  - Festival surfaces: ArrivalsBoard + PickupsBoard pill badges.
+  - Issues page: `SEV_PILL` with `animate-coral-pulse` on high severity.
+  - Auth + onboarding pages: radial brand-glow backdrop, `loading` prop on CTAs.
+  - 462 tests green (was 462 — no new tests in Phase 4 itself).
+
+- 2026-05-21 — **Design v2 Phase 3** — Lineup + Cockpit + Festival-day Now wear v2
+  - LineupBoard: `stage-wash` columns with `--stage-color` CSS var, Newsreader
+    stage names in `stage-text`, `pill-*` status chips, empty-column blueprint
+    placeholder (dotted border + "+ Add slot" CTA).
+  - LineupPipeline: `COLUMN_PILL` replaces left-border `COLUMN_ACCENT`; column
+    header labels are now `pill-*` badges. Card stage chips use `stage-pill` +
+    inline `--stage-color`; live column has `animate-coral-pulse`.
+  - ArtistCockpit: `NEXT_ACTION_TINT` map drives tinted `NextCard` per gap
+    type (set=amber, contract/payment=emerald, flight=sky, hotel=violet,
+    pickup=amber); `AllClearCard` uses `tinted-emerald`; `Row` dots promoted
+    to full-height 2px bars.
+  - NowBoard: stage cards use `stage-wash` + radial glow blob + `transition-
+  colors duration-1000`; "Now" artist name promoted to Newsreader 28pt;
+    cancelled pickups get `tinted-coral` highlight.
+    462 tests green (unchanged).
 
 - 2026-05-21 — **Design v2 Phase 2** — Sidebar + Topbar + Home wear v2
   UX audit findings:

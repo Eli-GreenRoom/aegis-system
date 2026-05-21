@@ -15,6 +15,7 @@ import { listHotels, listRoomBlocks } from "@/lib/hotels/repo";
 import { listVendors } from "@/lib/ground/repo";
 import { listInvoices } from "@/lib/payments/repo";
 import ArtistCockpit from "./_components/ArtistCockpit";
+import AuditHistory from "@/components/ui/AuditHistory";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -85,6 +86,9 @@ export default async function ArtistDetailPage({ params }: PageProps) {
         progress={progress}
         reference={{ artists, people, hotels, blocks, vendors, invoices }}
       />
+      <div className="px-6 pb-6">
+        <AuditHistory entityType="artist" entityId={sheet.artist.id} />
+      </div>
     </>
   );
 }

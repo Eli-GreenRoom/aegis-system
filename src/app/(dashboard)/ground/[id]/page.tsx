@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { getPickup, getVendor } from "@/lib/ground/repo";
 import { getPerson } from "@/lib/people";
 import { formatCents } from "@/lib/utils";
+import AuditHistory from "@/components/ui/AuditHistory";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -119,6 +120,7 @@ export default async function PickupDetailPage({ params }: PageProps) {
             </div>
           )}
         </dl>
+        <AuditHistory entityType="pickup" entityId={pickup.id} />
       </div>
     </>
   );

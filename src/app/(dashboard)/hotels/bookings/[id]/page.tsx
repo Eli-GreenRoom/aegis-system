@@ -7,6 +7,7 @@ import { getActiveFestival } from "@/lib/festivals";
 import { getBooking, listHotels, listRoomBlocks } from "@/lib/hotels/repo";
 import { listPeople } from "@/lib/people";
 import BookingForm from "../_components/BookingForm";
+import AuditHistory from "@/components/ui/AuditHistory";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -47,6 +48,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           blocks={blocks}
           people={people}
         />
+        <AuditHistory entityType="hotel_booking" entityId={booking.id} />
       </div>
     </>
   );
