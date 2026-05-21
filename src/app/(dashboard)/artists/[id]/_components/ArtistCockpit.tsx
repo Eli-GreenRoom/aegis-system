@@ -40,6 +40,15 @@ interface Props {
 
 type Level = "ok" | "warn" | "missing";
 
+const NEXT_ACTION_TINT: Record<CockpitGap, string> = {
+  set: "tinted-amber",
+  contract: "tinted-emerald",
+  inbound_flight: "tinted-sky",
+  hotel: "tinted-violet",
+  pickup: "tinted-amber",
+  payment: "tinted-emerald",
+};
+
 export default function ArtistCockpit({ sheet, progress, reference }: Props) {
   const router = useRouter();
   const [openSheet, setOpenSheet] = useState<SheetKind | null>(null);
@@ -66,7 +75,11 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
       <div className="px-6 py-6 max-w-3xl space-y-6">
         {/* ─── NEXT card ─────────────────────────────────────────────── */}
         {progress.next ? (
-          <NextCard progress={progress} onOpen={(k) => setOpenSheet(k)} />
+          <NextCard
+            progress={progress}
+            tint={NEXT_ACTION_TINT[progress.next.gap] ?? "tinted-emerald"}
+            onOpen={(k) => setOpenSheet(k)}
+          />
         ) : (
           <AllClearCard />
         )}
@@ -535,15 +548,17 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
 
 function NextCard({
   progress,
+  tint,
   onOpen,
 }: {
   progress: CockpitProgress;
+  tint: string;
   onOpen: (k: SheetKind) => void;
 }) {
   const next = progress.next!;
   return (
     <div
-      className="rounded-[--radius-lg] p-5 border border-[--color-brand]/30 bg-[--color-brand]/[0.04]"
+      className={`rounded-[--radius-lg] p-5 ${tint}`}
       style={{ boxShadow: "var(--shadow-card)" }}
     >
       <div className="flex items-center gap-2 mb-2.5">
@@ -583,7 +598,10 @@ function NextCard({
 
 function AllClearCard() {
   return (
-    <div className="rounded-[--radius-lg] p-5 border border-[--color-border] bg-[--color-surface]">
+    <div
+      className="rounded-[--radius-lg] p-5 tinted-emerald"
+      style={{ boxShadow: "var(--shadow-card)" }}
+    >
       <div className="flex items-center gap-2">
         <span className="w-1.5 h-1.5 rounded-full bg-[--color-brand]" />
         <span className="text-[13px] text-[--color-fg]">Fully prepped</span>
@@ -595,10 +613,10 @@ function AllClearCard() {
   );
 }
 
-const DOT: Record<Level, string> = {
+const ROW_BAR: Record<Level, string> = {
   ok: "bg-[--color-brand]",
   warn: "bg-[--color-warn]",
-  missing: "bg-white/20",
+  missing: "bg-white/15",
 };
 
 const BADGE: Record<Level, string> = {
@@ -622,7 +640,9 @@ function Row({
 }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3.5">
-      <span className={`w-2 h-2 rounded-full shrink-0 ${DOT[level]}`} />
+      <span
+        className={`w-0.5 self-stretch shrink-0 rounded-sm ${ROW_BAR[level]}`}
+      />
       <span className="text-mono text-[10px] uppercase tracking-[0.15em] text-[--color-fg-muted] w-32 shrink-0">
         {label}
       </span>

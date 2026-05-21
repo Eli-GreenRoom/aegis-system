@@ -21,22 +21,13 @@ const STATUS_COLUMNS: { status: SetStatus; label: string }[] = [
   { status: "withdrawn", label: "Withdrawn" },
 ];
 
-const COLUMN_ACCENT: Record<SetStatus, string> = {
-  option: "border-l-brand/50",
-  confirmed: "border-l-[--color-brand]/60",
-  not_available: "border-l-[--color-danger]/50",
-  live: "border-l-[--color-brand]",
-  done: "border-l-[--color-fg-subtle]/50",
-  withdrawn: "border-l-[--color-danger]/50",
-};
-
-const CARD_ACCENT: Record<SetStatus, string> = {
-  option: "border-brand/30",
-  confirmed: "border-[--color-brand]/40",
-  not_available: "border-[--color-danger]/30",
-  live: "border-[--color-brand]/60 shadow-[0_0_0_1px_var(--color-brand)]/30",
-  done: "border-[--color-border]",
-  withdrawn: "border-[--color-danger]/30 opacity-60",
+const COLUMN_PILL: Record<SetStatus, string> = {
+  option: "pill-amber",
+  confirmed: "pill-emerald",
+  not_available: "pill-coral",
+  live: "pill-emerald animate-coral-pulse",
+  done: "pill-emerald",
+  withdrawn: "pill-coral",
 };
 
 export default function LineupPipeline({ cards }: Props) {
@@ -147,12 +138,14 @@ export default function LineupPipeline({ cards }: Props) {
               onDragOver={(e) => onColumnDragOver(e, status)}
               onDragLeave={() => hoverColumn === status && setHoverColumn(null)}
               onDrop={() => onColumnDrop(status)}
-              className={`rounded-md border border-[--color-border] bg-[--color-surface] flex flex-col min-h-[200px] border-l-2 ${COLUMN_ACCENT[status]} ${
+              className={`rounded-md border border-[--color-border] bg-[--color-surface] flex flex-col min-h-[200px] ${
                 isHover ? "ring-1 ring-[--color-brand]/40" : ""
               } transition-all`}
             >
-              <header className="px-3 py-2.5 border-b border-[--color-border] flex items-baseline justify-between">
-                <span className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-muted]">
+              <header className="px-3 py-2.5 border-b border-[--color-border] flex items-center justify-between">
+                <span
+                  className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded ${COLUMN_PILL[status]}`}
+                >
                   {label}
                 </span>
                 <span className="text-mono text-[10px] text-[--color-fg-subtle]">
@@ -205,9 +198,6 @@ function Card({
   onDragStart: () => void;
   onDragEnd: () => void;
 }) {
-  const status = card.set.status;
-  const accent = CARD_ACCENT[status];
-
   return (
     <Link
       href={`/artists/${card.artist.id}` as Route}
@@ -228,34 +218,36 @@ function Card({
         // suppress the click).
         if (dragging) e.preventDefault();
       }}
-      className={`block rounded-md border ${accent} bg-[--color-surface-raised] px-2.5 py-2 cursor-grab active:cursor-grabbing transition-opacity ${
+      className={`block rounded-md border border-[--color-border-subtle] bg-[--color-surface-raised] px-2.5 py-2 cursor-grab active:cursor-grabbing transition-opacity ${
         dragging ? "opacity-40" : "hover:brightness-110"
       }`}
     >
       <div className="flex items-center gap-1.5 mb-1">
-        <span
-          className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
-          style={{
-            background: card.stage?.color ?? "var(--color-fg-subtle)",
-          }}
-        />
         <span className="text-[12px] text-[--color-fg] truncate flex-1 min-w-0">
           {card.artist.name}
         </span>
       </div>
 
-      <div className="flex items-baseline justify-between gap-2 text-[10px] text-[--color-fg-subtle]">
-        <span className="truncate">
-          {card.stage?.name ?? "no stage"}
-          {card.slot ? (
-            <>
-              <span className="text-[--color-fg-subtle]"> · </span>
-              <span className="text-mono">
-                {dayShort(card.slot.date)} {card.slot.startTime}
-              </span>
-            </>
-          ) : null}
-        </span>
+      <div className="flex items-center justify-between gap-2 text-[10px] text-[--color-fg-subtle]">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {card.stage && (
+            <span
+              className="stage-pill text-[9px] shrink-0"
+              style={
+                {
+                  "--stage-color": card.stage.color ?? undefined,
+                } as React.CSSProperties
+              }
+            >
+              {card.stage.name}
+            </span>
+          )}
+          {card.slot && (
+            <span className="text-mono truncate">
+              {dayShort(card.slot.date)} {card.slot.startTime}
+            </span>
+          )}
+        </div>
         {card.set.feeAmountCents != null && card.set.feeAmountCents > 0 && (
           <span
             className="text-mono shrink-0"

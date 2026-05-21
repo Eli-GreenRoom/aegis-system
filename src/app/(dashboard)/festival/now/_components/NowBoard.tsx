@@ -65,21 +65,31 @@ export default function NowBoard({
             return (
               <div
                 key={stage.id}
-                className="border border-[--color-border] rounded-md p-4 bg-[--color-surface]/40"
+                className="relative overflow-hidden stage-wash border rounded-md p-4 transition-colors duration-1000"
+                style={
+                  {
+                    "--stage-color": stage.color ?? undefined,
+                  } as React.CSSProperties
+                }
               >
-                <div className="flex items-center gap-2 mb-3">
-                  <span
-                    className="inline-block w-2 h-2 rounded-full"
-                    style={{
-                      background: stage.color ?? "var(--color-fg-subtle)",
-                    }}
-                  />
-                  <span className="text-[13px] text-[--color-fg]">
-                    {stage.name}
-                  </span>
+                {/* Radial glow blob */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background:
+                      "radial-gradient(50% 80% at 50% 0%, var(--stage-color, var(--color-brand-glow)), transparent 70%)",
+                    opacity: 0.15,
+                  }}
+                />
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-display text-[13pt] stage-text leading-none">
+                      {stage.name}
+                    </span>
+                  </div>
+                  <NowNextRow label="Now" set={ns.now} tone="mint" />
+                  <NowNextRow label="Next" set={ns.next} tone="brand" />
                 </div>
-                <NowNextRow label="Now" set={ns.now} tone="mint" />
-                <NowNextRow label="Next" set={ns.next} tone="brand" />
               </div>
             );
           })}
@@ -108,7 +118,11 @@ export default function NowBoard({
             {pickupsSoon.slice(0, 5).map(({ pickup, person, vendor }) => (
               <li
                 key={pickup.id}
-                className="flex items-center gap-3 rounded-md border border-[--color-border] bg-[--color-surface]/40 p-3"
+                className={`flex items-center gap-3 rounded-md border p-3 ${
+                  pickup.status === "cancelled"
+                    ? "tinted-coral"
+                    : "border-[--color-border] bg-[--color-surface]/40"
+                }`}
               >
                 <div className="text-mono text-[12px] text-[--color-fg] tabular-nums w-[60px] shrink-0">
                   {format(new Date(pickup.pickupDt), "HH:mm")}
@@ -231,8 +245,9 @@ function NowNextRow({
   tone: "mint" | "brand";
 }) {
   const toneClass = tone === "mint" ? "text-mint" : "text-brand";
+  const isNow = tone === "mint";
   return (
-    <div className="flex items-center gap-3 py-1.5 border-t border-[--color-border-subtle] first:border-t-0">
+    <div className="flex items-baseline gap-3 py-1.5 border-t border-[--color-border-subtle] first:border-t-0">
       <span
         className={`text-mono text-[10px] uppercase tracking-[0.18em] w-[40px] shrink-0 ${toneClass}`}
       >
@@ -240,10 +255,16 @@ function NowNextRow({
       </span>
       {set ? (
         <>
-          <span className="text-[--color-fg] text-sm flex-1 truncate">
+          <span
+            className={`flex-1 truncate ${
+              isNow
+                ? "text-display text-[28pt] leading-none text-[--color-fg]"
+                : "text-[--color-fg] text-sm"
+            }`}
+          >
             {set.artistName}
           </span>
-          <span className="text-mono text-[11px] text-[--color-fg-muted] tabular-nums">
+          <span className="text-mono text-[11px] text-[--color-fg-muted] tabular-nums shrink-0">
             {set.slotStartTime} — {set.slotEndTime}
           </span>
         </>

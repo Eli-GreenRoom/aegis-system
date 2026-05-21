@@ -37,13 +37,13 @@ const STATUS_LABEL: Record<SetStatus, string> = {
   withdrawn: "Withdrawn",
 };
 
-const STATUS_CLASSES: Record<SetStatus, string> = {
-  confirmed: "border-[--color-brand]/40 text-mint",
-  option: "border-brand/40 text-brand",
-  not_available: "border-[--color-danger]/40 text-coral",
-  live: "border-[--color-brand]/60 text-mint",
-  done: "border-[--color-fg-subtle]/40 text-[--color-fg-muted]",
-  withdrawn: "border-[--color-danger]/40 text-coral",
+const STATUS_PILL: Record<SetStatus, string> = {
+  confirmed: "pill-emerald",
+  option: "pill-amber",
+  not_available: "pill-coral",
+  live: "pill-emerald animate-coral-pulse",
+  done: "pill-emerald",
+  withdrawn: "pill-coral",
 };
 
 export default function LineupBoard({ day, grid, artists }: Props) {
@@ -173,17 +173,16 @@ export default function LineupBoard({ day, grid, artists }: Props) {
         {grid.map(({ stage, slots }) => (
           <div
             key={stage.id}
-            className="border border-[--color-border] rounded-md flex flex-col"
+            className="stage-wash border rounded-md flex flex-col"
+            style={
+              {
+                "--stage-color": stage.color ?? undefined,
+              } as React.CSSProperties
+            }
           >
             <header className="flex items-center justify-between px-3 py-2 border-b border-[--color-border]">
               <div className="flex items-center gap-2">
-                <span
-                  className="inline-block w-2 h-2 rounded-full"
-                  style={{
-                    background: stage.color ?? "var(--color-fg-subtle)",
-                  }}
-                />
-                <span className="text-[13px] text-[--color-fg]">
+                <span className="text-display text-[13pt] stage-text leading-none">
                   {stage.name}
                 </span>
                 <span className="text-mono text-[10px] text-[--color-fg-subtle]">
@@ -207,9 +206,12 @@ export default function LineupBoard({ day, grid, artists }: Props) {
               }}
             >
               {slots.length === 0 && (
-                <p className="text-[--color-fg-subtle] text-[12px] italic px-1 py-2">
-                  No slots.
-                </p>
+                <button
+                  onClick={() => setAddSlotForStage(stage.id)}
+                  className="w-full border border-dashed border-[--color-border] rounded-md py-4 text-[11px] text-[--color-fg-subtle] hover:border-brand hover:text-brand transition-colors"
+                >
+                  + Add slot
+                </button>
               )}
               {displaySlots(stage.id, slots).map((slot) => (
                 <div
@@ -281,7 +283,7 @@ export default function LineupBoard({ day, grid, artists }: Props) {
                           </div>
                           <button
                             onClick={() => setEditSet(s)}
-                            className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md border ${STATUS_CLASSES[s.status as SetStatus]} hover:opacity-80`}
+                            className={`text-mono text-[9px] uppercase tracking-[0.14em] px-1.5 py-px rounded-md ${STATUS_PILL[s.status as SetStatus]} hover:opacity-80`}
                           >
                             {STATUS_LABEL[s.status as SetStatus]}
                           </button>
