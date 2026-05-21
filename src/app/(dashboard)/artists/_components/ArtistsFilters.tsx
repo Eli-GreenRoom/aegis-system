@@ -25,6 +25,7 @@ function ArtistsFiltersInner({ agencies, stages }: Props) {
   const archived = params.get("archived") ?? "active";
   const stageId = params.get("stageId") ?? "";
   const setStatus = params.get("setStatus") ?? "";
+  const gaps = params.get("gaps") ?? "";
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -131,6 +132,20 @@ function ArtistsFiltersInner({ agencies, stages }: Props) {
           <option value="archived">Archived</option>
           <option value="all">All</option>
         </select>
+      </div>
+
+      <div className="flex items-end pb-0.5">
+        <button
+          onClick={() => apply({ gaps: gaps === "1" ? "" : "1" })}
+          className={[
+            "text-mono text-[11px] uppercase tracking-[0.14em] px-3 py-2 rounded-[--radius-md] border transition-colors",
+            gaps === "1"
+              ? "border-[--color-brand]/40 bg-[rgba(52,211,153,0.08)] text-brand"
+              : "border-white/10 text-[--color-fg-muted] hover:text-[--color-fg] hover:bg-white/4",
+          ].join(" ")}
+        >
+          Gaps only
+        </button>
       </div>
 
       {pending && (

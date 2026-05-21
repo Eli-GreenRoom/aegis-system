@@ -25,6 +25,7 @@ interface PageProps {
     archived?: string;
     stageId?: string;
     setStatus?: string;
+    gaps?: string;
   }>;
 }
 
@@ -51,10 +52,12 @@ export default async function ArtistsPage({ searchParams }: PageProps) {
     ? setStatusEnum.safeParse(sp.setStatus)
     : null;
 
+  const gapsOnly = sp.gaps === "1";
+
   // The visible table respects the filters; the share dialog always offers
   // the full set of active artists so a search/agency filter doesn't
   // accidentally restrict what you share.
-  const [artists, agencies, stages, shareCandidates] = await Promise.all([
+  const [allArtists, agencies, stages, shareCandidates] = await Promise.all([
     listArtists({
       festivalId: festival.id,
       search: sp.search,
@@ -68,7 +71,23 @@ export default async function ArtistsPage({ searchParams }: PageProps) {
     listArtists({ festivalId: festival.id, archived: "active" }),
   ]);
 
-  const statusMap = await getArtistStatusMap(artists.map((a) => a.id));
+  const statusMap = await getArtistStatusMap(allArtists.map((a) => a.id));
+
+  const artists = gapsOnly
+    ? allArtists.filter((a) => {
+        const s = statusMap.get(a.id);
+        if (!s) return true;
+        return (
+          !s.setStatus ||
+          !s.contractStatus ||
+          s.outstandingPayments > 0 ||
+          !s.inboundFlight ||
+          !s.outboundFlight ||
+          !s.hotelStatus ||
+          s.ridersReady === null
+        );
+      })
+    : allArtists;
 
   const sharePicker = shareCandidates.map((a) => ({
     id: a.id,
