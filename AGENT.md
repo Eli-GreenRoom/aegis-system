@@ -69,33 +69,87 @@ Operator-grade density. No marketing flourish.
 
 Full rationale: `docs/BRAND.md`. Tokens: `src/styles/tokens.css`.
 
-### Palette
+### Palette · v2 "Festival Console"
 
-The ops dashboard runs on a **neutral dark** canvas aligned to the GreenRoom HQ
-palette (see `src/styles/tokens.css`). The Aegis Festival brand colors
-(gold `#E5B85A`, coral, indigo) are **tenant identity only** — used exclusively
-in customer-facing export templates, never in the app chrome.
+The ops dashboard runs on a **cool dark** canvas with six functional
+accents, each bound to a product meaning. Full rationale lives in
+`docs/BRAND.md` and the design book `design-study.html`. Phased rollout
+in `DESIGN_V2_PLAN.md`. The Aegis Festival brand colors (gold, coral,
+indigo from the Hammerspace brand book) are **tenant identity only** —
+used exclusively in customer-facing export templates, never in the app
+chrome.
 
-- **Background (page):** `#0A0A0B`
-- **Surface:** `#111113` **Surface raised:** `#1A1A1D`
-- **Brand accent (emerald):** `#34D399` — primary call-to-action, highlights,
-  success state. Aliases `text-brand`, `bg-brand`, `border-brand`.
-- **Warn:** `#FBBF24` — warning state.
-- **Danger:** `#F87171` — destructive / urgent / overdue.
-- **Text:** `#FAFAFA` body, `#A1A1AA` muted, `#52525B` subtle.
+- **Background (page):** `#0B0E16` (cooler than v1 `#0A0A0B` so accents pop)
+- **Surface:** `#181F30` **Surface raised:** `#1E2740`
+- **Brand accent (emerald):** `#34D399` — primary CTA, success, paid,
+  confirmed. Aliases `text-brand`, `bg-brand`, `border-brand`.
+- **Amber:** `#FFB546` — warn, pending, Main Stage, money.
+- **Coral:** `#FF6B7A` — danger, overdue, withdrawn, live-pulse.
+- **Sky:** `#7DB9FF` — info, flights & travel module, Alternative Stage.
+- **Violet:** `#B69CFF` — hotels & lodging module, Select Pool stage.
+- **Pink:** `#FF9DD0` — guestlist module, Collectives stage.
+- **Text:** `#F5F7FB` body, `#A8B0C7` muted, `#6B7390` subtle.
 
-**Status mapping:** `success → brand (emerald)`, `warning → warn`, `danger → danger`.
+**Status mapping:** `success → brand (emerald)`, `warn → amber`,
+`danger → coral`, `info → sky`. Hotels are violet; guestlist is pink.
 Don't use generic Tailwind `red-500` / `green-500`.
 
-### Stage colors (use sparingly — only on stage chips/badges/filters)
+**Surface tints:** `tinted-emerald`/`amber`/`coral`/`sky`/`violet`/`pink`
+— top-down colored gradient that fades into the surface. Use on stat
+cards, hero cards, anything wearing module color.
 
-Stage chip colors are Aegis Festival tenant data — keep them as-is in the
-stage records. They are correct for this deployment.
+**Stage washes:** `wash-stage-main/alt/pool/coll` — same idea, locked
+to stage identity. Used on lineup columns and Now-board stage cards.
 
-- Main Stage: `#E5B85A` (gold) — `var(--color-stage-main)`
-- Alternative Stage: `#7C9EFF` (blue) — `var(--color-stage-alt)`
-- Select Pool: `#A78BFA` (violet) — `var(--color-stage-pool)`
-- Collectives: `#F472B6` (pink) — `var(--color-stage-coll)`
+**Glows:** `glow-brand/amber/coral/sky/violet/pink` — soft 24px outer
+glow. Used on active items and urgent rows.
+
+**Live strip:** `live-strip` utility — 2px gradient bar
+(emerald → amber → coral) with a slow shimmer. Topbar bottom-edge
+when `festivalMode === true`.
+
+### Stage colors — data, not enum
+
+**Stages are user data, not a four-element enum.** Each row in the
+`stages` table carries its own `color` hex, editable from
+Settings → Festival → Stages. A festival can have one stage or twelve;
+each can be any hex the operator picks. There is no four-stage limit.
+
+The chrome reads `stage.color` at runtime and sets it as a
+`--stage-color` CSS variable inline:
+
+```tsx
+<div
+  className="stage-wash"
+  style={{ "--stage-color": stage.color } as React.CSSProperties}
+>
+```
+
+Utilities in `src/styles/globals.css` derive every variant from that
+one variable via `color-mix()`:
+
+| Utility      | What it does                                          |
+| ------------ | ----------------------------------------------------- |
+| `stage-wash` | Top-down wash fading into surface (lineup columns)    |
+| `stage-tint` | Ambient tint on a card or panel                       |
+| `stage-pill` | Colored chip / status pill in the stage color         |
+| `stage-glow` | Soft 24px outer glow (active set card)                |
+| `stage-text` | Inline text in the stage color (column header, label) |
+| `stage-bar`  | 2px solid bar (active-set indicator)                  |
+
+`--color-stage-main`, `--color-stage-alt`, `--color-stage-pool`,
+`--color-stage-coll` in `tokens.css` are **seed defaults** used by the
+festival onboarding flow (`DEFAULT_STAGE_SEEDS` in
+`src/lib/festivals.ts`). The chrome doesn't read them; it reads the
+row's `color` column. They exist so a new festival starts with
+sensible Aegis-aligned defaults the operator can override.
+
+If `stage.color` is null or unset, the utilities fall back to
+`var(--color-fg-muted)` — chrome stays readable, nothing breaks.
+
+Aegis Festival's poster palette (deep indigo, cream, gold `#E5B85A`,
+coral) lives in `src/lib/branding/aegis-festival.ts` for export
+templates only — see `docs/BRAND.md` §Tenant brand.
 
 ### Typography
 
@@ -120,9 +174,15 @@ stage records. They are correct for this deployment.
 ### Don'ts
 
 - No emoji. No exclamation points. No marketing copy.
-- No cyan, no neon green, no brand colors not in the palette above.
-- No serif on data, buttons, body, or anything inside a card.
-- No `rounded-xl` or larger.
+- No cyan, no neon green, no off-palette accents. The v2 functional
+  palette (emerald · amber · coral · sky · violet · pink) is the
+  full set — adding a seventh accent requires updating
+  `src/styles/tokens.css` AND `docs/BRAND.md` AND `AGENT.md`.
+- Color must encode meaning. No decorative accents. If you can't say
+  why a hex is on the screen, take it off.
+- Serif (Newsreader) only on page H1, the wordmark, and hero numbers.
+  Never on tables, forms, or anything inside a card.
+- `rounded-md` (8px) is the ceiling. No `rounded-xl` or larger.
 - Don't refer to artists as "users" — see §4.
 
 ### Operator vocabulary

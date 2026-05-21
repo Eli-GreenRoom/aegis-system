@@ -144,7 +144,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       month: "long",
       year: "numeric",
     });
-    const stampLine = signerName ? `${signerName} · ${dateStr}` : dateStr;
+    const stampLine = signerName ? `${signerName} - ${dateStr}` : dateStr;
     targetPage.drawText(stampLine, {
       x: sigX,
       y: Math.max(0, sigY - 14),

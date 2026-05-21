@@ -92,7 +92,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       while (s.length > 4 && font.widthOfTextAtSize(s, size) > maxWidth) {
         s = s.slice(0, -1);
       }
-      if (s !== str) s = s.slice(0, -1) + "…";
+      if (s !== str) s = s.slice(0, -1) + "...";
     }
     page.drawText(s, { x, y: yPos, size, font, color });
   }
@@ -126,10 +126,10 @@ export async function GET(req: NextRequest, { params }: Params) {
     y -= 14;
   }
 
-  // ── Background ──────────────────────────────────────────────────────────────
+  // -- Background --------------------------------------------------------------
   drawPageBg();
 
-  // ── Gold top bar ────────────────────────────────────────────────────────────
+  // -- Gold top bar ------------------------------------------------------------
   page.drawRectangle({
     x: 0,
     y: pageH - 6,
@@ -138,7 +138,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     color: C.gold,
   });
 
-  // ── Artist name ─────────────────────────────────────────────────────────────
+  // -- Artist name -------------------------------------------------------------
   text(artist.name, marginL, y, {
     size: 22,
     font: helveticaBold,
@@ -157,7 +157,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     artist.visaStatus ? `Visa: ${artist.visaStatus}` : null,
   ]
     .filter(Boolean)
-    .join("  ·  ");
+    .join("  -  ");
   if (meta) {
     text(meta, marginL, y, { size: 9, color: C.muted });
     y -= 14;
@@ -169,7 +169,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     artist.agentEmail ? `Agent: ${artist.agentEmail}` : null,
   ]
     .filter(Boolean)
-    .join("  ·  ");
+    .join("  -  ");
   if (contact) {
     text(contact, marginL, y, { size: 9, color: C.muted });
     y -= 14;
@@ -177,13 +177,13 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   y -= 4;
 
-  // ── Set ─────────────────────────────────────────────────────────────────────
+  // -- Set ---------------------------------------------------------------------
   sectionHeader("Set");
   if (set) {
     row("Stage", set.stage.name);
     row(
       "Time",
-      `${set.slot.date}  ${set.slot.startTime} – ${set.slot.endTime}`,
+      `${set.slot.date}  ${set.slot.startTime} - ${set.slot.endTime}`,
     );
     row("Status", set.set.status);
   } else {
@@ -191,15 +191,15 @@ export async function GET(req: NextRequest, { params }: Params) {
     y -= 14;
   }
 
-  // ── Travel ──────────────────────────────────────────────────────────────────
+  // -- Travel ------------------------------------------------------------------
   sectionHeader("Travel");
   if (inboundFlight) {
     const dt = inboundFlight.scheduledDt
       ? format(new Date(inboundFlight.scheduledDt), "EEE d MMM HH:mm")
-      : "—";
+      : "--";
     row(
       "Inbound",
-      `${inboundFlight.airline ?? ""} ${inboundFlight.flightNumber ?? ""}  ${inboundFlight.fromAirport ?? "?"}→${inboundFlight.toAirport ?? "?"}  ${dt}`,
+      `${inboundFlight.airline ?? ""} ${inboundFlight.flightNumber ?? ""}  ${inboundFlight.fromAirport ?? "?"}->${inboundFlight.toAirport ?? "?"}  ${dt}`,
     );
     row("Status", inboundFlight.status);
   } else {
@@ -209,18 +209,18 @@ export async function GET(req: NextRequest, { params }: Params) {
   if (outboundFlight) {
     const dt = outboundFlight.scheduledDt
       ? format(new Date(outboundFlight.scheduledDt), "EEE d MMM HH:mm")
-      : "—";
+      : "--";
     row(
       "Outbound",
-      `${outboundFlight.airline ?? ""} ${outboundFlight.flightNumber ?? ""}  ${outboundFlight.fromAirport ?? "?"}→${outboundFlight.toAirport ?? "?"}  ${dt}`,
+      `${outboundFlight.airline ?? ""} ${outboundFlight.flightNumber ?? ""}  ${outboundFlight.fromAirport ?? "?"}->${outboundFlight.toAirport ?? "?"}  ${dt}`,
     );
   }
 
-  // ── Hotel ───────────────────────────────────────────────────────────────────
+  // -- Hotel -------------------------------------------------------------------
   sectionHeader("Hotel");
   if (hotel) {
     row("Hotel", hotel.hotelName);
-    row("Dates", `${hotel.booking.checkin} → ${hotel.booking.checkout}`);
+    row("Dates", `${hotel.booking.checkin} -> ${hotel.booking.checkout}`);
     if (hotel.booking.roomType) row("Room", hotel.booking.roomType);
     row("Status", hotel.booking.status);
     if (hotel.booking.bookingNumber) row("Ref", hotel.booking.bookingNumber);
@@ -229,7 +229,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     y -= 14;
   }
 
-  // ── Pickups ─────────────────────────────────────────────────────────────────
+  // -- Pickups -----------------------------------------------------------------
   sectionHeader("Pickups");
   if (pickups.length === 0) {
     text("No pickups scheduled.", marginL, y, { size: 9, color: C.subtle });
@@ -238,18 +238,18 @@ export async function GET(req: NextRequest, { params }: Params) {
     for (const p of pickups) {
       const dt = format(new Date(p.pickupDt), "EEE HH:mm");
       const detail = [
-        p.routeFrom + " → " + p.routeTo,
+        p.routeFrom + " -> " + p.routeTo,
         p.driverName,
         p.driverPhone,
         p.status,
       ]
         .filter(Boolean)
-        .join("  ·  ");
+        .join("  -  ");
       row(dt, detail);
     }
   }
 
-  // ── Riders ──────────────────────────────────────────────────────────────────
+  // -- Riders ------------------------------------------------------------------
   sectionHeader("Riders");
   if (riders.length === 0) {
     text("No riders on file.", marginL, y, { size: 9, color: C.subtle });
@@ -264,7 +264,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     }
   }
 
-  // ── Contract ─────────────────────────────────────────────────────────────────
+  // -- Contract -----------------------------------------------------------------
   sectionHeader("Contract");
   if (contract) {
     row("Status", contract.status);
@@ -275,7 +275,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     y -= 14;
   }
 
-  // ── Payments ─────────────────────────────────────────────────────────────────
+  // -- Payments -----------------------------------------------------------------
   sectionHeader("Outstanding Payments");
   if (payments.length === 0) {
     text("All paid.", marginL, y, { size: 9, color: C.mint });
@@ -289,12 +289,12 @@ export async function GET(req: NextRequest, { params }: Params) {
         p.status,
       ]
         .filter(Boolean)
-        .join("  ·  ");
+        .join("  -  ");
       row(amt, detail, p.status === "overdue" ? C.coral : C.fg);
     }
   }
 
-  // ── Footer ───────────────────────────────────────────────────────────────────
+  // -- Footer -------------------------------------------------------------------
   ensureSpace(30);
   y -= 10;
   page.drawLine({
@@ -304,7 +304,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     color: C.subtle,
   });
   y -= 14;
-  const footerStr = `GreenRoom Stages · roadsheet · ${format(new Date(), "EEE d MMM yyyy HH:mm")}${day ? `  ·  ${day}` : ""}`;
+  const footerStr = `GreenRoom Stages - roadsheet - ${format(new Date(), "EEE d MMM yyyy HH:mm")}${day ? `  -  ${day}` : ""}`;
   text(footerStr, marginL, y, { size: 8, color: C.subtle });
 
   const bytes = await doc.save();
