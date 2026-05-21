@@ -11,18 +11,23 @@ _(nothing — pick from Later)_
 
 ## Later
 
-- [ ] **Consume `?gaps=1` filter on /artists** — "Pending by artist" View all now passes the param; /artists needs to read it and pre-filter to artists with gaps (Phase 2 audit follow-up).
-- [ ] **Sidebar mobile collapse → bottom nav** — Phase 4.5 scope. At 390px the 220px rail consumes 56% viewport; bottom-nav spec in `DESIGN_V2_PLAN.md` §Phase 4.5.
 - [ ] **Cmd+K AI agent** — streaming agentic loop, read/write tools, palette overlay
 - [ ] **Resend email** — roadsheet email T-1 day per artist, invite emails
 - [ ] **Audit log UI** — surface transition history in Settings
 - [ ] **Repo + Vercel rename** — manual, Eli does this: `aegis-system` → `greenroom-stages`
-- [ ] **PWA icons** — add actual `icon-192.png` + `icon-512.png` to `public/` (manifest wired, icons placeholder)
 - [ ] **Contract signing** — fresh design TBD (previous approach rejected; see memory)
 
 ---
 
 ## Done
+
+- 2026-05-21 — **gaps filter + PWA icons**
+  - `/artists` page reads `?gaps=1`; post-filters result via statusMap (missing
+    set/contract/flight/hotel/rider or outstanding payments).
+  - `ArtistsFilters`: "Gaps only" toggle button; brand-tint active state.
+  - `public/icon-192.png` + `icon-512.png` generated (dark surface + emerald
+    cross mark); manifest was already wired, icons were placeholder.
+  - 465 tests green.
 
 - 2026-05-21 — **Design v2 Phase 4.5** — Mobile responsiveness
   - Sidebar: mobile bottom-nav bar (4 primary items + "More" slide-up drawer);
