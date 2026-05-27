@@ -63,3 +63,5 @@ drizzle/meta/_journal.json.bak
 
 .vercel
 .env*.local
+
+vercel-import.env
