@@ -9,7 +9,8 @@ export type SheetKind =
   | "pickup"
   | "rider_tech"
   | "rider_hosp"
-  | "payment";
+  | "payment"
+  | "invoice";
 
 /** A single gap in an artist's prep, ordered by operational priority. */
 export type CockpitGap =

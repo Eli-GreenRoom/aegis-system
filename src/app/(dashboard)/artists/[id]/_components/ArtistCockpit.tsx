@@ -11,13 +11,12 @@ import BookingForm from "@/app/(dashboard)/hotels/bookings/_components/BookingFo
 import PickupForm from "@/app/(dashboard)/ground/_components/PickupForm";
 import ContractForm from "@/app/(dashboard)/contracts/_components/ContractForm";
 import RiderForm from "@/app/(dashboard)/riders/_components/RiderForm";
-import PaymentForm from "@/app/(dashboard)/payments/_components/PaymentForm";
+import InvoiceSheet from "./InvoiceSheet";
 import type { ArtistRoadsheet } from "@/lib/aggregators";
 import type { Person } from "@/lib/people";
 import type { Hotel, RoomBlock } from "@/lib/hotels/repo";
 import type { Vendor } from "@/lib/ground/repo";
 import type { Artist } from "@/lib/artists/repo";
-import type { Invoice } from "@/lib/payments/repo";
 import type {
   CockpitProgress,
   CockpitGap,
@@ -34,7 +33,6 @@ interface Props {
     hotels: Hotel[];
     blocks: RoomBlock[];
     vendors: Vendor[];
-    invoices: Invoice[];
   };
 }
 
@@ -377,41 +375,12 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
 
             {/* Payments */}
             {artist.needsPayment ? (
-              <Row
-                label="Payments"
-                level={
-                  sheet.payments.length === 0
-                    ? "missing"
-                    : outstandingPayments.length === 0
-                      ? "ok"
-                      : "warn"
-                }
-                badge={
-                  sheet.payments.length === 0
-                    ? "none"
-                    : outstandingPayments.length === 0
-                      ? "all clear"
-                      : `${outstandingPayments.length} outstanding`
-                }
-                detail={
-                  outstandingPayments.length > 0
-                    ? outstandingPayments
-                        .slice(0, 2)
-                        .map(
-                          (p) =>
-                            `${formatCents(p.amountCents)} ${p.currency}${p.dueDate ? ` · due ${p.dueDate}` : ""}`,
-                        )
-                        .join("  ·  ")
-                    : null
-                }
-                cta={{
-                  label: sheet.payments.length === 0 ? "Add" : "View",
-                  onClick:
-                    sheet.payments.length === 0
-                      ? () => setOpenSheet("payment")
-                      : undefined,
-                  href: sheet.payments.length === 0 ? undefined : "/payments",
-                }}
+              <PaymentsSection
+                artistId={artist.id}
+                payments={sheet.payments}
+                outstandingCount={outstandingPayments.length}
+                onAddInvoice={() => setOpenSheet("invoice")}
+                onRefresh={onSuccess}
               />
             ) : (
               <Row
@@ -631,16 +600,14 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
       </SideSheet>
 
       <SideSheet
-        open={openSheet === "payment"}
+        open={openSheet === "invoice"}
         onClose={close}
-        title="Add payment"
+        title="Add invoice & payment"
         subtitle={artist.name}
       >
-        <PaymentForm
-          artists={reference.artists}
-          vendors={reference.vendors}
-          invoices={reference.invoices}
-          prefill={{ artistId: artist.id }}
+        <InvoiceSheet
+          artistId={artist.id}
+          artistName={artist.name}
           onSuccess={onSuccess}
         />
       </SideSheet>
@@ -815,6 +782,272 @@ function EmptyHint({
       >
         {cta}
       </Link>
+    </div>
+  );
+}
+
+// ── PaymentsSection ──────────────────────────────────────────────────────────
+
+const PAYMENT_STATUS_COLOR: Record<string, string> = {
+  paid: "text-[--color-brand]",
+  pending: "text-[--color-warn]",
+  due: "text-[--color-warn]",
+  overdue: "text-coral",
+  void: "text-[--color-fg-subtle]",
+};
+
+function PaymentsSection({
+  artistId,
+  payments,
+  outstandingCount,
+  onAddInvoice,
+  onRefresh,
+}: {
+  artistId: string;
+  payments: ArtistRoadsheet["payments"];
+  outstandingCount: number;
+  onAddInvoice: () => void;
+  onRefresh: () => void;
+}) {
+  const level: Level =
+    payments.length === 0 ? "missing" : outstandingCount === 0 ? "ok" : "warn";
+
+  const [markingPaid, setMarkingPaid] = useState<string | null>(null);
+  const [popUploadId, setPopUploadId] = useState<string | null>(null);
+  const [popBusy, setPopBusy] = useState(false);
+
+  async function markPaid(id: string) {
+    setMarkingPaid(id);
+    try {
+      await fetch(`/api/payments/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: "paid" }),
+      });
+      onRefresh();
+    } finally {
+      setMarkingPaid(null);
+    }
+  }
+
+  async function attachPop(paymentId: string, url: string) {
+    setPopBusy(true);
+    try {
+      await fetch(`/api/payments/${paymentId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ popUrl: url }),
+      });
+      setPopUploadId(null);
+      onRefresh();
+    } finally {
+      setPopBusy(false);
+    }
+  }
+
+  return (
+    <div className="px-4 py-3.5">
+      {/* Header row */}
+      <div className="flex items-center gap-3 mb-3">
+        <span
+          className={`w-0.5 self-stretch shrink-0 rounded-sm ${ROW_BAR[level]}`}
+          style={{ minHeight: "1.25rem" }}
+        />
+        <span className="text-mono text-[10px] uppercase tracking-[0.15em] text-[--color-fg-muted] w-36 shrink-0">
+          Payments
+        </span>
+        <span className={`text-mono text-[10px] shrink-0 ${BADGE_CLS[level]}`}>
+          {payments.length === 0
+            ? "none"
+            : outstandingCount === 0
+              ? "all clear"
+              : `${outstandingCount} outstanding`}
+        </span>
+        <div className="flex-1" />
+        <button
+          type="button"
+          onClick={onAddInvoice}
+          className="text-mono text-[10px] uppercase tracking-[0.14em] px-2 py-1 rounded border border-[--color-border-strong] text-[--color-fg-muted] hover:text-[--color-fg] hover:border-white/30 transition-colors shrink-0"
+        >
+          Add invoice
+        </button>
+      </div>
+
+      {/* Payment rows */}
+      {payments.length > 0 && (
+        <div className="ml-4 divide-y divide-white/4 rounded-md border border-white/6 overflow-hidden">
+          {payments.map((p) => {
+            const isPaid = p.status === "paid" || p.status === "void";
+            const isMarkingThis = markingPaid === p.id;
+            const isPopOpen = popUploadId === p.id;
+
+            return (
+              <div key={p.id} className="px-3 py-2.5 space-y-1.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  {/* Status */}
+                  <span
+                    className={`text-mono text-[10px] shrink-0 w-16 ${PAYMENT_STATUS_COLOR[p.status] ?? "text-[--color-fg-muted]"}`}
+                  >
+                    {p.status}
+                  </span>
+                  {/* Description */}
+                  <span className="text-[12px] text-[--color-fg] truncate flex-1 min-w-0">
+                    {p.description}
+                  </span>
+                  {/* Amount */}
+                  <span className="text-mono text-[11px] text-[--color-fg-muted] shrink-0 tabular-nums">
+                    {formatCents(p.amountCents)} {p.currency}
+                  </span>
+                  {/* Due */}
+                  {p.dueDate && !isPaid && (
+                    <span className="text-mono text-[10px] text-[--color-fg-subtle] shrink-0 hidden sm:block">
+                      due {p.dueDate}
+                    </span>
+                  )}
+                  {/* POP icon */}
+                  {isPaid && (
+                    <button
+                      type="button"
+                      title={
+                        p.popUrl
+                          ? "View proof of payment"
+                          : "Attach proof of payment"
+                      }
+                      onClick={() =>
+                        p.popUrl
+                          ? window.open(p.popUrl, "_blank")
+                          : setPopUploadId(isPopOpen ? null : p.id)
+                      }
+                      className={`text-mono text-[10px] shrink-0 px-1.5 py-0.5 rounded border transition-colors ${
+                        p.popUrl
+                          ? "border-[--color-brand]/30 text-[--color-brand]"
+                          : "border-[--color-border-strong] text-[--color-fg-subtle] hover:text-[--color-fg]"
+                      }`}
+                    >
+                      {p.popUrl ? "POP" : "+ POP"}
+                    </button>
+                  )}
+                  {/* Mark paid */}
+                  {!isPaid && (
+                    <button
+                      type="button"
+                      disabled={!!isMarkingThis}
+                      onClick={() => markPaid(p.id)}
+                      className="text-mono text-[10px] uppercase tracking-[0.14em] px-2 py-0.5 rounded border border-[--color-brand]/30 text-[--color-brand] hover:bg-[--color-brand]/10 transition-colors shrink-0 disabled:opacity-50"
+                    >
+                      {isMarkingThis ? "..." : "Mark paid"}
+                    </button>
+                  )}
+                  {/* Edit link */}
+                  <Link
+                    href={`/payments/${p.id}` as Route}
+                    className="text-mono text-[10px] text-[--color-fg-subtle] hover:text-brand shrink-0"
+                    title="Edit payment"
+                  >
+                    edit
+                  </Link>
+                </div>
+
+                {/* POP upload inline */}
+                {isPopOpen && (
+                  <div className="pl-[4.5rem]">
+                    <InlinePop
+                      paymentId={p.id}
+                      busy={popBusy}
+                      onAttach={attachPop}
+                      onCancel={() => setPopUploadId(null)}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {payments.length === 0 && (
+        <div className="ml-4 text-[12px] text-[--color-fg-subtle]">
+          No payments yet.{" "}
+          <button
+            type="button"
+            className="text-brand hover:underline"
+            onClick={onAddInvoice}
+          >
+            Add invoice
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InlinePop({
+  paymentId,
+  busy,
+  onAttach,
+  onCancel,
+}: {
+  paymentId: string;
+  busy: boolean;
+  onAttach: (paymentId: string, url: string) => void;
+  onCancel: () => void;
+}) {
+  const inputId = `pop-file-${paymentId}`;
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError("");
+    setUploading(true);
+    const form = new FormData();
+    form.append("file", file);
+    form.append("entityType", "payment");
+    form.append("entityId", paymentId);
+    form.append("tags", "pop");
+    try {
+      const res = await fetch("/api/documents", { method: "POST", body: form });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? "Upload failed");
+        return;
+      }
+      const body = await res.json();
+      onAttach(paymentId, body.document.proxyUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <label
+        htmlFor={inputId}
+        className={`text-mono text-[10px] uppercase tracking-[0.14em] px-2 py-1 rounded border border-[--color-border-strong] text-[--color-fg-muted] hover:text-[--color-fg] cursor-pointer transition-colors ${
+          uploading || busy ? "pointer-events-none opacity-50" : ""
+        }`}
+      >
+        {uploading ? "Uploading..." : "Choose file"}
+      </label>
+      <input
+        id={inputId}
+        type="file"
+        accept="application/pdf,image/*"
+        className="hidden"
+        onChange={onPick}
+        disabled={uploading || busy}
+      />
+      <button
+        type="button"
+        className="text-mono text-[10px] text-[--color-fg-subtle] hover:text-[--color-fg]"
+        onClick={onCancel}
+      >
+        cancel
+      </button>
+      {error && <span className="text-xs text-coral">{error}</span>}
     </div>
   );
 }

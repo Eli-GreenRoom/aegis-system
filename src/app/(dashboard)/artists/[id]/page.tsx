@@ -13,7 +13,6 @@ import { listArtists } from "@/lib/artists/repo";
 import { listPeople } from "@/lib/people";
 import { listHotels, listRoomBlocks } from "@/lib/hotels/repo";
 import { listVendors } from "@/lib/ground/repo";
-import { listInvoices } from "@/lib/payments/repo";
 import ArtistCockpit from "./_components/ArtistCockpit";
 import AuditHistory from "@/components/ui/AuditHistory";
 
@@ -34,15 +33,13 @@ export default async function ArtistDetailPage({ params }: PageProps) {
 
   // Reference data for the side-sheet forms — loaded in parallel so the
   // cockpit can open any panel instantly.
-  const [artists, people, hotels, blocks, vendors, invoices] =
-    await Promise.all([
-      listArtists({ festivalId: festival.id, archived: "active" }),
-      listPeople(festival.id),
-      listHotels(),
-      listRoomBlocks({ festivalId: festival.id }),
-      listVendors(),
-      listInvoices({ festivalId: festival.id }),
-    ]);
+  const [artists, people, hotels, blocks, vendors] = await Promise.all([
+    listArtists({ festivalId: festival.id, archived: "active" }),
+    listPeople(festival.id),
+    listHotels(),
+    listRoomBlocks({ festivalId: festival.id }),
+    listVendors(),
+  ]);
 
   const progress = getNextAction(sheet);
 
@@ -84,7 +81,7 @@ export default async function ArtistDetailPage({ params }: PageProps) {
       <ArtistCockpit
         sheet={sheet}
         progress={progress}
-        reference={{ artists, people, hotels, blocks, vendors, invoices }}
+        reference={{ artists, people, hotels, blocks, vendors }}
       />
       <div className="px-6 pb-6">
         <AuditHistory entityType="artist" entityId={sheet.artist.id} />
