@@ -100,6 +100,7 @@ export type ArtistPatch = z.infer<typeof artistPatchSchema>;
 
 /** DB-side payload - empty strings normalised to null. */
 export interface ArtistDbValues {
+  workspaceId: string;
   name: string;
   slug: string;
   legalName: string | null;
@@ -175,8 +176,12 @@ export function toDbPatchValues(input: ArtistPatch): Partial<ArtistDbValues> {
 }
 
 /** Convert form input to DB row shape - empty strings become null. */
-export function toDbValues(input: ArtistInput): ArtistDbValues {
+export function toDbValues(
+  input: ArtistInput,
+  workspaceId: string,
+): ArtistDbValues {
   const out: ArtistDbValues = {
+    workspaceId,
     name: input.name,
     slug: input.slug,
     local: input.local ?? false,

@@ -83,6 +83,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const created = await createArtist(festival.id, toDbValues(parsed.data));
+  const created = await createArtist(
+    festival.id,
+    toDbValues(parsed.data, session.workspaceId),
+  );
   return Response.json({ artist: created }, { status: 201 });
 }
