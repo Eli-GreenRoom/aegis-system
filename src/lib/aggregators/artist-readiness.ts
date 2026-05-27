@@ -80,7 +80,7 @@ export async function getFestivalReadiness(
       )
       .orderBy(asc(artists.name)),
 
-    // Confirmed sets only — joined to slots to scope by festival.
+    // Confirmed sets only - joined to slots to scope by festival.
     db
       .select({ artistId: sets.artistId })
       .from(sets)
