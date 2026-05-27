@@ -9,6 +9,12 @@ function emptySheet(): ArtistRoadsheet {
     artist: {
       id: ARTIST_ID,
       name: "Test Artist",
+      needsContract: true,
+      needsFlight: true,
+      needsHotel: true,
+      needsGround: true,
+      needsPayment: true,
+      needsRider: true,
     } as ArtistRoadsheet["artist"],
     set: null,
     inboundFlight: null,
@@ -99,13 +105,11 @@ describe("getNextAction", () => {
     expect(out.next?.reason).toContain("2026-08-15");
   });
 
-  it("treats 'not_needed' flight as opted out, skips to next gap", () => {
+  it("skips flight gap when needsFlight is false", () => {
     const sheet = emptySheet();
+    sheet.artist = { ...sheet.artist, needsFlight: false };
     sheet.set = confirmedSet();
     sheet.contract = { status: "signed" } as ArtistRoadsheet["contract"];
-    sheet.inboundFlight = {
-      status: "not_needed",
-    } as ArtistRoadsheet["inboundFlight"];
     const out = getNextAction(sheet);
     expect(out.next?.gap).toBe("hotel");
     expect(out.gaps).not.toContain("inbound_flight");

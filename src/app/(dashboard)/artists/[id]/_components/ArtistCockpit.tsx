@@ -38,7 +38,7 @@ interface Props {
   };
 }
 
-type Level = "ok" | "warn" | "missing";
+type Level = "ok" | "warn" | "missing" | "na";
 
 const NEXT_ACTION_TINT: Record<CockpitGap, string> = {
   set: "tinted-amber",
@@ -70,10 +70,22 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
     (p) => p.status !== "paid" && p.status !== "void",
   );
 
+  const pct =
+    progress.totalSteps === 0
+      ? 100
+      : Math.round((progress.doneSteps / progress.totalSteps) * 100);
+
+  const barColor =
+    pct === 100
+      ? "bg-[--color-brand]"
+      : pct >= 60
+        ? "bg-[--color-warn]"
+        : "bg-coral";
+
   return (
     <>
       <div className="px-6 py-6 max-w-3xl space-y-6">
-        {/* ─── NEXT card ─────────────────────────────────────────────── */}
+        {/* ─── Next action card ───────────────────────────────────────── */}
         {progress.next ? (
           <NextCard
             progress={progress}
@@ -84,21 +96,29 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
           <AllClearCard />
         )}
 
-        {/* ─── Progress rail ──────────────────────────────────────────── */}
+        {/* ─── Progress ───────────────────────────────────────────────── */}
         <section
           className="rounded-[--radius-lg] overflow-hidden"
           style={{ boxShadow: "var(--shadow-card)" }}
         >
-          <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between">
-            <h2 className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-subtle]">
+          <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between gap-4">
+            <h2 className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-subtle] shrink-0">
               Progress
             </h2>
-            <span className="text-mono text-[10px] text-[--color-fg-subtle]">
-              {progress.doneSteps} / {progress.totalSteps}
+            {/* bar */}
+            <div className="flex-1 h-1.5 rounded-full bg-white/8 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="text-mono text-[10px] text-[--color-fg-subtle] shrink-0 tabular-nums">
+              {progress.doneSteps}/{progress.totalSteps}
             </span>
           </div>
 
-          <div className="divide-y divide-white/[0.04]">
+          <div className="divide-y divide-white/4">
+            {/* Set — always shown */}
             <Row
               label="Set"
               level={
@@ -117,203 +137,291 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
               }
               detail={
                 sheet.set
-                  ? `${sheet.set.stage.name} · ${sheet.set.slot.date} · ${sheet.set.slot.startTime}–${sheet.set.slot.endTime}`
+                  ? `${sheet.set.stage.name} · ${sheet.set.slot.date} · ${sheet.set.slot.startTime}-${sheet.set.slot.endTime}`
                   : null
               }
               cta={{ label: sheet.set ? "Open" : "Add", href: "/lineup" }}
             />
 
-            <Row
-              label="Contract"
-              level={
-                sheet.contract
-                  ? sheet.contract.status === "signed"
-                    ? "ok"
-                    : "warn"
-                  : "missing"
-              }
-              badge={sheet.contract ? sheet.contract.status : "none"}
-              detail={
-                sheet.contract?.signedAt
-                  ? `Signed ${format(new Date(sheet.contract.signedAt), "d MMM yyyy")}`
-                  : sheet.contract
-                    ? "Unsigned"
+            {/* Contract */}
+            {artist.needsContract ? (
+              <Row
+                label="Contract"
+                level={
+                  sheet.contract
+                    ? sheet.contract.status === "signed"
+                      ? "ok"
+                      : "warn"
+                    : "missing"
+                }
+                badge={sheet.contract ? sheet.contract.status : "none"}
+                detail={
+                  sheet.contract?.signedAt
+                    ? `Signed ${format(new Date(sheet.contract.signedAt), "d MMM yyyy")}`
+                    : sheet.contract
+                      ? "Unsigned"
+                      : null
+                }
+                cta={
+                  sheet.contract
+                    ? { label: "Open", href: `/contracts/${sheet.contract.id}` }
+                    : { label: "Add", onClick: () => setOpenSheet("contract") }
+                }
+              />
+            ) : (
+              <Row
+                label="Contract"
+                level="na"
+                badge="N/A"
+                detail={null}
+                cta={{ label: "Edit", href: `/artists/${artist.id}/edit` }}
+              />
+            )}
+
+            {/* Inbound flight */}
+            {artist.needsFlight ? (
+              <Row
+                label="Inbound flight"
+                level={flightLevel(sheet.inboundFlight?.status)}
+                badge={sheet.inboundFlight?.status ?? "not booked"}
+                detail={
+                  sheet.inboundFlight
+                    ? `${[sheet.inboundFlight.airline, sheet.inboundFlight.flightNumber].filter(Boolean).join(" ")} · ${sheet.inboundFlight.fromAirport ?? "?"} -> ${sheet.inboundFlight.toAirport ?? "?"}${sheet.inboundFlight.scheduledDt ? ` · ${format(new Date(sheet.inboundFlight.scheduledDt), "EEE d MMM HH:mm")}` : ""}`
                     : null
-              }
-              cta={
-                sheet.contract
-                  ? { label: "Open", href: `/contracts/${sheet.contract.id}` }
-                  : { label: "Add", onClick: () => setOpenSheet("contract") }
-              }
-            />
+                }
+                cta={
+                  sheet.inboundFlight
+                    ? {
+                        label: "Open",
+                        href: `/flights/${sheet.inboundFlight.id}`,
+                      }
+                    : {
+                        label: "Add",
+                        onClick: () => setOpenSheet("flight_inbound"),
+                      }
+                }
+              />
+            ) : (
+              <Row
+                label="Inbound flight"
+                level="na"
+                badge="N/A"
+                detail={null}
+                cta={{ label: "Edit", href: `/artists/${artist.id}/edit` }}
+              />
+            )}
 
-            <Row
-              label="Inbound flight"
-              level={flightLevel(sheet.inboundFlight?.status)}
-              badge={sheet.inboundFlight?.status ?? "not booked"}
-              detail={
-                sheet.inboundFlight
-                  ? `${[sheet.inboundFlight.airline, sheet.inboundFlight.flightNumber].filter(Boolean).join(" ")} · ${sheet.inboundFlight.fromAirport ?? "?"} → ${sheet.inboundFlight.toAirport ?? "?"}${sheet.inboundFlight.scheduledDt ? ` · ${format(new Date(sheet.inboundFlight.scheduledDt), "EEE d MMM HH:mm")}` : ""}`
-                  : null
-              }
-              cta={
-                sheet.inboundFlight
-                  ? {
-                      label: "Open",
-                      href: `/flights/${sheet.inboundFlight.id}`,
-                    }
-                  : {
-                      label: "Add",
-                      onClick: () => setOpenSheet("flight_inbound"),
-                    }
-              }
-            />
+            {/* Outbound flight */}
+            {artist.needsFlight ? (
+              <Row
+                label="Outbound flight"
+                level={flightLevel(sheet.outboundFlight?.status)}
+                badge={sheet.outboundFlight?.status ?? "not booked"}
+                detail={
+                  sheet.outboundFlight
+                    ? `${[sheet.outboundFlight.airline, sheet.outboundFlight.flightNumber].filter(Boolean).join(" ")} · ${sheet.outboundFlight.fromAirport ?? "?"} -> ${sheet.outboundFlight.toAirport ?? "?"}${sheet.outboundFlight.scheduledDt ? ` · ${format(new Date(sheet.outboundFlight.scheduledDt), "EEE d MMM HH:mm")}` : ""}`
+                    : null
+                }
+                cta={
+                  sheet.outboundFlight
+                    ? {
+                        label: "Open",
+                        href: `/flights/${sheet.outboundFlight.id}`,
+                      }
+                    : {
+                        label: "Add",
+                        onClick: () => setOpenSheet("flight_outbound"),
+                      }
+                }
+              />
+            ) : (
+              <Row
+                label="Outbound flight"
+                level="na"
+                badge="N/A"
+                detail={null}
+                cta={{ label: "Edit", href: `/artists/${artist.id}/edit` }}
+              />
+            )}
 
-            <Row
-              label="Outbound flight"
-              level={flightLevel(sheet.outboundFlight?.status)}
-              badge={sheet.outboundFlight?.status ?? "not booked"}
-              detail={
-                sheet.outboundFlight
-                  ? `${[sheet.outboundFlight.airline, sheet.outboundFlight.flightNumber].filter(Boolean).join(" ")} · ${sheet.outboundFlight.fromAirport ?? "?"} → ${sheet.outboundFlight.toAirport ?? "?"}${sheet.outboundFlight.scheduledDt ? ` · ${format(new Date(sheet.outboundFlight.scheduledDt), "EEE d MMM HH:mm")}` : ""}`
-                  : null
-              }
-              cta={
-                sheet.outboundFlight
-                  ? {
-                      label: "Open",
-                      href: `/flights/${sheet.outboundFlight.id}`,
-                    }
-                  : {
-                      label: "Add",
-                      onClick: () => setOpenSheet("flight_outbound"),
-                    }
-              }
-            />
+            {/* Hotel */}
+            {artist.needsHotel ? (
+              <Row
+                label="Hotel"
+                level={hotelLevel(sheet.hotel?.booking.status)}
+                badge={sheet.hotel?.booking.status ?? "no booking"}
+                detail={
+                  sheet.hotel
+                    ? `${sheet.hotel.hotelName} · ${sheet.hotel.booking.checkin} -> ${sheet.hotel.booking.checkout}${sheet.hotel.booking.roomType ? ` · ${sheet.hotel.booking.roomType}` : ""}`
+                    : null
+                }
+                cta={
+                  sheet.hotel
+                    ? { label: "Open", href: "/hotels/bookings" }
+                    : { label: "Add", onClick: () => setOpenSheet("hotel") }
+                }
+              />
+            ) : (
+              <Row
+                label="Hotel"
+                level="na"
+                badge="N/A"
+                detail={null}
+                cta={{ label: "Edit", href: `/artists/${artist.id}/edit` }}
+              />
+            )}
 
-            <Row
-              label="Hotel"
-              level={hotelLevel(sheet.hotel?.booking.status)}
-              badge={sheet.hotel?.booking.status ?? "no booking"}
-              detail={
-                sheet.hotel
-                  ? `${sheet.hotel.hotelName} · ${sheet.hotel.booking.checkin} → ${sheet.hotel.booking.checkout}${sheet.hotel.booking.roomType ? ` · ${sheet.hotel.booking.roomType}` : ""}`
-                  : null
-              }
-              cta={
-                sheet.hotel
-                  ? { label: "Open", href: "/hotels/bookings" }
-                  : { label: "Add", onClick: () => setOpenSheet("hotel") }
-              }
-            />
+            {/* Ground */}
+            {artist.needsGround ? (
+              <Row
+                label="Ground transport"
+                level={sheet.pickups.length > 0 ? "ok" : "missing"}
+                badge={
+                  sheet.pickups.length > 0
+                    ? `${sheet.pickups.length} pickup${sheet.pickups.length !== 1 ? "s" : ""}`
+                    : "none"
+                }
+                detail={
+                  sheet.pickups.length > 0
+                    ? sheet.pickups
+                        .slice(0, 2)
+                        .map(
+                          (p) =>
+                            `${format(new Date(p.pickupDt), "EEE HH:mm")} ${p.routeFrom} -> ${p.routeTo}`,
+                        )
+                        .join("  ·  ") +
+                      (sheet.pickups.length > 2
+                        ? ` +${sheet.pickups.length - 2} more`
+                        : "")
+                    : null
+                }
+                cta={{ label: "Add", onClick: () => setOpenSheet("pickup") }}
+              />
+            ) : (
+              <Row
+                label="Ground transport"
+                level="na"
+                badge="N/A"
+                detail={null}
+                cta={{ label: "Edit", href: `/artists/${artist.id}/edit` }}
+              />
+            )}
 
-            <Row
-              label="Ground transport"
-              level={sheet.pickups.length > 0 ? "ok" : "missing"}
-              badge={
-                sheet.pickups.length > 0
-                  ? `${sheet.pickups.length} pickup${sheet.pickups.length !== 1 ? "s" : ""}`
-                  : "none"
-              }
-              detail={
-                sheet.pickups.length > 0
-                  ? sheet.pickups
-                      .slice(0, 2)
-                      .map(
-                        (p) =>
-                          `${format(new Date(p.pickupDt), "EEE HH:mm")} ${p.routeFrom} → ${p.routeTo}`,
-                      )
-                      .join("  ·  ") +
-                    (sheet.pickups.length > 2
-                      ? ` +${sheet.pickups.length - 2} more`
-                      : "")
-                  : null
-              }
-              cta={{ label: "Add", onClick: () => setOpenSheet("pickup") }}
-            />
+            {/* Technical rider */}
+            {artist.needsRider ? (
+              <Row
+                label="Technical rider"
+                level={
+                  techRider ? (techRider.confirmed ? "ok" : "warn") : "missing"
+                }
+                badge={
+                  techRider
+                    ? techRider.confirmed
+                      ? "confirmed"
+                      : "pending"
+                    : "not uploaded"
+                }
+                detail={techRider?.fileUrl ? "File attached" : null}
+                cta={
+                  techRider
+                    ? { label: "Open", href: `/riders/${techRider.id}` }
+                    : {
+                        label: "Add",
+                        onClick: () => setOpenSheet("rider_tech"),
+                      }
+                }
+              />
+            ) : (
+              <Row
+                label="Technical rider"
+                level="na"
+                badge="N/A"
+                detail={null}
+                cta={{ label: "Edit", href: `/artists/${artist.id}/edit` }}
+              />
+            )}
 
-            <Row
-              label="Technical rider"
-              level={
-                techRider ? (techRider.confirmed ? "ok" : "warn") : "missing"
-              }
-              badge={
-                techRider
-                  ? techRider.confirmed
-                    ? "confirmed"
-                    : "pending"
-                  : "not uploaded"
-              }
-              detail={techRider?.fileUrl ? "File attached" : null}
-              cta={
-                techRider
-                  ? { label: "Open", href: `/riders/${techRider.id}` }
-                  : {
-                      label: "Add",
-                      onClick: () => setOpenSheet("rider_tech"),
-                    }
-              }
-            />
+            {/* Hospitality rider */}
+            {artist.needsRider ? (
+              <Row
+                label="Hospitality rider"
+                level={
+                  hospRider ? (hospRider.confirmed ? "ok" : "warn") : "missing"
+                }
+                badge={
+                  hospRider
+                    ? hospRider.confirmed
+                      ? "confirmed"
+                      : "pending"
+                    : "not uploaded"
+                }
+                detail={hospRider?.fileUrl ? "File attached" : null}
+                cta={
+                  hospRider
+                    ? { label: "Open", href: `/riders/${hospRider.id}` }
+                    : {
+                        label: "Add",
+                        onClick: () => setOpenSheet("rider_hosp"),
+                      }
+                }
+              />
+            ) : (
+              <Row
+                label="Hospitality rider"
+                level="na"
+                badge="N/A"
+                detail={null}
+                cta={{ label: "Edit", href: `/artists/${artist.id}/edit` }}
+              />
+            )}
 
-            <Row
-              label="Hospitality rider"
-              level={
-                hospRider ? (hospRider.confirmed ? "ok" : "warn") : "missing"
-              }
-              badge={
-                hospRider
-                  ? hospRider.confirmed
-                    ? "confirmed"
-                    : "pending"
-                  : "not uploaded"
-              }
-              detail={hospRider?.fileUrl ? "File attached" : null}
-              cta={
-                hospRider
-                  ? { label: "Open", href: `/riders/${hospRider.id}` }
-                  : {
-                      label: "Add",
-                      onClick: () => setOpenSheet("rider_hosp"),
-                    }
-              }
-            />
-
-            <Row
-              label="Payments"
-              level={
-                sheet.payments.length === 0
-                  ? "missing"
-                  : outstandingPayments.length === 0
-                    ? "ok"
-                    : "warn"
-              }
-              badge={
-                sheet.payments.length === 0
-                  ? "none"
-                  : outstandingPayments.length === 0
-                    ? "all clear"
-                    : `${outstandingPayments.length} outstanding`
-              }
-              detail={
-                outstandingPayments.length > 0
-                  ? outstandingPayments
-                      .slice(0, 2)
-                      .map(
-                        (p) =>
-                          `${formatCents(p.amountCents)} ${p.currency}${p.dueDate ? ` · due ${p.dueDate}` : ""}`,
-                      )
-                      .join("  ·  ")
-                  : null
-              }
-              cta={{
-                label: sheet.payments.length === 0 ? "Add" : "View",
-                onClick:
+            {/* Payments */}
+            {artist.needsPayment ? (
+              <Row
+                label="Payments"
+                level={
                   sheet.payments.length === 0
-                    ? () => setOpenSheet("payment")
-                    : undefined,
-                href: sheet.payments.length === 0 ? undefined : "/payments",
-              }}
-            />
+                    ? "missing"
+                    : outstandingPayments.length === 0
+                      ? "ok"
+                      : "warn"
+                }
+                badge={
+                  sheet.payments.length === 0
+                    ? "none"
+                    : outstandingPayments.length === 0
+                      ? "all clear"
+                      : `${outstandingPayments.length} outstanding`
+                }
+                detail={
+                  outstandingPayments.length > 0
+                    ? outstandingPayments
+                        .slice(0, 2)
+                        .map(
+                          (p) =>
+                            `${formatCents(p.amountCents)} ${p.currency}${p.dueDate ? ` · due ${p.dueDate}` : ""}`,
+                        )
+                        .join("  ·  ")
+                    : null
+                }
+                cta={{
+                  label: sheet.payments.length === 0 ? "Add" : "View",
+                  onClick:
+                    sheet.payments.length === 0
+                      ? () => setOpenSheet("payment")
+                      : undefined,
+                  href: sheet.payments.length === 0 ? undefined : "/payments",
+                }}
+              />
+            ) : (
+              <Row
+                label="Payments"
+                level="na"
+                badge="N/A"
+                detail={null}
+                cta={{ label: "Edit", href: `/artists/${artist.id}/edit` }}
+              />
+            )}
           </div>
         </section>
 
@@ -325,14 +433,14 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
           <button
             type="button"
             onClick={() => setDetailsOpen((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 border-b border-white/[0.05] hover:bg-white/[0.02] transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 border-b border-white/5 hover:bg-white/2 transition-colors"
             aria-expanded={detailsOpen}
           >
             <h2 className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-subtle]">
-              Identity & links
+              Identity &amp; links
             </h2>
             <span className="text-[--color-fg-subtle] text-[12px]">
-              {detailsOpen ? "−" : "+"}
+              {detailsOpen ? "-" : "+"}
             </span>
           </button>
           {detailsOpen && (
@@ -351,7 +459,6 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
                   </span>
                 )}
               </div>
-
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
                 {artist.email && (
                   <a
@@ -375,7 +482,6 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
                   </a>
                 )}
               </div>
-
               {(artist.pressKitUrl ||
                 artist.instagram ||
                 artist.soundcloud ||
@@ -407,9 +513,8 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
                   )}
                 </div>
               )}
-
               {artist.comments && (
-                <p className="text-[13px] text-[--color-fg-subtle] whitespace-pre-wrap pt-2 border-t border-white/[0.05]">
+                <p className="text-[13px] text-[--color-fg-subtle] whitespace-pre-wrap pt-2 border-t border-white/5">
                   {artist.comments}
                 </p>
               )}
@@ -419,7 +524,6 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
       </div>
 
       {/* ─── Side sheets ──────────────────────────────────────────────── */}
-
       <SideSheet
         open={openSheet === "contract"}
         onClose={close}
@@ -471,7 +575,7 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
           <EmptyHint
             label="No hotels in the catalogue yet."
             href="/hotels"
-            cta="Add a hotel first →"
+            cta="Add a hotel first ->"
           />
         ) : (
           <BookingForm
@@ -544,7 +648,7 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
   );
 }
 
-// ── Sub-components ──────────────────────────────────────────────────────────
+// ── Sub-components ───────────────────────────────────────────────────────────
 
 function NextCard({
   progress,
@@ -607,7 +711,7 @@ function AllClearCard() {
         <span className="text-[13px] text-[--color-fg]">Fully prepped</span>
       </div>
       <p className="text-[12px] text-[--color-fg-muted] mt-1">
-        Set, contract, flight, hotel, pickup and payment are all in place.
+        All required modules are complete.
       </p>
     </div>
   );
@@ -617,12 +721,14 @@ const ROW_BAR: Record<Level, string> = {
   ok: "bg-[--color-brand]",
   warn: "bg-[--color-warn]",
   missing: "bg-white/15",
+  na: "bg-white/6",
 };
 
-const BADGE: Record<Level, string> = {
+const BADGE_CLS: Record<Level, string> = {
   ok: "text-[--color-brand]",
   warn: "text-[--color-warn]",
-  missing: "text-[--color-fg-subtle]",
+  missing: "text-coral",
+  na: "text-[--color-fg-subtle]",
 };
 
 function Row({
@@ -638,36 +744,42 @@ function Row({
   detail: string | null;
   cta: { label: string; href?: string; onClick?: () => void };
 }) {
+  const isNa = level === "na";
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5">
+    <div
+      className={`flex items-center gap-3 px-4 py-3.5 ${isNa ? "opacity-40" : ""}`}
+    >
       <span
         className={`w-0.5 self-stretch shrink-0 rounded-sm ${ROW_BAR[level]}`}
       />
-      <span className="text-mono text-[10px] uppercase tracking-[0.15em] text-[--color-fg-muted] w-32 shrink-0">
+      <span className="text-mono text-[10px] uppercase tracking-[0.15em] text-[--color-fg-muted] w-36 shrink-0">
         {label}
       </span>
-      <span className={`text-mono text-[10px] shrink-0 w-24 ${BADGE[level]}`}>
+      <span
+        className={`text-mono text-[10px] shrink-0 w-28 ${BADGE_CLS[level]}`}
+      >
         {badge}
       </span>
       <span className="text-[12px] text-[--color-fg-subtle] truncate flex-1 min-w-0">
         {detail ?? ""}
       </span>
-      {cta.onClick ? (
-        <button
-          type="button"
-          onClick={cta.onClick}
-          className="text-mono text-[10px] uppercase tracking-[0.14em] px-2 py-1 rounded border border-[--color-border-strong] text-[--color-fg-muted] hover:text-[--color-fg] hover:border-white/30 transition-colors shrink-0"
-        >
-          {cta.label}
-        </button>
-      ) : cta.href ? (
-        <Link
-          href={cta.href as Route}
-          className="text-mono text-[10px] uppercase tracking-[0.14em] px-2 py-1 rounded border border-[--color-border-strong] text-[--color-fg-muted] hover:text-[--color-fg] hover:border-white/30 transition-colors shrink-0"
-        >
-          {cta.label}
-        </Link>
-      ) : null}
+      {!isNa &&
+        (cta.onClick ? (
+          <button
+            type="button"
+            onClick={cta.onClick}
+            className="text-mono text-[10px] uppercase tracking-[0.14em] px-2 py-1 rounded border border-[--color-border-strong] text-[--color-fg-muted] hover:text-[--color-fg] hover:border-white/30 transition-colors shrink-0"
+          >
+            {cta.label}
+          </button>
+        ) : cta.href ? (
+          <Link
+            href={cta.href as Route}
+            className="text-mono text-[10px] uppercase tracking-[0.14em] px-2 py-1 rounded border border-[--color-border-strong] text-[--color-fg-muted] hover:text-[--color-fg] hover:border-white/30 transition-colors shrink-0"
+          >
+            {cta.label}
+          </Link>
+        ) : null)}
     </div>
   );
 }
@@ -707,7 +819,7 @@ function EmptyHint({
   );
 }
 
-// ── helpers ──────────────────────────────────────────────────────────────
+// ── helpers ──────────────────────────────────────────────────────────────────
 
 function flightLevel(s: string | undefined): Level {
   if (!s) return "missing";

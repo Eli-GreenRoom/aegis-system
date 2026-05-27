@@ -41,58 +41,90 @@ export interface CockpitProgress {
 }
 
 /**
- * Derive the artist cockpit's progress + next-action from the roadsheet
- * (no extra DB queries). Pure function -- used by the artist detail page.
- *
- * Operational order (matches how an artist actually gets prepped):
- *  1. set        -- must be confirmed before anything else makes sense
- *  2. contract   -- signed contract before booking travel
- *  3. flight in  -- book inbound first; outbound usually settles later
- *  4. hotel      -- needs to land somewhere
- *  5. pickup     -- needs a ride from airport
- *  6. payment    -- settle balance
- *
- * Outbound flight, riders, and crew are tracked separately on the progress
- * rail but not surfaced as the primary "next action" -- they're rarely the
- * blocker that prevents an artist from showing up.
+ * Derive the artist cockpit's progress + next-action from the roadsheet.
+ * Respects needs_* flags on the artist: modules marked N/A are excluded from
+ * totalSteps and never surfaced as gaps or next actions.
  */
 export function getNextAction(sheet: ArtistRoadsheet): CockpitProgress {
+  const { artist } = sheet;
   const gaps: CockpitGap[] = [];
+  let totalSteps = 0;
+  let doneSteps = 0;
 
+  // -- Set (always required) ------------------------------------------------
+  totalSteps++;
   const setStatus = sheet.set?.set.status;
   const setOk =
     setStatus === "confirmed" || setStatus === "live" || setStatus === "done";
-  if (!setOk) gaps.push("set");
+  if (setOk) {
+    doneSteps++;
+  } else {
+    gaps.push("set");
+  }
 
-  const contractOk = sheet.contract?.status === "signed";
-  if (!contractOk) gaps.push("contract");
+  // -- Contract -------------------------------------------------------------
+  if (artist.needsContract) {
+    totalSteps++;
+    const contractOk = sheet.contract?.status === "signed";
+    if (contractOk) {
+      doneSteps++;
+    } else {
+      gaps.push("contract");
+    }
+  }
 
-  const inbound = sheet.inboundFlight;
-  const inboundOk =
-    inbound != null &&
-    inbound.status !== "cancelled" &&
-    inbound.status !== "not_needed";
-  const inboundOpted = inbound != null && inbound.status === "not_needed";
-  if (!inboundOk && !inboundOpted) gaps.push("inbound_flight");
+  // -- Inbound flight -------------------------------------------------------
+  if (artist.needsFlight) {
+    totalSteps++;
+    const inbound = sheet.inboundFlight;
+    const inboundOk =
+      inbound != null &&
+      inbound.status !== "cancelled" &&
+      inbound.status !== "not_needed";
+    if (inboundOk) {
+      doneSteps++;
+    } else {
+      gaps.push("inbound_flight");
+    }
+  }
 
-  const hotelOk =
-    sheet.hotel != null &&
-    sheet.hotel.booking.status !== "cancelled" &&
-    sheet.hotel.booking.status !== "no_show" &&
-    sheet.hotel.booking.status !== "not_needed";
-  const hotelOpted =
-    sheet.hotel != null && sheet.hotel.booking.status === "not_needed";
-  if (!hotelOk && !hotelOpted) gaps.push("hotel");
+  // -- Hotel ----------------------------------------------------------------
+  if (artist.needsHotel) {
+    totalSteps++;
+    const hotelOk =
+      sheet.hotel != null &&
+      sheet.hotel.booking.status !== "cancelled" &&
+      sheet.hotel.booking.status !== "no_show" &&
+      sheet.hotel.booking.status !== "not_needed";
+    if (hotelOk) {
+      doneSteps++;
+    } else {
+      gaps.push("hotel");
+    }
+  }
 
-  if (sheet.pickups.length === 0) gaps.push("pickup");
+  // -- Ground transport -----------------------------------------------------
+  if (artist.needsGround) {
+    totalSteps++;
+    if (sheet.pickups.length > 0) {
+      doneSteps++;
+    } else {
+      gaps.push("pickup");
+    }
+  }
 
-  const anyOutstanding = sheet.payments.some(
-    (p) => p.status !== "paid" && p.status !== "void",
-  );
-  if (anyOutstanding || sheet.payments.length === 0) gaps.push("payment");
-
-  const totalSteps = 6;
-  const doneSteps = totalSteps - gaps.length;
+  // -- Payment --------------------------------------------------------------
+  if (artist.needsPayment) {
+    totalSteps++;
+    const anyOutstanding = sheet.payments.some(
+      (p) => p.status !== "paid" && p.status !== "void",
+    );
+    if (!anyOutstanding && sheet.payments.length > 0) {
+      doneSteps++;
+    } else {
+      gaps.push("payment");
+    }
+  }
 
   const next: NextAction | null =
     gaps.length === 0 ? null : buildAction(gaps[0]!, sheet);

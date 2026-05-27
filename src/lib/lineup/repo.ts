@@ -281,7 +281,14 @@ export async function getLineupGrid(
     slotsByStage.set(s.stageId, list);
   }
 
-  return allStages.map((stage) => ({
+  // Only include stages that are active on this date.
+  // A stage with an empty activeDates array is active on all dates.
+  const activeStages = allStages.filter((stage) => {
+    const active = stage.activeDates as string[] | null;
+    return !active || active.length === 0 || active.includes(date);
+  });
+
+  return activeStages.map((stage) => ({
     stage,
     slots: slotsByStage.get(stage.id) ?? [],
   }));
