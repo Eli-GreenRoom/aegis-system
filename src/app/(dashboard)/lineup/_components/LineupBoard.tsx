@@ -59,20 +59,33 @@ const SET_STATUSES: SetStatus[] = [
   "withdrawn",
 ];
 
+// ---- slugify (client-side, mirrors server) ---------------------------------
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
+}
+
 // ---- artist combobox -------------------------------------------------------
 
 function ArtistCombobox({
   artists,
   value,
   onChange,
+  onCreated,
 }: {
   artists: ArtistOption[];
   value: string;
   onChange: (id: string) => void;
+  onCreated: (artist: ArtistOption) => void;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(0);
+  const [creating, setCreating] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const selected = artists.find((a) => a.id === value);
@@ -85,6 +98,14 @@ function ArtistCombobox({
             a.name.toLowerCase().includes(query.toLowerCase()) ||
             (a.agency ?? "").toLowerCase().includes(query.toLowerCase()),
         );
+
+  // Whether to show the "Create" row
+  const showCreate =
+    query.trim().length > 0 &&
+    !filtered.some((a) => a.name.toLowerCase() === query.trim().toLowerCase());
+
+  // Total items in the dropdown (filtered + optional create row)
+  const totalItems = filtered.length + (showCreate ? 1 : 0);
 
   // Close on outside click
   useEffect(() => {
@@ -103,6 +124,33 @@ function ArtistCombobox({
     setFocused(0);
   }
 
+  async function createArtist() {
+    const name = query.trim();
+    if (!name || creating) return;
+    setCreating(true);
+    try {
+      const res = await fetch("/api/artists", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name, slug: slugify(name) }),
+      });
+      if (!res.ok) return;
+      const { artist } = await res.json();
+      const opt: ArtistOption = {
+        id: artist.id,
+        name: artist.name,
+        agency: artist.agency ?? null,
+      };
+      onCreated(opt);
+      onChange(opt.id);
+      setQuery("");
+      setOpen(false);
+      setFocused(0);
+    } finally {
+      setCreating(false);
+    }
+  }
+
   function onKeyDown(e: React.KeyboardEvent) {
     if (!open) {
       if (e.key === "ArrowDown" || e.key === "Enter") setOpen(true);
@@ -110,13 +158,17 @@ function ArtistCombobox({
     }
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setFocused((i) => Math.min(i + 1, filtered.length - 1));
+      setFocused((i) => Math.min(i + 1, totalItems - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setFocused((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (filtered[focused]) pick(filtered[focused]);
+      if (focused < filtered.length) {
+        if (filtered[focused]) pick(filtered[focused]);
+      } else if (showCreate) {
+        void createArtist();
+      }
     } else if (e.key === "Escape") {
       setOpen(false);
     }
@@ -143,7 +195,9 @@ function ArtistCombobox({
           <input
             autoFocus={open}
             className="flex-1 bg-transparent text-sm text-[--color-fg] outline-none placeholder:text-[--color-fg-subtle] min-w-0"
-            placeholder={selected ? selected.name : "Search artist..."}
+            placeholder={
+              selected ? selected.name : "Search or create artist..."
+            }
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -163,30 +217,45 @@ function ArtistCombobox({
             maxHeight: "220px",
           }}
         >
-          {filtered.length === 0 ? (
+          {filtered.length === 0 && !showCreate && (
             <p className="px-3 py-2 text-[12px] text-[--color-fg-subtle]">
               No artists found
             </p>
-          ) : (
-            filtered.map((a, i) => (
-              <button
-                key={a.id}
-                type="button"
-                onMouseDown={() => pick(a)}
-                className={`w-full text-left px-3 py-2 transition-colors ${
-                  i === focused
-                    ? "bg-white/[0.07] text-[--color-fg]"
-                    : "hover:bg-white/4 text-[--color-fg]"
-                }`}
-              >
-                <span className="text-sm block">{a.name}</span>
-                {a.agency && (
-                  <span className="text-[10px] text-[--color-fg-subtle] block">
-                    {a.agency}
-                  </span>
-                )}
-              </button>
-            ))
+          )}
+          {filtered.map((a, i) => (
+            <button
+              key={a.id}
+              type="button"
+              onMouseDown={() => pick(a)}
+              className={`w-full text-left px-3 py-2 transition-colors ${
+                i === focused
+                  ? "bg-white/[0.07] text-[--color-fg]"
+                  : "hover:bg-white/4 text-[--color-fg]"
+              }`}
+            >
+              <span className="text-sm block">{a.name}</span>
+              {a.agency && (
+                <span className="text-[10px] text-[--color-fg-subtle] block">
+                  {a.agency}
+                </span>
+              )}
+            </button>
+          ))}
+          {showCreate && (
+            <button
+              type="button"
+              disabled={creating}
+              onMouseDown={() => void createArtist()}
+              className={`w-full text-left px-3 py-2 transition-colors border-t border-[--color-border] ${
+                focused === filtered.length
+                  ? "bg-white/[0.07]"
+                  : "hover:bg-white/4"
+              }`}
+            >
+              <span className="text-[12px] text-brand">
+                {creating ? "Creating..." : `+ Create "${query.trim()}"`}
+              </span>
+            </button>
           )}
         </div>
       )}
@@ -285,6 +354,7 @@ function AddSheet({
   const [startTime, setStartTime] = useState("22:00");
   const [endTime, setEndTime] = useState("23:30");
   const [artistId, setArtistId] = useState(artists[0]?.id ?? "");
+  const [localArtists, setLocalArtists] = useState<ArtistOption[]>(artists);
   const [status, setStatus] = useState<SetStatus>("option");
   const [feeUsd, setFeeUsd] = useState("");
   const [feeCurrency, setFeeCurrency] = useState<"USD" | "EUR">("USD");
@@ -330,12 +400,6 @@ function AddSheet({
   return (
     <Sheet title="Add to lineup" onClose={onClose}>
       <form onSubmit={submit} className="space-y-5">
-        {artists.length === 0 && (
-          <p className="text-xs text-coral">
-            No artists yet. Add some on the Artists page first.
-          </p>
-        )}
-
         {/* Stage */}
         <div className="space-y-1.5">
           <Label>Stage</Label>
@@ -380,9 +444,13 @@ function AddSheet({
         <div className="space-y-1.5">
           <Label>Artist</Label>
           <ArtistCombobox
-            artists={artists}
+            artists={localArtists}
             value={artistId}
             onChange={setArtistId}
+            onCreated={(a) => {
+              setLocalArtists((prev) => [...prev, a]);
+              setArtistId(a.id);
+            }}
           />
         </div>
 
@@ -428,7 +496,7 @@ function AddSheet({
         {error && <p className="text-xs text-coral">{error}</p>}
 
         <div className="flex items-center gap-2 pt-2">
-          <Button type="submit" disabled={saving || artists.length === 0}>
+          <Button type="submit" disabled={saving || !artistId}>
             {saving ? "Adding..." : "Add to lineup"}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
@@ -460,6 +528,8 @@ function AddB2bSheet({
   onSaved,
 }: AddB2bSheetProps) {
   const available = artists.filter((a) => !existingArtistIds.includes(a.id));
+  const [localAvailable, setLocalAvailable] =
+    useState<ArtistOption[]>(available);
   const [artistId, setArtistId] = useState(available[0]?.id ?? "");
   const [status, setStatus] = useState<SetStatus>("option");
   const [feeUsd, setFeeUsd] = useState("");
@@ -513,9 +583,13 @@ function AddB2bSheet({
         <div className="space-y-1.5">
           <Label>Artist</Label>
           <ArtistCombobox
-            artists={available}
+            artists={localAvailable}
             value={artistId}
             onChange={setArtistId}
+            onCreated={(a) => {
+              setLocalAvailable((prev) => [...prev, a]);
+              setArtistId(a.id);
+            }}
           />
         </div>
 
@@ -559,7 +633,7 @@ function AddB2bSheet({
         {error && <p className="text-xs text-coral">{error}</p>}
 
         <div className="flex items-center gap-2 pt-2">
-          <Button type="submit" disabled={saving || available.length === 0}>
+          <Button type="submit" disabled={saving || !artistId}>
             {saving ? "Adding..." : "Add b2b partner"}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
@@ -577,6 +651,8 @@ interface EditSetSheetProps {
   set: SetWithArtist;
   isLastOnSlot: boolean;
   slotId: string;
+  slotStartTime: string;
+  slotEndTime: string;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -585,10 +661,14 @@ function EditSetSheet({
   set,
   isLastOnSlot,
   slotId,
+  slotStartTime,
+  slotEndTime,
   onClose,
   onSaved,
 }: EditSetSheetProps) {
   const [status, setStatus] = useState<SetStatus>(set.status as SetStatus);
+  const [startTime, setStartTime] = useState(slotStartTime);
+  const [endTime, setEndTime] = useState(slotEndTime);
   const [announceBatch, setAnnounceBatch] = useState(set.announceBatch ?? "");
   const [feeUsd, setFeeUsd] = useState(
     set.feeAmountCents != null ? (set.feeAmountCents / 100).toFixed(2) : "",
@@ -608,7 +688,9 @@ function EditSetSheet({
     setSaving(true);
     const feeAmountCents =
       feeUsd === "" ? null : Math.round(Number(feeUsd) * 100);
-    const res = await fetch(`/api/sets/${set.id}`, {
+
+    // Patch set fields
+    const setRes = await fetch(`/api/sets/${set.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -620,12 +702,29 @@ function EditSetSheet({
         comments,
       }),
     });
-    setSaving(false);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
+    if (!setRes.ok) {
+      setSaving(false);
+      const body = await setRes.json().catch(() => ({}));
       setError(body.error ?? "Couldn't save.");
       return;
     }
+
+    // Patch slot times if changed
+    if (startTime !== slotStartTime || endTime !== slotEndTime) {
+      const slotRes = await fetch(`/api/slots/${slotId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ startTime, endTime }),
+      });
+      if (!slotRes.ok) {
+        setSaving(false);
+        const body = await slotRes.json().catch(() => ({}));
+        setError(body.error ?? "Set saved, but couldn't update times.");
+        return;
+      }
+    }
+
+    setSaving(false);
     onSaved();
   }
 
@@ -654,6 +753,30 @@ function EditSetSheet({
   return (
     <Sheet title={set.artist.name} onClose={onClose}>
       <form onSubmit={submit} className="space-y-5">
+        {/* Time */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Start</Label>
+            <Input
+              type="time"
+              step={60}
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>End</Label>
+            <Input
+              type="time"
+              step={60}
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              required
+            />
+          </div>
+        </div>
+
         {/* Status */}
         <div className="space-y-1.5">
           <Label>Status</Label>
@@ -1082,6 +1205,8 @@ export default function LineupBoard({ day, grid, artists }: Props) {
         <EditSetSheet
           set={editingSet.set}
           slotId={editingSet.slot.id}
+          slotStartTime={editingSet.slot.startTime}
+          slotEndTime={editingSet.slot.endTime}
           isLastOnSlot={editingSet.slot.sets.length === 1}
           onClose={() => setEditingSet(null)}
           onSaved={() => {
