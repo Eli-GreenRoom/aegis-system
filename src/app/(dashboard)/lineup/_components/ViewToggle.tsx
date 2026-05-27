@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { Route } from "next";
 
-type View = "grid" | "pipeline";
+type View = "grid" | "pipeline" | "readiness";
 
 interface Props {
   active: View;
@@ -14,6 +14,7 @@ interface Props {
 const OPTIONS: { value: View; label: string }[] = [
   { value: "grid", label: "Grid" },
   { value: "pipeline", label: "Pipeline" },
+  { value: "readiness", label: "Readiness" },
 ];
 
 function ViewToggleInner({ active }: Props) {
@@ -28,8 +29,8 @@ function ViewToggleInner({ active }: Props) {
     } else {
       next.set("view", view);
     }
-    // Pipeline doesn't use a day filter; drop it when switching.
-    if (view === "pipeline") next.delete("date");
+    // Pipeline and readiness don't use a day filter; drop it when switching.
+    if (view === "pipeline" || view === "readiness") next.delete("date");
     const qs = next.toString();
     return `${pathname}${qs ? `?${qs}` : ""}` as Route;
   }

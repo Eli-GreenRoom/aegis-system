@@ -11,7 +11,7 @@ import {
   listArtists,
   type ListArtistsParams,
 } from "@/lib/artists/repo";
-import { getArtistStatusMap } from "@/lib/artists/status";
+import { getArtistStatusMap, hasGap } from "@/lib/artists/status";
 import { listStages } from "@/lib/lineup/repo";
 import { setStatusEnum } from "@/lib/lineup/schema";
 import ArtistsTable from "./_components/ArtistsTable";
@@ -76,16 +76,7 @@ export default async function ArtistsPage({ searchParams }: PageProps) {
   const artists = gapsOnly
     ? allArtists.filter((a) => {
         const s = statusMap.get(a.id);
-        if (!s) return true;
-        return (
-          !s.setStatus ||
-          !s.contractStatus ||
-          s.outstandingPayments > 0 ||
-          !s.inboundFlight ||
-          !s.outboundFlight ||
-          !s.hotelStatus ||
-          s.ridersReady === null
-        );
+        return !s || hasGap(s);
       })
     : allArtists;
 

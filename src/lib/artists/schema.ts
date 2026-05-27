@@ -74,6 +74,13 @@ export const artistInputSchema = z.object({
   pressKitUrl: optionalUrl,
   passportFileUrl: optionalUrl,
   comments: z.string().trim().max(4000).optional().or(z.literal("")),
+  // Logistics requirement flags - false = N/A for this artist
+  needsFlight: z.boolean().optional(),
+  needsHotel: z.boolean().optional(),
+  needsGround: z.boolean().optional(),
+  needsContract: z.boolean().optional(),
+  needsPayment: z.boolean().optional(),
+  needsRider: z.boolean().optional(),
 });
 
 export type ArtistInput = z.infer<typeof artistInputSchema>;
@@ -109,6 +116,12 @@ export interface ArtistDbValues {
   pressKitUrl: string | null;
   passportFileUrl: string | null;
   comments: string | null;
+  needsFlight: boolean;
+  needsHotel: boolean;
+  needsGround: boolean;
+  needsContract: boolean;
+  needsPayment: boolean;
+  needsRider: boolean;
 }
 
 const NULLABLE_FIELDS = [
@@ -140,6 +153,18 @@ export function toDbPatchValues(input: ArtistPatch): Partial<ArtistDbValues> {
     const v = input.visaStatus;
     out.visaStatus = v === undefined || v === "" ? null : v;
   }
+  if ("needsFlight" in input && input.needsFlight !== undefined)
+    out.needsFlight = input.needsFlight;
+  if ("needsHotel" in input && input.needsHotel !== undefined)
+    out.needsHotel = input.needsHotel;
+  if ("needsGround" in input && input.needsGround !== undefined)
+    out.needsGround = input.needsGround;
+  if ("needsContract" in input && input.needsContract !== undefined)
+    out.needsContract = input.needsContract;
+  if ("needsPayment" in input && input.needsPayment !== undefined)
+    out.needsPayment = input.needsPayment;
+  if ("needsRider" in input && input.needsRider !== undefined)
+    out.needsRider = input.needsRider;
   for (const k of NULLABLE_FIELDS) {
     if (k in input) {
       const v = input[k];
@@ -171,6 +196,12 @@ export function toDbValues(input: ArtistInput): ArtistDbValues {
     pressKitUrl: null,
     passportFileUrl: null,
     comments: null,
+    needsFlight: input.needsFlight ?? true,
+    needsHotel: input.needsHotel ?? true,
+    needsGround: input.needsGround ?? true,
+    needsContract: input.needsContract ?? true,
+    needsPayment: input.needsPayment ?? true,
+    needsRider: input.needsRider ?? true,
   };
   for (const k of NULLABLE_FIELDS) {
     const v = input[k];

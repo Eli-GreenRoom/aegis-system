@@ -23,6 +23,12 @@ export const fixtureArtist: Artist = {
   visaStatus: null,
   pressKitUrl: null,
   passportFileUrl: null,
+  needsFlight: true,
+  needsHotel: true,
+  needsGround: true,
+  needsContract: true,
+  needsPayment: true,
+  needsRider: true,
   createdAt: new Date("2026-01-01T00:00:00Z"),
   archivedAt: null,
 };

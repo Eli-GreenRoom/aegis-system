@@ -263,6 +263,14 @@ export const artists = pgTable("artists", {
   visaStatus: visaStatusEnum("visa_status"),
   pressKitUrl: text("press_kit_url"),
   passportFileUrl: text("passport_file_url"),
+  // Logistics requirements — false means N/A (not needed for this artist).
+  // All default true so existing artists are unaffected.
+  needsFlight: boolean("needs_flight").notNull().default(true),
+  needsHotel: boolean("needs_hotel").notNull().default(true),
+  needsGround: boolean("needs_ground").notNull().default(true),
+  needsContract: boolean("needs_contract").notNull().default(true),
+  needsPayment: boolean("needs_payment").notNull().default(true),
+  needsRider: boolean("needs_rider").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   archivedAt: timestamp("archived_at"),
 });

@@ -8,10 +8,12 @@ import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
 import { getLineupGrid, getLineupPipeline } from "@/lib/lineup/repo";
 import { listArtists } from "@/lib/artists/repo";
+import { getArtistStatusMap } from "@/lib/artists/status";
 import { slotDateSchema } from "@/lib/lineup/schema";
 import DayTabs from "./_components/DayTabs";
 import LineupBoard from "./_components/LineupBoard";
 import LineupPipeline from "./_components/LineupPipeline";
+import ReadinessGrid from "./_components/ReadinessGrid";
 import ViewToggle from "./_components/ViewToggle";
 
 interface PageProps {
@@ -31,8 +33,12 @@ export default async function LineupPage({ searchParams }: PageProps) {
     );
 
   const sp = await searchParams;
-  const view: "grid" | "pipeline" =
-    sp.view === "pipeline" ? "pipeline" : "grid";
+  const view: "grid" | "pipeline" | "readiness" =
+    sp.view === "pipeline"
+      ? "pipeline"
+      : sp.view === "readiness"
+        ? "readiness"
+        : "grid";
 
   if (view === "pipeline") {
     const cards = await getLineupPipeline(festival.id);
@@ -50,6 +56,36 @@ export default async function LineupPage({ searchParams }: PageProps) {
         <div className="px-6 py-6 space-y-5">
           <ViewToggle active="pipeline" />
           <LineupPipeline cards={cards} />
+        </div>
+      </>
+    );
+  }
+
+  if (view === "readiness") {
+    const allArtists = await listArtists({
+      festivalId: festival.id,
+      archived: "active",
+    });
+    const statusMap = await getArtistStatusMap(allArtists.map((a) => a.id));
+    const rows = allArtists.map((a) => ({
+      artist: { id: a.id, name: a.name, agency: a.agency },
+      status: statusMap.get(a.id)!,
+    }));
+
+    return (
+      <>
+        <Topbar
+          title="Lineup"
+          subtitle={`${allArtists.length} artist${allArtists.length === 1 ? "" : "s"} on ${festival.name}`}
+          actions={
+            <Link href="/settings?tab=festival">
+              <Button variant="secondary">Stages</Button>
+            </Link>
+          }
+        />
+        <div className="px-6 py-6 space-y-5">
+          <ViewToggle active="readiness" />
+          <ReadinessGrid rows={rows} />
         </div>
       </>
     );

@@ -53,6 +53,12 @@ export default function ArtistForm({ artist, festivalLocation }: Props) {
       pressKitUrl: artist?.pressKitUrl ?? "",
       passportFileUrl: artist?.passportFileUrl ?? "",
       comments: artist?.comments ?? "",
+      needsFlight: artist?.needsFlight ?? true,
+      needsHotel: artist?.needsHotel ?? true,
+      needsGround: artist?.needsGround ?? true,
+      needsContract: artist?.needsContract ?? true,
+      needsPayment: artist?.needsPayment ?? true,
+      needsRider: artist?.needsRider ?? true,
     },
   });
 
@@ -156,7 +162,7 @@ export default function ArtistForm({ artist, festivalLocation }: Props) {
         <Field label="Visa status" error={errors.visaStatus?.message}>
           <select
             {...register("visaStatus")}
-            className="w-full rounded-[--radius-md] border border-white/[0.10] bg-white/[0.04] px-3 py-2 text-sm text-[--color-fg]"
+            className="w-full rounded-[--radius-md] border border-white/10 bg-white/4 px-3 py-2 text-sm text-[--color-fg]"
           >
             <option value="">-</option>
             <option value="not_needed">Not needed</option>
@@ -198,10 +204,46 @@ export default function ArtistForm({ artist, festivalLocation }: Props) {
         />
         <Label
           htmlFor="local"
-          className="!text-[12px] !normal-case !tracking-normal text-[--color-fg]"
+          className="text-[12px]! normal-case! tracking-normal! text-[--color-fg]"
         >
           Local artist{festivalLocation ? ` (${festivalLocation})` : ""}
         </Label>
+      </div>
+
+      {/* Logistics requirements */}
+      <div className="space-y-2">
+        <p className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted]">
+          Logistics requirements
+        </p>
+        <p className="text-[11px] text-[--color-fg-subtle]">
+          Uncheck modules this artist does not need. Unchecked = N/A on the
+          readiness grid and excluded from gap counts.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+          {(
+            [
+              { id: "needsFlight", label: "Flight" },
+              { id: "needsHotel", label: "Hotel" },
+              { id: "needsGround", label: "Ground transport" },
+              { id: "needsContract", label: "Contract" },
+              { id: "needsPayment", label: "Payment" },
+              { id: "needsRider", label: "Rider" },
+            ] as const
+          ).map(({ id, label }) => (
+            <label
+              key={id}
+              className="flex items-center gap-2 cursor-pointer select-none"
+            >
+              <input
+                id={id}
+                type="checkbox"
+                {...register(id)}
+                className="rounded border border-[--color-border-strong] bg-[--color-surface]"
+              />
+              <span className="text-[13px] text-[--color-fg]">{label}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
       <Field label="Comments" error={errors.comments?.message}>
