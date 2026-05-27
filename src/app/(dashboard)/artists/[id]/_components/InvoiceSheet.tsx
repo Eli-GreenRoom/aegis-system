@@ -33,7 +33,6 @@ const ISSUER_KINDS = [
 ];
 
 const formSchema = z.object({
-  // Invoice fields
   number: z.string().trim().max(100).optional().or(z.literal("")),
   issuerKind: z.string().trim().min(1, "Required").max(80),
   issueDate: z
@@ -41,6 +40,7 @@ const formSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD")
     .optional()
     .or(z.literal("")),
+  // Single due date shared by both invoice and payment
   dueDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD")
@@ -57,13 +57,7 @@ const formSchema = z.object({
   currency: z.enum(["USD", "EUR"]),
   fileUrl: z.string().optional().or(z.literal("")),
   comments: z.string().trim().max(4000).optional().or(z.literal("")),
-  // Payment fields
   description: z.string().trim().min(1, "Required").max(500),
-  paymentDueDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD")
-    .optional()
-    .or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -95,7 +89,6 @@ export default function InvoiceSheet({
     control,
     setValue,
     formState: { errors, isSubmitting },
-    watch,
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -108,11 +101,8 @@ export default function InvoiceSheet({
       fileUrl: "",
       comments: "",
       description: `${artistName} - fee`,
-      paymentDueDate: "",
     },
   });
-
-  const watchedDueDate = watch("dueDate");
 
   async function runAiParse() {
     setAiError("");
@@ -144,10 +134,8 @@ export default function InvoiceSheet({
       setValue("issuerKind", p.issuerKind, { shouldValidate: true });
     if (typeof p.issueDate === "string")
       setValue("issueDate", p.issueDate, { shouldValidate: true });
-    if (typeof p.dueDate === "string") {
+    if (typeof p.dueDate === "string")
       setValue("dueDate", p.dueDate, { shouldValidate: true });
-      setValue("paymentDueDate", p.dueDate, { shouldValidate: true });
-    }
     if (typeof p.amount === "number")
       setValue("amount", p.amount.toFixed(2), { shouldValidate: true });
     if (p.currency === "USD" || p.currency === "EUR")
@@ -197,7 +185,7 @@ export default function InvoiceSheet({
         artistId,
         invoiceId: invoice.id,
         description: data.description,
-        dueDate: data.paymentDueDate || data.dueDate || undefined,
+        dueDate: data.dueDate || undefined,
         amountCents,
         currency: data.currency,
         status: "pending",
@@ -345,7 +333,7 @@ export default function InvoiceSheet({
             <Field label="Issue date" error={errors.issueDate?.message}>
               <Input type="date" {...register("issueDate")} />
             </Field>
-            <Field label="Invoice due date" error={errors.dueDate?.message}>
+            <Field label="Due date" error={errors.dueDate?.message}>
               <Input type="date" {...register("dueDate")} />
             </Field>
 
@@ -384,37 +372,19 @@ export default function InvoiceSheet({
           </Field>
         </fieldset>
 
-        {/* Payment section */}
-        <fieldset className="space-y-3 pt-2 border-t border-white/6">
-          <legend className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] mb-2">
-            Payment
-          </legend>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <Field
-                label="Description"
-                error={errors.description?.message}
-                required
-              >
-                <Input
-                  {...register("description")}
-                  placeholder="Agency fee - deposit"
-                />
-              </Field>
-            </div>
-            <Field
-              label="Payment due date"
-              error={errors.paymentDueDate?.message}
-            >
-              <Input
-                type="date"
-                {...register("paymentDueDate")}
-                placeholder={watchedDueDate ?? ""}
-              />
-            </Field>
-          </div>
-        </fieldset>
+        {/* Payment description */}
+        <div className="pt-2 border-t border-white/6">
+          <Field
+            label="Payment description"
+            error={errors.description?.message}
+            required
+          >
+            <Input
+              {...register("description")}
+              placeholder="Agency fee - deposit"
+            />
+          </Field>
+        </div>
 
         {serverError && <p className="text-sm text-coral">{serverError}</p>}
 
