@@ -263,7 +263,7 @@ export const artists = pgTable("artists", {
   visaStatus: visaStatusEnum("visa_status"),
   pressKitUrl: text("press_kit_url"),
   passportFileUrl: text("passport_file_url"),
-  // Logistics requirements — false means N/A (not needed for this artist).
+  // Logistics requirements - false means N/A (not needed for this artist).
   // All default true so existing artists are unaffected.
   needsFlight: boolean("needs_flight").notNull().default(true),
   needsHotel: boolean("needs_hotel").notNull().default(true),

@@ -209,7 +209,7 @@ export async function getArtistStatusMap(
 }
 
 /**
- * Returns true if the artist has any actionable gap — i.e. a module they
+ * Returns true if the artist has any actionable gap - i.e. a module they
  * need but haven't completed yet. Respects needs_* flags so N/A modules
  * don't count as gaps.
  */
