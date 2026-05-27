@@ -26,15 +26,17 @@ export interface ArtistReadiness {
   agency: string | null;
   /** Items still missing (or in a non-final state) for this artist. */
   gaps: ReadinessGap[];
-  /** Convenience: total possible gap categories minus gaps.length. */
+  /** Modules this artist actually needs (denominator for progress). */
+  totalRequired: number;
+  /** totalRequired - gaps.length */
   doneCount: number;
-  /** Convenience: gaps.length. */
+  /** gaps.length */
   missingCount: number;
 }
 
 export interface FestivalReadiness {
   totalArtists: number;
-  /** Artists whose `gaps` is empty. */
+  /** Artists whose gaps array is empty. */
   fullyPrepped: number;
   /** 0..100, integer. 0 when totalArtists is 0. */
   percent: number;
@@ -42,21 +44,12 @@ export interface FestivalReadiness {
   byArtist: ArtistReadiness[];
 }
 
-const GAP_CATEGORIES = 6 as const;
-
 /**
  * Returns "what is missing" per active artist for the festival.
+ * Respects needs_* flags: modules marked N/A are excluded from gaps and
+ * do not count against the artist's readiness score.
  *
- * "Fully prepped" definition (chosen by Eli):
- *  - confirmed set
- *  - signed contract
- *  - at least one inbound flight (status not cancelled)
- *  - at least one hotel booking (status not cancelled / no_show)
- *  - at least one ground pickup
- *  - all payments paid or void (no outstanding)
- *
- * Used by the home worklist to surface "manage what's missing" without
- * the operator hopping between modules.
+ * "Fully prepped" = no gaps remaining across all required modules.
  */
 export async function getFestivalReadiness(
   festivalId: string,
@@ -75,6 +68,11 @@ export async function getFestivalReadiness(
         id: artists.id,
         name: artists.name,
         agency: artists.agency,
+        needsContract: artists.needsContract,
+        needsFlight: artists.needsFlight,
+        needsHotel: artists.needsHotel,
+        needsGround: artists.needsGround,
+        needsPayment: artists.needsPayment,
       })
       .from(artists)
       .where(
@@ -82,7 +80,7 @@ export async function getFestivalReadiness(
       )
       .orderBy(asc(artists.name)),
 
-    // Confirmed sets only. Joined to slots to scope by festival.
+    // Confirmed sets only — joined to slots to scope by festival.
     db
       .select({ artistId: sets.artistId })
       .from(sets)
@@ -92,10 +90,7 @@ export async function getFestivalReadiness(
       ),
 
     db
-      .select({
-        artistId: contracts.artistId,
-        status: contracts.status,
-      })
+      .select({ artistId: contracts.artistId, status: contracts.status })
       .from(contracts)
       .where(eq(contracts.festivalId, festivalId)),
 
@@ -130,10 +125,7 @@ export async function getFestivalReadiness(
       .where(eq(groundTransportPickups.festivalId, festivalId)),
 
     db
-      .select({
-        artistId: payments.artistId,
-        status: payments.status,
-      })
+      .select({ artistId: payments.artistId, status: payments.status })
       .from(payments)
       .where(eq(payments.festivalId, festivalId)),
   ]);
@@ -175,48 +167,64 @@ export async function getFestivalReadiness(
 
   const byArtist: ArtistReadiness[] = artistRows.map((a) => {
     const gaps: ReadinessGap[] = [];
+    let totalRequired = 1; // set is always required
 
+    // -- Set (always required) ---------------------------------------------
     if (!confirmedSetArtists.has(a.id)) gaps.push("set");
 
-    if (contractByArtist.get(a.id) !== "signed") gaps.push("contract");
-
-    const inbounds = inboundByArtist.get(a.id) ?? [];
-    const hasUsableInbound = inbounds.some(
-      (s) => s !== "cancelled" && s !== "not_needed",
-    );
-    if (!hasUsableInbound && !inbounds.includes("not_needed")) {
-      gaps.push("inbound_flight");
+    // -- Contract ----------------------------------------------------------
+    if (a.needsContract) {
+      totalRequired++;
+      if (contractByArtist.get(a.id) !== "signed") gaps.push("contract");
     }
 
-    const hotels = hotelByArtist.get(a.id) ?? [];
-    const hasUsableHotel = hotels.some(
-      (s) => s !== "cancelled" && s !== "no_show" && s !== "not_needed",
-    );
-    if (!hasUsableHotel && !hotels.includes("not_needed")) {
-      gaps.push("hotel");
+    // -- Inbound flight ----------------------------------------------------
+    if (a.needsFlight) {
+      totalRequired++;
+      const inbounds = inboundByArtist.get(a.id) ?? [];
+      const hasUsable = inbounds.some((s) => s !== "cancelled");
+      if (!hasUsable) gaps.push("inbound_flight");
     }
 
-    if (!pickupArtists.has(a.id)) gaps.push("pickup");
+    // -- Hotel -------------------------------------------------------------
+    if (a.needsHotel) {
+      totalRequired++;
+      const hotels = hotelByArtist.get(a.id) ?? [];
+      const hasUsable = hotels.some(
+        (s) => s !== "cancelled" && s !== "no_show",
+      );
+      if (!hasUsable) gaps.push("hotel");
+    }
 
-    const pays = paymentsByArtist.get(a.id) ?? [];
-    const anyOutstanding = pays.some((s) => s !== "paid" && s !== "void");
-    if (anyOutstanding) gaps.push("payment");
+    // -- Ground transport --------------------------------------------------
+    if (a.needsGround) {
+      totalRequired++;
+      if (!pickupArtists.has(a.id)) gaps.push("pickup");
+    }
+
+    // -- Payment -----------------------------------------------------------
+    if (a.needsPayment) {
+      totalRequired++;
+      const pays = paymentsByArtist.get(a.id) ?? [];
+      const anyOutstanding = pays.some((s) => s !== "paid" && s !== "void");
+      if (anyOutstanding || pays.length === 0) gaps.push("payment");
+    }
 
     return {
       artistId: a.id,
       artistName: a.name,
       agency: a.agency,
       gaps,
-      doneCount: GAP_CATEGORIES - gaps.length,
+      totalRequired,
+      doneCount: totalRequired - gaps.length,
       missingCount: gaps.length,
     };
   });
 
   // Sort: most-missing first, then alphabetical.
   byArtist.sort((a, b) => {
-    if (a.missingCount !== b.missingCount) {
+    if (a.missingCount !== b.missingCount)
       return b.missingCount - a.missingCount;
-    }
     return a.artistName.localeCompare(b.artistName);
   });
 
@@ -225,12 +233,7 @@ export async function getFestivalReadiness(
   const percent =
     totalArtists === 0 ? 0 : Math.round((fullyPrepped / totalArtists) * 100);
 
-  return {
-    totalArtists,
-    fullyPrepped,
-    percent,
-    byArtist,
-  };
+  return { totalArtists, fullyPrepped, percent, byArtist };
 }
 
 /** Human label for a gap, matched to the artist page logistics labels. */
@@ -243,7 +246,7 @@ export const GAP_LABEL: Record<ReadinessGap, string> = {
   payment: "payment",
 };
 
-/** CSS utility class for each gap's pill - maps module color to gap type. */
+/** CSS utility class for each gap's pill. */
 export const GAP_PILL: Record<ReadinessGap, string> = {
   set: "pill-amber",
   contract: "pill-emerald",

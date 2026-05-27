@@ -673,7 +673,16 @@ describe("getFestivalReadiness", () => {
   const ARTIST_B = "bbbbbbbb-bbbb-4bbb-8bbb-222222222222";
 
   function seed(opts: {
-    artists: { id: string; name: string; agency: string | null }[];
+    artists: {
+      id: string;
+      name: string;
+      agency: string | null;
+      needsContract?: boolean;
+      needsFlight?: boolean;
+      needsHotel?: boolean;
+      needsGround?: boolean;
+      needsPayment?: boolean;
+    }[];
     confirmedSets: string[];
     contracts: { artistId: string; status: string }[];
     inboundFlights: { personId: string; personKind: string; status: string }[];
@@ -693,8 +702,26 @@ describe("getFestivalReadiness", () => {
   it("returns 100% when both artists have everything", async () => {
     seed({
       artists: [
-        { id: ARTIST_A, name: "Anouk", agency: "WME" },
-        { id: ARTIST_B, name: "Boris", agency: null },
+        {
+          id: ARTIST_A,
+          name: "Anouk",
+          agency: "WME",
+          needsContract: true,
+          needsFlight: true,
+          needsHotel: true,
+          needsGround: true,
+          needsPayment: true,
+        },
+        {
+          id: ARTIST_B,
+          name: "Boris",
+          agency: null,
+          needsContract: true,
+          needsFlight: true,
+          needsHotel: true,
+          needsGround: true,
+          needsPayment: true,
+        },
       ],
       confirmedSets: [ARTIST_A, ARTIST_B],
       contracts: [
@@ -729,8 +756,26 @@ describe("getFestivalReadiness", () => {
   it("flags every missing piece and sorts most-missing first", async () => {
     seed({
       artists: [
-        { id: ARTIST_A, name: "Anouk", agency: null },
-        { id: ARTIST_B, name: "Boris", agency: null },
+        {
+          id: ARTIST_A,
+          name: "Anouk",
+          agency: null,
+          needsContract: true,
+          needsFlight: true,
+          needsHotel: true,
+          needsGround: true,
+          needsPayment: true,
+        },
+        {
+          id: ARTIST_B,
+          name: "Boris",
+          agency: null,
+          needsContract: true,
+          needsFlight: true,
+          needsHotel: true,
+          needsGround: true,
+          needsPayment: true,
+        },
       ],
       // ARTIST_A fully prepped, ARTIST_B missing everything
       confirmedSets: [ARTIST_A],
@@ -767,18 +812,25 @@ describe("getFestivalReadiness", () => {
     expect(out.byArtist[1]!.gaps).toEqual([]);
   });
 
-  it("respects 'not_needed' for flights and hotels", async () => {
+  it("respects needs_* flags for flights and hotels", async () => {
     seed({
-      artists: [{ id: ARTIST_A, name: "Local DJ", agency: null }],
+      artists: [
+        {
+          id: ARTIST_A,
+          name: "Local DJ",
+          agency: null,
+          needsContract: true,
+          needsFlight: false,
+          needsHotel: false,
+          needsGround: false,
+          needsPayment: true,
+        },
+      ],
       confirmedSets: [ARTIST_A],
       contracts: [{ artistId: ARTIST_A, status: "signed" }],
-      inboundFlights: [
-        { personId: ARTIST_A, personKind: "artist", status: "not_needed" },
-      ],
-      bookings: [
-        { personId: ARTIST_A, personKind: "artist", status: "not_needed" },
-      ],
-      pickups: [{ personId: ARTIST_A, personKind: "artist" }],
+      inboundFlights: [],
+      bookings: [],
+      pickups: [],
       payments: [{ artistId: ARTIST_A, status: "paid" }],
     });
 
@@ -789,7 +841,18 @@ describe("getFestivalReadiness", () => {
 
   it("ignores crew rows when computing artist readiness", async () => {
     seed({
-      artists: [{ id: ARTIST_A, name: "Anouk", agency: null }],
+      artists: [
+        {
+          id: ARTIST_A,
+          name: "Anouk",
+          agency: null,
+          needsContract: true,
+          needsFlight: true,
+          needsHotel: true,
+          needsGround: true,
+          needsPayment: true,
+        },
+      ],
       confirmedSets: [ARTIST_A],
       contracts: [{ artistId: ARTIST_A, status: "signed" }],
       // Flight + hotel + pickup are all for crew, not the artist

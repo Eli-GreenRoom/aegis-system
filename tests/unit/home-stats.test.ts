@@ -102,8 +102,26 @@ describe("getFestivalReadiness percent", () => {
   it("returns 100% when all artists are fully prepped", async () => {
     // artists
     pushQueryResult([
-      { id: ARTIST_A, name: "Hiroko Yamamura", agency: null },
-      { id: ARTIST_B, name: "DJ Tennis", agency: "Life and Death" },
+      {
+        id: ARTIST_A,
+        name: "Hiroko Yamamura",
+        agency: null,
+        needsContract: true,
+        needsFlight: true,
+        needsHotel: true,
+        needsGround: true,
+        needsPayment: true,
+      },
+      {
+        id: ARTIST_B,
+        name: "DJ Tennis",
+        agency: "Life and Death",
+        needsContract: true,
+        needsFlight: true,
+        needsHotel: true,
+        needsGround: true,
+        needsPayment: true,
+      },
     ]);
     // sets — both confirmed
     pushQueryResult([{ artistId: ARTIST_A }, { artistId: ARTIST_B }]);
@@ -127,8 +145,11 @@ describe("getFestivalReadiness percent", () => {
       { personId: ARTIST_A, personKind: "artist" },
       { personId: ARTIST_B, personKind: "artist" },
     ]);
-    // payments — none outstanding (empty means no gaps)
-    pushQueryResult([]);
+    // payments — both paid
+    pushQueryResult([
+      { artistId: ARTIST_A, status: "paid" },
+      { artistId: ARTIST_B, status: "paid" },
+    ]);
 
     const { getFestivalReadiness } =
       await import("@/lib/aggregators/artist-readiness");
@@ -141,7 +162,18 @@ describe("getFestivalReadiness percent", () => {
   });
 
   it("returns 0% when no artists are prepped", async () => {
-    pushQueryResult([{ id: ARTIST_A, name: "Hiroko Yamamura", agency: null }]);
+    pushQueryResult([
+      {
+        id: ARTIST_A,
+        name: "Hiroko Yamamura",
+        agency: null,
+        needsContract: true,
+        needsFlight: true,
+        needsHotel: true,
+        needsGround: true,
+        needsPayment: true,
+      },
+    ]);
     pushQueryResult([]); // no sets
     pushQueryResult([]); // no contracts
     pushQueryResult([]); // no flights
