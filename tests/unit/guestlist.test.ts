@@ -6,7 +6,7 @@ import {
   FIXTURE_GUEST_ID,
   fixtureGuest,
 } from "../fixtures/guestlist";
-import { fakeOwnerSession } from "../fixtures/session";
+import { fakeOwnerSession, FIXTURE_WORKSPACE_ID } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -52,7 +52,7 @@ vi.mock("@/db/client", () => ({
 vi.mock("@/lib/guestlist/repo", () => ({
   listGuestlist: vi.fn(async () => [fixtureGuest]),
   getGuestlistEntry: vi.fn(async () => fixtureGuest),
-  createGuestlistEntry: vi.fn(async (_editionId, input) => ({
+  createGuestlistEntry: vi.fn(async (_editionId, _workspaceId, input) => ({
     ...fixtureGuest,
     ...input,
     id: FIXTURE_GUEST_ID,
@@ -146,6 +146,7 @@ describe("/api/guestlist", () => {
     expect(res.status).toBe(201);
     expect(mocks.repo.createGuestlistEntry).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({
         category: "dj_guest",
         name: "Yuki Tanaka",
@@ -202,6 +203,7 @@ describe("/api/guestlist", () => {
     );
     expect(mocks.repo.createGuestlistEntry).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({ hostArtistId: null }),
     );
   });

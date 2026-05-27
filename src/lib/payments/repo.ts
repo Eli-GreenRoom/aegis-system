@@ -64,11 +64,12 @@ export async function getInvoice(id: string): Promise<Invoice | null> {
 
 export async function createInvoice(
   festivalId: string,
+  workspaceId: string,
   input: InvoiceDbValues,
 ): Promise<Invoice> {
   const [row] = await db
     .insert(invoices)
-    .values({ ...input, festivalId })
+    .values({ ...input, festivalId, workspaceId })
     .returning();
   return row;
 }
@@ -184,11 +185,12 @@ export async function getPayment(id: string): Promise<Payment | null> {
 
 export async function createPayment(
   festivalId: string,
+  workspaceId: string,
   input: PaymentDbValues,
 ): Promise<Payment> {
   const [row] = await db
     .insert(payments)
-    .values({ ...input, festivalId })
+    .values({ ...input, festivalId, workspaceId })
     .returning();
   return row;
 }

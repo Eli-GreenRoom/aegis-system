@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
 
   const created = await createGuestlistEntry(
     festival.id,
+    session.workspaceId,
     guestlistToDbValues(parsed.data),
   );
   return Response.json({ entry: created }, { status: 201 });

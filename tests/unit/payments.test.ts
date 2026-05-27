@@ -9,7 +9,7 @@ import {
   fixtureInvoice,
   fixturePayment,
 } from "../fixtures/payments";
-import { fakeOwnerSession } from "../fixtures/session";
+import { fakeOwnerSession, FIXTURE_WORKSPACE_ID } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -65,7 +65,7 @@ vi.mock("@/lib/payments/repo", () => ({
   listInvoices: vi.fn(async () => [fixtureInvoice]),
   listInvoiceIssuerKinds: vi.fn(async () => ["agency"]),
   getInvoice: vi.fn(async () => fixtureInvoice),
-  createInvoice: vi.fn(async (_editionId, input) => ({
+  createInvoice: vi.fn(async (_editionId, _workspaceId, input) => ({
     ...fixtureInvoice,
     ...input,
     id: FIXTURE_INVOICE_ID,
@@ -79,7 +79,7 @@ vi.mock("@/lib/payments/repo", () => ({
   // payments
   listPayments: vi.fn(async () => [fixturePayment]),
   getPayment: vi.fn(async () => fixturePayment),
-  createPayment: vi.fn(async (_editionId, input) => ({
+  createPayment: vi.fn(async (_editionId, _workspaceId, input) => ({
     ...fixturePayment,
     ...input,
     id: FIXTURE_PAYMENT_ID,
@@ -203,6 +203,7 @@ describe("/api/invoices", () => {
     expect(res.status).toBe(201);
     expect(mocks.repo.createInvoice).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({
         issuerKind: "agency",
         amountCents: 250000,
@@ -218,6 +219,7 @@ describe("/api/invoices", () => {
     );
     expect(mocks.repo.createInvoice).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({ status: "received" }),
     );
   });
@@ -233,6 +235,7 @@ describe("/api/invoices", () => {
     );
     expect(mocks.repo.createInvoice).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({
         number: null,
         fileUrl: null,
@@ -432,6 +435,7 @@ describe("/api/payments", () => {
     expect(res.status).toBe(201);
     expect(mocks.repo.createPayment).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({
         description: "Hiroko - deposit",
         amountCents: 100000,
@@ -448,6 +452,7 @@ describe("/api/payments", () => {
     );
     expect(mocks.repo.createPayment).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({ status: "pending" }),
     );
   });
@@ -492,6 +497,7 @@ describe("/api/payments", () => {
     );
     expect(mocks.repo.createPayment).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({
         artistId: null,
         vendorId: null,

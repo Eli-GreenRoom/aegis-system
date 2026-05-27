@@ -6,7 +6,7 @@ import {
   FIXTURE_FLIGHT_ID,
   fixtureFlight,
 } from "../fixtures/flight";
-import { fakeOwnerSession } from "../fixtures/session";
+import { fakeOwnerSession, FIXTURE_WORKSPACE_ID } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -61,7 +61,7 @@ vi.mock("@/lib/flights/repo", () => ({
   listFlights: vi.fn(async () => [fixtureFlight]),
   listFlightsForPerson: vi.fn(async () => [fixtureFlight]),
   getFlight: vi.fn(async () => fixtureFlight),
-  createFlight: vi.fn(async (_editionId, input) => ({
+  createFlight: vi.fn(async (_editionId, _workspaceId, input) => ({
     ...fixtureFlight,
     ...input,
     id: FIXTURE_FLIGHT_ID,
@@ -237,6 +237,7 @@ describe("POST /api/flights", () => {
     expect(res.status).toBe(201);
     expect(mocks.repo.createFlight).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({ status: "delayed", delayMinutes: 45 }),
     );
   });
@@ -257,6 +258,7 @@ describe("POST /api/flights", () => {
     await createPOST(jsonReq("http://test/api/flights", "POST", validInput));
     expect(mocks.repo.createFlight).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({ delayMinutes: null }),
     );
   });

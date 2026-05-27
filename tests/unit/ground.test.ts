@@ -73,7 +73,7 @@ vi.mock("@/lib/ground/repo", () => ({
   // pickups
   listPickups: vi.fn(async () => [fixturePickup]),
   getPickup: vi.fn(async () => fixturePickup),
-  createPickup: vi.fn(async (_editionId, input) => ({
+  createPickup: vi.fn(async (_editionId, _workspaceId, input) => ({
     ...fixturePickup,
     ...input,
     id: FIXTURE_PICKUP_ID,

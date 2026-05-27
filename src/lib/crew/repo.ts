@@ -61,11 +61,12 @@ export async function getCrewMember(id: string): Promise<CrewMember | null> {
 
 export async function createCrewMember(
   festivalId: string,
+  workspaceId: string,
   input: CrewDbValues,
 ): Promise<CrewMember> {
   const [row] = await db
     .insert(crew)
-    .values({ ...input, festivalId })
+    .values({ ...input, festivalId, workspaceId })
     .returning();
   return row;
 }

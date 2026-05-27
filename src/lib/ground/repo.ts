@@ -112,11 +112,12 @@ export async function getPickup(id: string): Promise<Pickup | null> {
 
 export async function createPickup(
   festivalId: string,
+  workspaceId: string,
   input: PickupDbValues,
 ): Promise<Pickup> {
   const [row] = await db
     .insert(groundTransportPickups)
-    .values({ ...input, festivalId })
+    .values({ ...input, festivalId, workspaceId })
     .returning();
   return row;
 }

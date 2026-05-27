@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
 
   const created = await createPayment(
     festival.id,
+    session.workspaceId,
     paymentToDbValues(parsed.data),
   );
   return Response.json({ payment: created }, { status: 201 });

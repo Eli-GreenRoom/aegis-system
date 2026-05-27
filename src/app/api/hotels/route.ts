@@ -38,6 +38,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const created = await createHotel(hotelToDbValues(parsed.data));
+  const created = await createHotel(
+    session.workspaceId,
+    hotelToDbValues(parsed.data),
+  );
   return Response.json({ hotel: created }, { status: 201 });
 }

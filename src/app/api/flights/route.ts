@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
 
   const created = await createFlight(
     festival.id,
+    session.workspaceId,
     flightToDbValues(parsed.data),
   );
   return Response.json({ flight: created }, { status: 201 });

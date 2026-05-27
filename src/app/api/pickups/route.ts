@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
 
   const created = await createPickup(
     festival.id,
+    session.workspaceId,
     pickupToDbValues(parsed.data),
   );
   return Response.json({ pickup: created }, { status: 201 });

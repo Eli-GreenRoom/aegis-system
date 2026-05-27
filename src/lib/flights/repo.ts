@@ -76,11 +76,12 @@ export async function listFlightsForPerson(
 
 export async function createFlight(
   festivalId: string,
+  workspaceId: string,
   input: FlightDbValues,
 ): Promise<Flight> {
   const [row] = await db
     .insert(flights)
-    .values({ ...input, festivalId })
+    .values({ ...input, festivalId, workspaceId })
     .returning();
   return row;
 }

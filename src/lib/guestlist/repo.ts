@@ -65,11 +65,12 @@ export async function getGuestlistEntry(
 
 export async function createGuestlistEntry(
   festivalId: string,
+  workspaceId: string,
   input: GuestlistDbValues,
 ): Promise<GuestlistEntry> {
   const [row] = await db
     .insert(guestlistEntries)
-    .values({ ...input, festivalId })
+    .values({ ...input, festivalId, workspaceId })
     .returning();
   return row;
 }

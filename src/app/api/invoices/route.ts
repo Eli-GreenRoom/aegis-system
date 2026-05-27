@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
 
   const created = await createInvoice(
     festival.id,
+    session.workspaceId,
     invoiceToDbValues(parsed.data),
   );
   return Response.json({ invoice: created }, { status: 201 });

@@ -45,8 +45,14 @@ export async function getHotel(id: string): Promise<Hotel | null> {
   return row ?? null;
 }
 
-export async function createHotel(input: HotelDbValues): Promise<Hotel> {
-  const [row] = await db.insert(hotels).values(input).returning();
+export async function createHotel(
+  workspaceId: string,
+  input: HotelDbValues,
+): Promise<Hotel> {
+  const [row] = await db
+    .insert(hotels)
+    .values({ ...input, workspaceId })
+    .returning();
   return row;
 }
 
@@ -201,9 +207,13 @@ export async function getBooking(id: string): Promise<Booking | null> {
 }
 
 export async function createBooking(
+  workspaceId: string,
   input: HotelBookingDbValues,
 ): Promise<Booking> {
-  const [row] = await db.insert(hotelBookings).values(input).returning();
+  const [row] = await db
+    .insert(hotelBookings)
+    .values({ ...input, workspaceId })
+    .returning();
   return row;
 }
 

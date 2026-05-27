@@ -5,7 +5,7 @@ import {
   FIXTURE_EDITION_ID,
   fixtureCrew,
 } from "../fixtures/crew";
-import { fakeOwnerSession } from "../fixtures/session";
+import { fakeOwnerSession, FIXTURE_WORKSPACE_ID } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -47,7 +47,7 @@ vi.mock("@/lib/crew/repo", () => ({
   listCrew: vi.fn(async () => [fixtureCrew]),
   listCrewRoles: vi.fn(async () => ["Stage manager"]),
   getCrewMember: vi.fn(async () => fixtureCrew),
-  createCrewMember: vi.fn(async (_editionId, input) => ({
+  createCrewMember: vi.fn(async (_editionId, _workspaceId, input) => ({
     ...fixtureCrew,
     ...input,
     id: FIXTURE_CREW_ID,
@@ -154,6 +154,7 @@ describe("POST /api/crew", () => {
     expect(body.crew.name).toBe("Mira");
     expect(mocks.repo.createCrewMember).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({ name: "Mira", role: "Tour manager" }),
     );
   });
@@ -203,6 +204,7 @@ describe("POST /api/crew", () => {
     expect(res.status).toBe(201);
     expect(mocks.repo.createCrewMember).toHaveBeenCalledWith(
       FIXTURE_EDITION_ID,
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({
         nationality: "FR",
         visaStatus: "approved",

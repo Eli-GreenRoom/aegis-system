@@ -10,7 +10,7 @@ import {
   fixtureHotel,
   fixtureRoomBlock,
 } from "../fixtures/hotels";
-import { fakeOwnerSession } from "../fixtures/session";
+import { fakeOwnerSession, FIXTURE_WORKSPACE_ID } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -65,7 +65,7 @@ vi.mock("@/lib/hotels/repo", () => ({
   // hotels
   listHotels: vi.fn(async () => [fixtureHotel]),
   getHotel: vi.fn(async () => fixtureHotel),
-  createHotel: vi.fn(async (input) => ({
+  createHotel: vi.fn(async (_workspaceId, input) => ({
     ...fixtureHotel,
     ...input,
     id: FIXTURE_HOTEL_ID,
@@ -93,7 +93,7 @@ vi.mock("@/lib/hotels/repo", () => ({
   // bookings
   listBookings: vi.fn(async () => [fixtureBooking]),
   getBooking: vi.fn(async () => fixtureBooking),
-  createBooking: vi.fn(async (input) => ({
+  createBooking: vi.fn(async (_workspaceId, input) => ({
     ...fixtureBooking,
     ...input,
     id: FIXTURE_BOOKING_ID,
@@ -204,6 +204,7 @@ describe("/api/hotels", () => {
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createHotel).toHaveBeenCalledWith(
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({ name: "Aqua Resort", location: "Batroun" }),
     );
   });
@@ -217,6 +218,7 @@ describe("/api/hotels", () => {
       }),
     );
     expect(mocks.repo.createHotel).toHaveBeenCalledWith(
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({ location: null, contactEmail: null }),
     );
   });
@@ -540,6 +542,7 @@ describe("/api/hotel-bookings", () => {
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createBooking).toHaveBeenCalledWith(
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({
         hotelId: FIXTURE_HOTEL_ID,
         personKind: "artist",
@@ -593,6 +596,7 @@ describe("/api/hotel-bookings", () => {
     );
     expect(res.status).toBe(201);
     expect(mocks.repo.createBooking).toHaveBeenCalledWith(
+      FIXTURE_WORKSPACE_ID,
       expect.objectContaining({ roomBlockId: null }),
     );
   });

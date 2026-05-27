@@ -65,6 +65,10 @@ export async function POST(req: NextRequest) {
   if (!festival)
     return Response.json({ error: "No festival" }, { status: 404 });
 
-  const created = await createCrewMember(festival.id, toDbValues(parsed.data));
+  const created = await createCrewMember(
+    festival.id,
+    session.workspaceId,
+    toDbValues(parsed.data),
+  );
   return Response.json({ crew: created }, { status: 201 });
 }
