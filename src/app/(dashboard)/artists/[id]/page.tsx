@@ -1,6 +1,5 @@
 export const dynamic = "force-dynamic";
 
-import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Route } from "next";
@@ -14,14 +13,32 @@ import { listArtists } from "@/lib/artists/repo";
 import { listPeople } from "@/lib/people";
 import { listHotels, listRoomBlocks } from "@/lib/hotels/repo";
 import ArtistCockpit from "./_components/ArtistCockpit";
+import type { LogisticsTab } from "./_components/LogisticsSheet";
 import AuditHistory from "@/components/ui/AuditHistory";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ focus?: string }>;
 }
 
-export default async function ArtistDetailPage({ params }: PageProps) {
+const VALID_FOCUS: LogisticsTab[] = [
+  "travel",
+  "stay",
+  "ground",
+  "docs",
+  "money",
+];
+
+export default async function ArtistDetailPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { id } = await params;
+  const sp = await searchParams;
+  const initialFocus =
+    sp.focus && (VALID_FOCUS as string[]).includes(sp.focus)
+      ? (sp.focus as LogisticsTab)
+      : null;
 
   const session = await getAppSession();
   if (!session) redirect("/sign-in");
@@ -77,13 +94,12 @@ export default async function ArtistDetailPage({ params }: PageProps) {
         }
       />
 
-      <Suspense fallback={null}>
-        <ArtistCockpit
-          sheet={sheet}
-          progress={progress}
-          reference={{ artists, people, hotels, blocks }}
-        />
-      </Suspense>
+      <ArtistCockpit
+        sheet={sheet}
+        progress={progress}
+        reference={{ artists, people, hotels, blocks }}
+        initialFocus={initialFocus}
+      />
       <div className="px-6 pb-6">
         <AuditHistory entityType="artist" entityId={sheet.artist.id} />
       </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { format } from "date-fns";
 import LogisticsSheet, { type LogisticsTab } from "./LogisticsSheet";
@@ -27,6 +27,9 @@ interface Props {
     hotels: Hotel[];
     blocks: RoomBlock[];
   };
+  /** When non-null, open the Logistics sheet on this tab on first render.
+   *  Driven by `?focus=` on the artist page (set server-side). */
+  initialFocus?: LogisticsTab | null;
 }
 
 type Level = "ok" | "warn" | "missing" | "na";
@@ -60,25 +63,18 @@ function sheetKindToTab(k: SheetKind): LogisticsTab {
   }
 }
 
-const VALID_TABS: LogisticsTab[] = [
-  "travel",
-  "stay",
-  "ground",
-  "docs",
-  "money",
-];
-
-export default function ArtistCockpit({ sheet, progress, reference }: Props) {
+export default function ArtistCockpit({
+  sheet,
+  progress,
+  reference,
+  initialFocus,
+}: Props) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  // Honor ?focus= from the home page gap pills so the sheet opens on the
-  // right tab immediately on mount.
-  const [logisticsTab, setLogisticsTab] = useState<LogisticsTab | null>(() => {
-    const focus = searchParams.get("focus");
-    return focus && (VALID_TABS as string[]).includes(focus)
-      ? (focus as LogisticsTab)
-      : null;
-  });
+  // Honor ?focus= (passed in from server) so the sheet opens on the right
+  // tab when the operator arrives from a home-page gap pill.
+  const [logisticsTab, setLogisticsTab] = useState<LogisticsTab | null>(
+    initialFocus ?? null,
+  );
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   const { artist } = sheet;
