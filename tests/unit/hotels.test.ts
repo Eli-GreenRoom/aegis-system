@@ -661,6 +661,7 @@ describe("/api/hotel-bookings/[id]", () => {
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
       {
+        workspaceId: FIXTURE_WORKSPACE_ID,
         actorId: "u1",
         entity: { type: "hotel_booking", id: FIXTURE_BOOKING_ID },
         diff: { field: "status", from: "booked", to: "checked_in" },

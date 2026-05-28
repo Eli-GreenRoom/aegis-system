@@ -10,7 +10,7 @@ import {
   fixtureSlot,
   fixtureStage,
 } from "../fixtures/lineup";
-import { fakeOwnerSession } from "../fixtures/session";
+import { fakeOwnerSession, FIXTURE_WORKSPACE_ID } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -455,6 +455,7 @@ describe("/api/sets/[id]", () => {
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
       {
+        workspaceId: FIXTURE_WORKSPACE_ID,
         actorId: "u1",
         entity: { type: "set", id: FIXTURE_SET_ID },
         diff: { field: "status", from: "option", to: "confirmed" },

@@ -295,6 +295,7 @@ describe("/api/flights/[id]", () => {
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
       {
+        workspaceId: FIXTURE_WORKSPACE_ID,
         actorId: "u1",
         entity: { type: "flight", id: FIXTURE_FLIGHT_ID },
         diff: { field: "status", from: "scheduled", to: "landed" },

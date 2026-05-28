@@ -348,6 +348,7 @@ describe("/api/invoices/[id]", () => {
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
       {
+        workspaceId: FIXTURE_WORKSPACE_ID,
         actorId: "u1",
         entity: { type: "invoice", id: FIXTURE_INVOICE_ID },
         diff: { field: "status", from: "received", to: "approved" },
@@ -548,6 +549,7 @@ describe("/api/payments/[id]", () => {
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
       {
+        workspaceId: FIXTURE_WORKSPACE_ID,
         actorId: "u1",
         entity: { type: "payment", id: FIXTURE_PAYMENT_ID },
         diff: { field: "status", from: "pending", to: "paid" },

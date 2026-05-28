@@ -58,9 +58,12 @@ beforeEach(() => {
   selectSpy.mockClear();
 });
 
+const WS = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+
 describe("recordTransition", () => {
   it("returns a Drizzle insert builder targeting auditEvents", () => {
     const builder = recordTransition(db, {
+      workspaceId: WS,
       actorId: "u1",
       entity: { type: "flight", id: "f1" },
       diff: { field: "status", from: "scheduled", to: "landed" },
@@ -70,14 +73,16 @@ describe("recordTransition", () => {
     expect(builder).toEqual({ __returning: true, values: expect.anything() });
   });
 
-  it("captures actor + entity + diff in the row payload", () => {
+  it("captures workspaceId + actor + entity + diff in the row payload", () => {
     recordTransition(db, {
+      workspaceId: WS,
       actorId: "u1",
       entity: { type: "pickup", id: "p1" },
       diff: { field: "status", from: "scheduled", to: "in_transit" },
     });
     expect(capturedValues).toHaveLength(1);
     expect(capturedValues[0]).toEqual({
+      workspaceId: WS,
       actorId: "u1",
       action: "transition",
       entityType: "pickup",
@@ -88,6 +93,7 @@ describe("recordTransition", () => {
 
   it("includes optional meta in the diff JSON when supplied", () => {
     recordTransition(db, {
+      workspaceId: WS,
       actorId: "u2",
       entity: { type: "set", id: "s1" },
       diff: {
@@ -109,6 +115,7 @@ describe("recordTransition", () => {
 
   it("omits the meta key entirely when not supplied", () => {
     recordTransition(db, {
+      workspaceId: WS,
       actorId: "u1",
       entity: { type: "flight", id: "f1" },
       diff: { field: "status", from: "scheduled", to: "boarded" },
@@ -132,6 +139,7 @@ describe("recordTransition", () => {
     for (const type of types) {
       capturedValues.length = 0;
       recordTransition(db, {
+        workspaceId: WS,
         actorId: "u1",
         entity: { type, id: "x" },
         diff: { field: "status", from: "a", to: "b" },

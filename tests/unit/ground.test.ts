@@ -8,7 +8,7 @@ import {
   fixturePickup,
   fixtureVendor,
 } from "../fixtures/ground";
-import { fakeOwnerSession } from "../fixtures/session";
+import { fakeOwnerSession, FIXTURE_WORKSPACE_ID } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -324,6 +324,7 @@ describe("/api/pickups/[id]", () => {
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
       {
+        workspaceId: FIXTURE_WORKSPACE_ID,
         actorId: "u1",
         entity: { type: "pickup", id: FIXTURE_PICKUP_ID },
         diff: { field: "status", from: "scheduled", to: "completed" },

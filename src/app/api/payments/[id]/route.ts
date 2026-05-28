@@ -75,6 +75,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     const [rows] = await db.batch([
       buildUpdatePayment(id, finalPatch),
       recordTransition(db, {
+        workspaceId: session.workspaceId,
         actorId: session.user.id,
         entity: { type: "payment", id },
         diff: { field: "status", from: existing.status, to: patch.status },

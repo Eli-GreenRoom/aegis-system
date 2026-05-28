@@ -6,7 +6,7 @@ import {
   FIXTURE_EDITION_ID,
   fixtureContract,
 } from "../fixtures/contracts";
-import { fakeOwnerSession } from "../fixtures/session";
+import { fakeOwnerSession, FIXTURE_WORKSPACE_ID } from "../fixtures/session";
 
 vi.mock("@/lib/session", () => ({
   getAppSession: vi.fn(),
@@ -230,6 +230,7 @@ describe("/api/contracts/[id]", () => {
     expect(mocks.audit.recordTransition).toHaveBeenCalledWith(
       expect.anything(),
       {
+        workspaceId: FIXTURE_WORKSPACE_ID,
         actorId: "u1",
         entity: { type: "contract", id: FIXTURE_CONTRACT_ID },
         diff: { field: "status", from: "draft", to: "sent" },

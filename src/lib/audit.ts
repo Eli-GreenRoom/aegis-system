@@ -83,15 +83,17 @@ export async function getAuditHistory(
 export function recordTransition(
   client: Db,
   args: {
+    workspaceId: string;
     actorId: string;
     entity: { type: AuditEntityType; id: string };
     diff: AuditDiff;
   },
 ) {
-  const { actorId, entity, diff } = args;
+  const { workspaceId, actorId, entity, diff } = args;
   return client
     .insert(auditEvents)
     .values({
+      workspaceId,
       actorId,
       action: "transition",
       entityType: entity.type,

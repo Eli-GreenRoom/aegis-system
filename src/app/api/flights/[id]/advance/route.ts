@@ -56,6 +56,7 @@ export async function POST(_req: NextRequest, ctx: Ctx) {
   const [rows] = await db.batch([
     buildUpdateFlight(id, patch),
     recordTransition(db, {
+      workspaceId: session.workspaceId,
       actorId: session.user.id,
       entity: { type: "flight", id },
       diff: { field: "status", from: existing.status, to: next },
