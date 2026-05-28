@@ -11,6 +11,11 @@ export interface ArtistStatusSummary {
   outboundFlight: string | null;
   hotelStatus: string | null;
   groundStatus: string | null;
+  /** True iff at least one payment record exists for this artist (any
+   *  status, including paid/void). Lets the UI tell "nothing logged
+   *  yet" from "all paid". */
+  hasAnyPayment: boolean;
+  /** Count of payment rows whose status is not 'paid' and not 'void'. */
   outstandingPayments: number;
   ridersReady: boolean | null;
   // Logistics requirement flags from the artists table
@@ -25,7 +30,8 @@ export interface ArtistStatusSummary {
 export function hasGap(s: ArtistStatusSummary): boolean {
   if (!s.setStatus) return true;
   if (s.needsContract && !s.contractStatus) return true;
-  if (s.needsPayment && s.outstandingPayments > 0) return true;
+  if (s.needsPayment && (!s.hasAnyPayment || s.outstandingPayments > 0))
+    return true;
   if (s.needsFlight && (!s.inboundFlight || !s.outboundFlight)) return true;
   if (s.needsHotel && !s.hotelStatus) return true;
   if (s.needsGround && !s.groundStatus) return true;

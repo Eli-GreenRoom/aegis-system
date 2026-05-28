@@ -130,6 +130,10 @@ export default function ArtistsTable({ artists, statusMap }: Props) {
                 <td className="px-4 py-3 hidden lg:table-cell">
                   {s && !s.needsPayment ? (
                     <NA />
+                  ) : s && !s.hasAnyPayment ? (
+                    <span className="text-mono text-[10px] text-[--color-warn]">
+                      missing
+                    </span>
                   ) : s && s.outstandingPayments > 0 ? (
                     <span className="text-mono text-[10px] text-[--color-warn]">
                       {s.outstandingPayments} due

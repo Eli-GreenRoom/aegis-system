@@ -215,6 +215,12 @@ function PaymentCell({ status }: { status: ArtistStatusSummary }) {
         <PillNA />
       </Cell>
     );
+  if (!status.hasAnyPayment)
+    return (
+      <Cell>
+        <PillMissing />
+      </Cell>
+    );
   if (status.outstandingPayments > 0)
     return (
       <Cell>

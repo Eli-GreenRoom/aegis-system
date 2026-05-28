@@ -1,4 +1,4 @@
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   artists,
@@ -30,6 +30,7 @@ export async function getArtistStatusMap(
     outboundFlight: null,
     hotelStatus: null,
     groundStatus: null,
+    hasAnyPayment: false,
     outstandingPayments: 0,
     ridersReady: null,
     needsFlight: true,
@@ -112,16 +113,13 @@ export async function getArtistStatusMap(
           inArray(groundTransportPickups.personId, artistIds),
         ),
       ),
+    // All payment rows (any status). We need to distinguish "no payments
+    // logged yet" from "all paid", so the unpaid filter from earlier was
+    // wrong - it conflated both into outstandingPayments=0.
     db
       .select({ artistId: payments.artistId, status: payments.status })
       .from(payments)
-      .where(
-        and(
-          inArray(payments.artistId, artistIds),
-          ne(payments.status, "paid"),
-          ne(payments.status, "void"),
-        ),
-      ),
+      .where(inArray(payments.artistId, artistIds)),
     db
       .select({
         artistId: riders.artistId,
@@ -183,7 +181,9 @@ export async function getArtistStatusMap(
   for (const r of paymentRows) {
     if (!r.artistId) continue;
     const s = map.get(r.artistId);
-    if (s) s.outstandingPayments++;
+    if (!s) continue;
+    s.hasAnyPayment = true;
+    if (r.status !== "paid" && r.status !== "void") s.outstandingPayments++;
   }
 
   // ridersReady: null = no riders, true = all confirmed, false = any unconfirmed
