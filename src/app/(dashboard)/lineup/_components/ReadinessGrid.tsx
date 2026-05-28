@@ -23,13 +23,16 @@ interface Props {
   rows: ReadinessRow[];
   stageOptions: StageOption[];
   dayOptions: string[];
+  /** Outside the festival window, the "live" and "done" chips are hidden -
+   *  they're operationally meaningful only during the show. */
+  festivalMode: boolean;
 }
 
 // ---- types -----------------------------------------------------------------
 
 type LogisticsTab = "travel" | "stay" | "ground" | "docs" | "money";
 
-const SET_STATUS_OPTIONS = [
+const ALL_SET_STATUS_OPTIONS = [
   "no_set",
   "confirmed",
   "option",
@@ -38,7 +41,7 @@ const SET_STATUS_OPTIONS = [
   "not_available",
   "withdrawn",
 ] as const;
-type SetStatusFilter = (typeof SET_STATUS_OPTIONS)[number];
+type SetStatusFilter = (typeof ALL_SET_STATUS_OPTIONS)[number];
 
 // ---- cell helpers ----------------------------------------------------------
 
@@ -364,11 +367,18 @@ export default function ReadinessGrid({
   rows,
   stageOptions,
   dayOptions,
+  festivalMode,
 }: Props) {
-  // Filter state.
+  // Outside the festival window, "live" and "done" are operationally
+  // irrelevant - drop them from the chip row.
+  const setStatusOptions = festivalMode
+    ? ALL_SET_STATUS_OPTIONS
+    : ALL_SET_STATUS_OPTIONS.filter((s) => s !== "live" && s !== "done");
+
+  // Filter state. readiness is a tri-state: all / gaps only / ready only.
   const [search, setSearch] = useState("");
-  const [gapsOnly, setGapsOnly] = useState(false);
-  const [setStatusFilter, setSetStatusFilter] = useState<Set<SetStatusFilter>>(
+  const [readiness, setReadiness] = useState<"all" | "gaps" | "ready">("all");
+  const [setStatusChips, setSetStatusChips] = useState<Set<SetStatusFilter>>(
     new Set(),
   );
   const [stageFilter, setStageFilter] = useState<Set<string>>(new Set());
@@ -382,12 +392,13 @@ export default function ReadinessGrid({
         const matchesAgency = (r.artist.agency ?? "").toLowerCase().includes(q);
         if (!matchesName && !matchesAgency) return false;
       }
-      if (gapsOnly && !hasGap(r.status)) return false;
-      if (setStatusFilter.size > 0) {
+      if (readiness === "gaps" && !hasGap(r.status)) return false;
+      if (readiness === "ready" && hasGap(r.status)) return false;
+      if (setStatusChips.size > 0) {
         const v: SetStatusFilter = r.status.setStatus
           ? (r.status.setStatus as SetStatusFilter)
           : "no_set";
-        if (!setStatusFilter.has(v)) return false;
+        if (!setStatusChips.has(v)) return false;
       }
       if (stageFilter.size > 0) {
         if (!r.stageId || !stageFilter.has(r.stageId)) return false;
@@ -397,22 +408,22 @@ export default function ReadinessGrid({
       }
       return true;
     });
-  }, [rows, search, gapsOnly, setStatusFilter, stageFilter, dayFilter]);
+  }, [rows, search, readiness, setStatusChips, stageFilter, dayFilter]);
 
   const gaps = filtered.filter((r) => hasGap(r.status));
   const ready = filtered.filter((r) => !hasGap(r.status));
 
   const anyFilter =
     !!search ||
-    gapsOnly ||
-    setStatusFilter.size > 0 ||
+    readiness !== "all" ||
+    setStatusChips.size > 0 ||
     stageFilter.size > 0 ||
     dayFilter.size > 0;
 
   function clearFilters() {
     setSearch("");
-    setGapsOnly(false);
-    setSetStatusFilter(new Set());
+    setReadiness("all");
+    setSetStatusChips(new Set());
     setStageFilter(new Set());
     setDayFilter(new Set());
   }
@@ -440,17 +451,22 @@ export default function ReadinessGrid({
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 min-w-[180px] rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-1.5 text-sm text-[--color-fg] placeholder:text-[--color-fg-subtle] focus:border-brand focus:outline-none"
           />
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={gapsOnly}
-              onChange={(e) => setGapsOnly(e.target.checked)}
-              className="rounded border border-[--color-border-strong] bg-[--color-surface]"
-            />
-            <span className="text-mono text-[10px] uppercase tracking-[0.14em] text-[--color-fg-muted]">
-              Gaps only
-            </span>
-          </label>
+          <div className="flex items-center gap-1 rounded-md border border-[--color-border] p-0.5">
+            {(["all", "gaps", "ready"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setReadiness(v)}
+                className={`text-mono text-[10px] uppercase tracking-[0.14em] px-2 py-1 rounded-[--radius-sm] transition-colors ${
+                  readiness === v
+                    ? "bg-[--color-surface-raised] text-[--color-fg]"
+                    : "text-[--color-fg-subtle] hover:text-[--color-fg]"
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
           {anyFilter && (
             <button
               type="button"
@@ -464,14 +480,14 @@ export default function ReadinessGrid({
 
         <ChipRow
           label="Set"
-          options={SET_STATUS_OPTIONS.map((s) => ({
+          options={setStatusOptions.map((s) => ({
             id: s,
             label: s === "no_set" ? "no set" : s.replace(/_/g, " "),
           }))}
-          selected={setStatusFilter}
+          selected={setStatusChips}
           onToggle={(id) =>
-            setSetStatusFilter(
-              toggleInSet(setStatusFilter, id as SetStatusFilter),
+            setSetStatusChips(
+              toggleInSet(setStatusChips, id as SetStatusFilter),
             )
           }
         />

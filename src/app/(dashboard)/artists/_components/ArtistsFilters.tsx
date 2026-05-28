@@ -12,9 +12,11 @@ interface StageOption {
 interface Props {
   agencies: string[];
   stages: StageOption[];
+  /** Hide "Live" and "Done" set statuses outside the festival window. */
+  festivalMode: boolean;
 }
 
-function ArtistsFiltersInner({ agencies, stages }: Props) {
+function ArtistsFiltersInner({ agencies, stages, festivalMode }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -113,8 +115,8 @@ function ArtistsFiltersInner({ agencies, stages }: Props) {
           <option value="option">Option</option>
           <option value="confirmed">Confirmed</option>
           <option value="not_available">N/A</option>
-          <option value="live">Live</option>
-          <option value="done">Done</option>
+          {festivalMode && <option value="live">Live</option>}
+          {festivalMode && <option value="done">Done</option>}
           <option value="withdrawn">Withdrawn</option>
         </select>
       </div>

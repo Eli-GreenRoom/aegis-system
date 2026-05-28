@@ -32,6 +32,10 @@ interface Props {
   day: string;
   grid: StageWithSlots[];
   artists: ArtistOption[];
+  /** True when today is in the festival window (or override flag is on).
+   *  Outside festival mode, "live" and "done" statuses are hidden from
+   *  pickers - they're meaningful only during the show. */
+  festivalMode: boolean;
 }
 
 // ---- constants -------------------------------------------------------------
@@ -62,6 +66,13 @@ const SET_STATUSES: SetStatus[] = [
   "not_available",
   "withdrawn",
 ];
+
+/** Hide "live"/"done" outside the festival window - they're only meaningful
+ *  during the show. */
+function availableStatuses(festivalMode: boolean): SetStatus[] {
+  if (festivalMode) return SET_STATUSES;
+  return SET_STATUSES.filter((s) => s !== "live" && s !== "done");
+}
 
 // ---- utility ---------------------------------------------------------------
 
@@ -246,6 +257,7 @@ interface EditSetSheetProps {
   slotId: string;
   slotStartTime: string;
   slotEndTime: string;
+  festivalMode: boolean;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -256,9 +268,11 @@ function EditSetSheet({
   slotId,
   slotStartTime,
   slotEndTime,
+  festivalMode,
   onClose,
   onSaved,
 }: EditSetSheetProps) {
+  const statusOptions = availableStatuses(festivalMode);
   const [status, setStatus] = useState<SetStatus>(set.status as SetStatus);
   const [startTime, setStartTime] = useState(slotStartTime);
   const [endTime, setEndTime] = useState(slotEndTime);
@@ -368,7 +382,7 @@ function EditSetSheet({
             onChange={(e) => setStatus(e.target.value as SetStatus)}
             className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
           >
-            {SET_STATUSES.map((s) => (
+            {statusOptions.map((s) => (
               <option key={s} value={s}>
                 {STATUS_LABEL[s]}
               </option>
@@ -687,6 +701,7 @@ interface AddB2bSheetProps {
   slotLabel: string;
   artists: ArtistOption[];
   existingArtistIds: string[];
+  festivalMode: boolean;
   onRequestCreate: () => void;
   onClose: () => void;
   onSaved: () => void;
@@ -697,10 +712,12 @@ function AddB2bSheet({
   slotLabel,
   artists,
   existingArtistIds,
+  festivalMode,
   onRequestCreate,
   onClose,
   onSaved,
 }: AddB2bSheetProps) {
+  const statusOptions = availableStatuses(festivalMode);
   const available = artists.filter((a) => !existingArtistIds.includes(a.id));
   const [artistId, setArtistId] = useState("");
   const [status, setStatus] = useState<SetStatus>("option");
@@ -764,7 +781,7 @@ function AddB2bSheet({
             onChange={(e) => setStatus(e.target.value as SetStatus)}
             className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
           >
-            {SET_STATUSES.map((s) => (
+            {statusOptions.map((s) => (
               <option key={s} value={s}>
                 {STATUS_LABEL[s]}
               </option>
@@ -789,7 +806,12 @@ function AddB2bSheet({
 
 // ---- main board ------------------------------------------------------------
 
-export default function LineupBoard({ day, grid, artists }: Props) {
+export default function LineupBoard({
+  day,
+  grid,
+  artists,
+  festivalMode,
+}: Props) {
   const router = useRouter();
 
   // Local artists list so inline-created ones show up immediately across the
@@ -1094,6 +1116,7 @@ export default function LineupBoard({ day, grid, artists }: Props) {
           slotLabel={`${b2bSlot.startTime} - ${b2bSlot.endTime}`}
           artists={localArtists}
           existingArtistIds={b2bSlot.sets.map((s) => s.artistId)}
+          festivalMode={festivalMode}
           onRequestCreate={() =>
             setCreateArtistFor({ mode: "b2b", slotId: b2bSlot.id })
           }
@@ -1113,6 +1136,7 @@ export default function LineupBoard({ day, grid, artists }: Props) {
           slotStartTime={editingSet.slot.startTime}
           slotEndTime={editingSet.slot.endTime}
           isLastOnSlot={editingSet.slot.sets.length === 1}
+          festivalMode={festivalMode}
           onClose={() => setEditingSet(null)}
           onSaved={() => {
             setEditingSet(null);

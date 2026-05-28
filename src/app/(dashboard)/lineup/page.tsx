@@ -15,6 +15,7 @@ import {
 import { listArtists } from "@/lib/artists/repo";
 import { getArtistStatusMap } from "@/lib/artists/status";
 import { festivalDates } from "@/lib/festivals";
+import { isFestivalMode } from "@/lib/festival-mode";
 import { slotDateSchema } from "@/lib/lineup/schema";
 import DayTabs from "./_components/DayTabs";
 import LineupBoard from "./_components/LineupBoard";
@@ -37,6 +38,8 @@ export default async function LineupPage({ searchParams }: PageProps) {
         No festival configured.
       </div>
     );
+
+  const festivalMode = isFestivalMode(festival);
 
   const sp = await searchParams;
   const view: "grid" | "pipeline" | "readiness" =
@@ -61,7 +64,7 @@ export default async function LineupPage({ searchParams }: PageProps) {
         />
         <div className="px-6 py-6 space-y-5">
           <ViewToggle active="pipeline" />
-          <LineupPipeline cards={cards} />
+          <LineupPipeline cards={cards} festivalMode={festivalMode} />
         </div>
       </>
     );
@@ -111,6 +114,7 @@ export default async function LineupPage({ searchParams }: PageProps) {
             rows={rows}
             stageOptions={stageOptions}
             dayOptions={dayOptions}
+            festivalMode={festivalMode}
           />
         </div>
       </>
@@ -154,7 +158,12 @@ export default async function LineupPage({ searchParams }: PageProps) {
           <DayTabs active={date} festival={festival} />
           <ViewToggle active="grid" />
         </div>
-        <LineupBoard day={date} grid={grid} artists={artists} />
+        <LineupBoard
+          day={date}
+          grid={grid}
+          artists={artists}
+          festivalMode={festivalMode}
+        />
       </div>
     </>
   );

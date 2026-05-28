@@ -10,9 +10,11 @@ import { formatCents } from "@/lib/utils";
 
 interface Props {
   cards: PipelineCard[];
+  /** Outside the festival window, "Live" and "Done" columns are hidden. */
+  festivalMode: boolean;
 }
 
-const STATUS_COLUMNS: { status: SetStatus; label: string }[] = [
+const ALL_STATUS_COLUMNS: { status: SetStatus; label: string }[] = [
   { status: "option", label: "Option" },
   { status: "confirmed", label: "Confirmed" },
   { status: "not_available", label: "N/A" },
@@ -30,7 +32,12 @@ const COLUMN_PILL: Record<SetStatus, string> = {
   withdrawn: "pill-coral",
 };
 
-export default function LineupPipeline({ cards }: Props) {
+export default function LineupPipeline({ cards, festivalMode }: Props) {
+  const STATUS_COLUMNS = festivalMode
+    ? ALL_STATUS_COLUMNS
+    : ALL_STATUS_COLUMNS.filter(
+        (c) => c.status !== "live" && c.status !== "done",
+      );
   const router = useRouter();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);

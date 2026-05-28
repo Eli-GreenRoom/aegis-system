@@ -6,6 +6,7 @@ import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
+import { isFestivalMode } from "@/lib/festival-mode";
 import {
   listAgencies,
   listArtists,
@@ -105,6 +106,7 @@ export default async function ArtistsPage({ searchParams }: PageProps) {
         <ArtistsFilters
           agencies={agencies}
           stages={stages.map((s) => ({ id: s.id, name: s.name }))}
+          festivalMode={isFestivalMode(festival)}
         />
         <ArtistsTable artists={artists} statusMap={statusMap} />
       </div>
