@@ -22,6 +22,9 @@ interface Props {
   /** When supplied (modal use), called with the newly-created artist
    *  instead of redirecting to its detail page. */
   onCreated?: (artist: Artist) => void;
+  /** When supplied, Cancel calls this instead of router.back(). Required
+   *  for modal/sheet hosts so Cancel doesn't navigate away. */
+  onCancel?: () => void;
   /** Optional initial name for create flows triggered with a known string. */
   initialName?: string;
 }
@@ -30,6 +33,7 @@ export default function ArtistForm({
   artist,
   festivalLocation,
   onCreated,
+  onCancel,
   initialName,
 }: Props) {
   const router = useRouter();
@@ -305,7 +309,7 @@ export default function ArtistForm({
         <Button
           type="button"
           variant="ghost"
-          onClick={() => router.back()}
+          onClick={() => (onCancel ? onCancel() : router.back())}
           disabled={isSubmitting}
         >
           Cancel

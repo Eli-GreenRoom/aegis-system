@@ -1063,6 +1063,7 @@ export default function LineupBoard({ day, grid, artists }: Props) {
       {createArtistFor && (
         <Sheet title="New artist" onClose={() => setCreateArtistFor(null)}>
           <ArtistForm
+            onCancel={() => setCreateArtistFor(null)}
             onCreated={async (created: Artist) => {
               setLocalArtists((prev) => [
                 ...prev,
