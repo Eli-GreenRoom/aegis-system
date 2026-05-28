@@ -839,11 +839,18 @@ export default function LineupBoard({ day, grid, artists }: Props) {
     }
   }
 
-  // Sort slots chronologically by startTime (no manual reorder).
+  // Sort slots chronologically. Festival nights run past midnight, so a
+  // 22:00 slot belongs BEFORE a 02:00 slot. Treat anything earlier than
+  // 06:00 as "next day" by adding 24h to its minute value before comparing.
   function sortByStart(stageSlots: SlotWithSets[]): SlotWithSets[] {
-    return [...stageSlots].sort((a, b) =>
-      a.startTime.localeCompare(b.startTime),
+    return [...stageSlots].sort(
+      (a, b) => sortKey(a.startTime) - sortKey(b.startTime),
     );
+  }
+  function sortKey(hhmm: string): number {
+    const [h = 0, m = 0] = hhmm.split(":").map(Number);
+    const minutes = h * 60 + m;
+    return h < 6 ? minutes + 24 * 60 : minutes;
   }
 
   return (
