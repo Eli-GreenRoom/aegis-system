@@ -913,7 +913,7 @@ export default function LineupBoard({ day, grid, artists }: Props) {
     const res = await fetch("/api/slots/reorder", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ stageId, day, slotIds: order }),
+      body: JSON.stringify({ stageId, date: day, slotIds: order }),
     });
     setBusy(false);
     setLocalOrder((o) => ({ ...o, [stageId]: undefined }));
