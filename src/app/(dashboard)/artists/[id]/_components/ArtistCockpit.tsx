@@ -520,8 +520,11 @@ export default function ArtistCockpit({
         </section>
       </div>
 
-      {/* ─── Logistics sheet (single, tabbed) ─────────────────────────── */}
+      {/* Logistics sheet. Keyed on logisticsTab so each open with a
+       *  different tab remounts fresh - the inner state seeds from
+       *  initialTab and is then owned by the user's clicks. */}
       <LogisticsSheet
+        key={logisticsTab ?? "closed"}
         open={logisticsTab !== null}
         initialTab={logisticsTab ?? "travel"}
         sheet={sheet}

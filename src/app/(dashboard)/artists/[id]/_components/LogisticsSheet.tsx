@@ -49,15 +49,10 @@ export default function LogisticsSheet({
   pickupPrefill,
 }: Props) {
   const { artist } = sheet;
+  // initialTab seeds the state once; clicking the tab strip thereafter
+  // is the only thing that changes `tab`. Parent re-keys this component
+  // when it wants to force a new initialTab on open.
   const [tab, setTab] = useState<LogisticsTab>(initialTab);
-
-  // When the sheet is opened with a fresh initialTab (e.g. a different gap
-  // pill was clicked), jump to that tab.
-  if (open && tab !== initialTab && initialTab !== undefined) {
-    // Use a microtask via state update; React's setState is fine here, the
-    // condition only fires on transitions.
-    queueMicrotask(() => setTab(initialTab));
-  }
 
   return (
     <SideSheet
