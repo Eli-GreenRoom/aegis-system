@@ -10,33 +10,36 @@ import { pickupInputSchema } from "@/lib/ground/schema";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import type { Pickup, Vendor } from "@/lib/ground/repo";
+import type { Pickup } from "@/lib/ground/repo";
 import type { Person } from "@/lib/people";
 
 interface Props {
   pickup?: Pickup;
   people: Person[];
-  vendors: Vendor[];
   defaultPerson?: { id: string; kind: "artist" | "crew" };
+  /** Prefill when opened from a context that already has them
+   *  (e.g. the cockpit knows the inbound flight). */
+  prefill?: {
+    linkedFlightId?: string;
+    pickupDtLocal?: string;
+    routeFrom?: "airport" | "hotel" | "stage" | "other";
+    routeTo?: "airport" | "hotel" | "stage" | "other";
+  };
   onSuccess?: () => void;
 }
 
-// Form-shape: pickupDt is a datetime-local string; cost in whole USD.
+// Form-shape: pickupDt is a datetime-local string; vendor/cost dropped
+// from UI (kept on the schema/DB but ignored here — pickups are itinerary
+// details, not a vendor relationship).
 const formSchema = pickupInputSchema
-  .omit({ pickupDt: true, costAmountCents: true })
+  .omit({
+    pickupDt: true,
+    costAmountCents: true,
+    costCurrency: true,
+    vendorId: true,
+  })
   .extend({
     pickupDtLocal: z.string().min(1, "required"),
-    costUsd: z
-      .union([z.string(), z.number()])
-      .optional()
-      .refine(
-        (v) =>
-          v === undefined ||
-          v === "" ||
-          (typeof v === "number" && v >= 0) ||
-          (typeof v === "string" && /^\d+(\.\d{1,2})?$/.test(v)),
-        { message: "must be a non-negative number with up to 2 decimals" },
-      ),
   });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -53,8 +56,8 @@ function toDtLocal(d: Date | string | null | undefined): string {
 export default function PickupForm({
   pickup,
   people,
-  vendors,
   defaultPerson,
+  prefill,
   onSuccess,
 }: Props) {
   const router = useRouter();
@@ -71,22 +74,16 @@ export default function PickupForm({
     defaultValues: {
       personKind: pickup?.personKind ?? defaultPerson?.kind ?? "artist",
       personId: pickup?.personId ?? defaultPerson?.id ?? people[0]?.id ?? "",
-      routeFrom: pickup?.routeFrom ?? "airport",
+      routeFrom: pickup?.routeFrom ?? prefill?.routeFrom ?? "airport",
       routeFromDetail: pickup?.routeFromDetail ?? "",
-      routeTo: pickup?.routeTo ?? "hotel",
+      routeTo: pickup?.routeTo ?? prefill?.routeTo ?? "hotel",
       routeToDetail: pickup?.routeToDetail ?? "",
-      linkedFlightId: pickup?.linkedFlightId ?? "",
-      pickupDtLocal: toDtLocal(pickup?.pickupDt ?? null),
+      linkedFlightId: pickup?.linkedFlightId ?? prefill?.linkedFlightId ?? "",
+      pickupDtLocal:
+        toDtLocal(pickup?.pickupDt ?? null) || (prefill?.pickupDtLocal ?? ""),
       vehicleType: pickup?.vehicleType ?? "",
-      vendorId: pickup?.vendorId ?? "",
       driverName: pickup?.driverName ?? "",
       driverPhone: pickup?.driverPhone ?? "",
-      costUsd:
-        pickup?.costAmountCents != null
-          ? (pickup.costAmountCents / 100).toFixed(2)
-          : "",
-      costCurrency:
-        (pickup?.costCurrency as "USD" | "EUR" | undefined) ?? "USD",
       status: pickup?.status ?? "scheduled",
       comments: pickup?.comments ?? "",
     },
@@ -96,11 +93,6 @@ export default function PickupForm({
     setServerError("");
     const url = isEdit ? `/api/pickups/${pickup!.id}` : "/api/pickups";
     const method = isEdit ? "PATCH" : "POST";
-
-    const costAmountCents =
-      data.costUsd === undefined || data.costUsd === ""
-        ? null
-        : Math.round(Number(data.costUsd) * 100);
 
     const payload = {
       personKind: data.personKind,
@@ -112,11 +104,8 @@ export default function PickupForm({
       linkedFlightId: data.linkedFlightId,
       pickupDt: new Date(data.pickupDtLocal).toISOString(),
       vehicleType: data.vehicleType,
-      vendorId: data.vendorId,
       driverName: data.driverName,
       driverPhone: data.driverPhone,
-      costAmountCents,
-      costCurrency: costAmountCents != null ? data.costCurrency : "",
       status: data.status,
       comments: data.comments,
     };
@@ -250,45 +239,6 @@ export default function PickupForm({
             placeholder="Sedan, van, mini-bus..."
           />
         </Field>
-        <Field label="Vendor" error={errors.vendorId?.message}>
-          <select
-            {...register("vendorId")}
-            className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
-          >
-            <option value="">-</option>
-            {vendors.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.name} ({v.service})
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Driver" error={errors.driverName?.message}>
-          <Input {...register("driverName")} />
-        </Field>
-        <Field label="Driver phone" error={errors.driverPhone?.message}>
-          <Input {...register("driverPhone")} />
-        </Field>
-
-        <Field label="Cost" error={errors.costUsd?.message}>
-          <Input
-            type="text"
-            inputMode="decimal"
-            {...register("costUsd")}
-            placeholder="80.00"
-          />
-        </Field>
-        <Field label="Currency" error={errors.costCurrency?.message}>
-          <select
-            {...register("costCurrency")}
-            className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
-          >
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-          </select>
-        </Field>
-
         <Field label="Status" error={errors.status?.message}>
           <select
             {...register("status")}
@@ -299,6 +249,13 @@ export default function PickupForm({
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
+        </Field>
+
+        <Field label="Driver" error={errors.driverName?.message}>
+          <Input {...register("driverName")} />
+        </Field>
+        <Field label="Driver phone" error={errors.driverPhone?.message}>
+          <Input {...register("driverPhone")} />
         </Field>
 
         <Field label="Linked flight ID" error={errors.linkedFlightId?.message}>

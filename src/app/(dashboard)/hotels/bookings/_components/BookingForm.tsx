@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/ui/FileUpload";
+import CreatableCombobox from "@/components/ui/CreatableCombobox";
 import type { Booking, Hotel, RoomBlock } from "@/lib/hotels/repo";
 import type { Person } from "@/lib/people";
 
@@ -20,25 +21,16 @@ interface Props {
   blocks: RoomBlock[];
   people: Person[];
   defaultPerson?: { id: string; kind: "artist" | "crew" };
+  /** Prefill values when opened from a context that already has them
+   *  (e.g. the artist cockpit knows the flight dates). */
+  prefill?: { checkin?: string; checkout?: string };
   onSuccess?: () => void;
 }
 
-// Form-shape: credits in whole USD/EUR (display unit), not cents.
+// Form-shape: credits dropped from UI (kept on the schema/DB but ignored
+// here — money tracking lives on payments, not hotels).
 const formSchema = hotelBookingBaseSchema
-  .omit({ creditsAmountCents: true })
-  .extend({
-    creditsAmount: z
-      .union([z.string(), z.number()])
-      .optional()
-      .refine(
-        (v: unknown) =>
-          v === undefined ||
-          v === "" ||
-          (typeof v === "number" && v >= 0) ||
-          (typeof v === "string" && /^\d+(\.\d{1,2})?$/.test(v)),
-        { message: "must be a non-negative number with up to 2 decimals" },
-      ),
-  })
+  .omit({ creditsAmountCents: true, creditsCurrency: true })
   .refine((v) => v.checkin <= v.checkout, {
     message: "checkout must be on or after checkin",
     path: ["checkout"],
@@ -52,17 +44,21 @@ export default function BookingForm({
   blocks,
   people,
   defaultPerson,
+  prefill,
   onSuccess,
 }: Props) {
   const router = useRouter();
   const isEdit = !!booking;
   const [serverError, setServerError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  // Local hotels list so inline-created hotels show up immediately.
+  const [localHotels, setLocalHotels] = useState<Hotel[]>(hotels);
 
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -72,15 +68,9 @@ export default function BookingForm({
       personKind: booking?.personKind ?? defaultPerson?.kind ?? "artist",
       personId: booking?.personId ?? defaultPerson?.id ?? people[0]?.id ?? "",
       roomType: booking?.roomType ?? "",
-      checkin: booking?.checkin ?? "",
-      checkout: booking?.checkout ?? "",
+      checkin: booking?.checkin ?? prefill?.checkin ?? "",
+      checkout: booking?.checkout ?? prefill?.checkout ?? "",
       bookingNumber: booking?.bookingNumber ?? "",
-      creditsAmount:
-        booking?.creditsAmountCents != null
-          ? (booking.creditsAmountCents / 100).toFixed(2)
-          : "",
-      creditsCurrency:
-        (booking?.creditsCurrency as "USD" | "EUR" | undefined) ?? "USD",
       status: booking?.status ?? "booked",
       confirmationUrl: booking?.confirmationUrl ?? "",
       comments: booking?.comments ?? "",
@@ -92,17 +82,21 @@ export default function BookingForm({
   const selectedHotelId = useWatch({ control, name: "hotelId" });
   const blocksForHotel = blocks.filter((b) => b.hotelId === selectedHotelId);
 
+  // If exactly one block exists for the selected hotel, auto-pick it. Skip
+  // on edit (the operator's prior choice wins).
+  useEffect(() => {
+    if (isEdit) return;
+    if (blocksForHotel.length === 1) {
+      setValue("roomBlockId", blocksForHotel[0]!.id);
+    }
+  }, [blocksForHotel, isEdit, setValue]);
+
   async function onSubmit(data: FormValues) {
     setServerError("");
     const url = isEdit
       ? `/api/hotel-bookings/${booking!.id}`
       : "/api/hotel-bookings";
     const method = isEdit ? "PATCH" : "POST";
-
-    const creditsAmountCents =
-      data.creditsAmount === undefined || data.creditsAmount === ""
-        ? null
-        : Math.round(Number(data.creditsAmount) * 100);
 
     const payload = {
       hotelId: data.hotelId,
@@ -113,8 +107,6 @@ export default function BookingForm({
       checkin: data.checkin,
       checkout: data.checkout,
       bookingNumber: data.bookingNumber,
-      creditsAmountCents,
-      creditsCurrency: creditsAmountCents != null ? data.creditsCurrency : "",
       status: data.status,
       confirmationUrl: data.confirmationUrl,
       comments: data.comments,
@@ -200,16 +192,38 @@ export default function BookingForm({
         </Field>
 
         <Field label="Hotel" error={errors.hotelId?.message} required>
-          <select
-            {...register("hotelId")}
-            className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
-          >
-            {hotels.map((h) => (
-              <option key={h.id} value={h.id}>
-                {h.name}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="hotelId"
+            render={({ field }) => (
+              <CreatableCombobox
+                options={localHotels.map((h) => ({
+                  id: h.id,
+                  label: h.name,
+                  sublabel: h.location,
+                }))}
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                placeholder="Search or create hotel..."
+                emptyText="No hotels found"
+                onCreate={async (name) => {
+                  const res = await fetch("/api/hotels", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ name }),
+                  });
+                  if (!res.ok) return null;
+                  const { hotel } = await res.json();
+                  setLocalHotels((prev) => [...prev, hotel]);
+                  return {
+                    id: hotel.id,
+                    label: hotel.name,
+                    sublabel: hotel.location,
+                  };
+                }}
+              />
+            )}
+          />
         </Field>
 
         <Field label="Room block" error={errors.roomBlockId?.message}>
@@ -253,24 +267,6 @@ export default function BookingForm({
             <option value="checked_out">Checked out</option>
             <option value="no_show">No show</option>
             <option value="cancelled">Cancelled</option>
-          </select>
-        </Field>
-
-        <Field label="Credits" error={errors.creditsAmount?.message}>
-          <Input
-            type="text"
-            inputMode="decimal"
-            {...register("creditsAmount")}
-            placeholder="0.00"
-          />
-        </Field>
-        <Field label="Credits currency" error={errors.creditsCurrency?.message}>
-          <select
-            {...register("creditsCurrency")}
-            className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
-          >
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
           </select>
         </Field>
 

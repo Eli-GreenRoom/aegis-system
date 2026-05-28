@@ -1,7 +1,10 @@
 export const dynamic = "force-dynamic";
 
+import Link from "next/link";
+import type { Route } from "next";
 import { notFound, redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
+import { Button } from "@/components/ui/button";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
 import { listArtists } from "@/lib/artists/repo";
@@ -35,12 +38,24 @@ export default async function PaymentDetailPage({ params }: PageProps) {
     listVendors(),
     listInvoices({ festivalId: festival.id }),
   ]);
+  const artist = payment.artistId
+    ? artists.find((a) => a.id === payment.artistId)
+    : null;
 
   return (
     <>
       <Topbar
         title="Payment"
         subtitle={`${payment.description} · ${payment.status}`}
+        actions={
+          artist ? (
+            <Link href={`/artists/${artist.id}` as Route}>
+              <Button variant="ghost" size="sm">
+                &larr; {artist.name}
+              </Button>
+            </Link>
+          ) : undefined
+        }
       />
       <div className="px-6 py-6">
         <PaymentForm

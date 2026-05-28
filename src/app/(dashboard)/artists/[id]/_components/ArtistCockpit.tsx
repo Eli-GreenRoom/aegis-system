@@ -2,20 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
 import { format } from "date-fns";
-import SideSheet from "@/components/ui/SideSheet";
-import FlightForm from "@/app/(dashboard)/flights/_components/FlightForm";
-import BookingForm from "@/app/(dashboard)/hotels/bookings/_components/BookingForm";
-import PickupForm from "@/app/(dashboard)/ground/_components/PickupForm";
-import ContractForm from "@/app/(dashboard)/contracts/_components/ContractForm";
-import RiderForm from "@/app/(dashboard)/riders/_components/RiderForm";
-import InvoiceSheet from "./InvoiceSheet";
+import LogisticsSheet, { type LogisticsTab } from "./LogisticsSheet";
+import { pickupPrefill } from "./pickup-prefill";
 import type { ArtistRoadsheet } from "@/lib/aggregators";
 import type { Person } from "@/lib/people";
 import type { Hotel, RoomBlock } from "@/lib/hotels/repo";
-import type { Vendor } from "@/lib/ground/repo";
 import type { Artist } from "@/lib/artists/repo";
 import type {
   CockpitProgress,
@@ -32,7 +26,6 @@ interface Props {
     artists: Artist[];
     hotels: Hotel[];
     blocks: RoomBlock[];
-    vendors: Vendor[];
   };
 }
 
@@ -47,15 +40,54 @@ const NEXT_ACTION_TINT: Record<CockpitGap, string> = {
   payment: "tinted-emerald",
 };
 
+/** Map a legacy SheetKind to the tab in the consolidated LogisticsSheet. */
+function sheetKindToTab(k: SheetKind): LogisticsTab {
+  switch (k) {
+    case "flight_inbound":
+    case "flight_outbound":
+      return "travel";
+    case "hotel":
+      return "stay";
+    case "pickup":
+      return "ground";
+    case "contract":
+    case "rider_tech":
+    case "rider_hosp":
+      return "docs";
+    case "payment":
+    case "invoice":
+      return "money";
+  }
+}
+
+const VALID_TABS: LogisticsTab[] = [
+  "travel",
+  "stay",
+  "ground",
+  "docs",
+  "money",
+];
+
 export default function ArtistCockpit({ sheet, progress, reference }: Props) {
   const router = useRouter();
-  const [openSheet, setOpenSheet] = useState<SheetKind | null>(null);
+  const searchParams = useSearchParams();
+  // Honor ?focus= from the home page gap pills so the sheet opens on the
+  // right tab immediately on mount.
+  const [logisticsTab, setLogisticsTab] = useState<LogisticsTab | null>(() => {
+    const focus = searchParams.get("focus");
+    return focus && (VALID_TABS as string[]).includes(focus)
+      ? (focus as LogisticsTab)
+      : null;
+  });
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   const { artist } = sheet;
 
+  function openTab(k: SheetKind) {
+    setLogisticsTab(sheetKindToTab(k));
+  }
   function close() {
-    setOpenSheet(null);
+    setLogisticsTab(null);
   }
   function onSuccess() {
     close();
@@ -88,7 +120,7 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
           <NextCard
             progress={progress}
             tint={NEXT_ACTION_TINT[progress.next.gap] ?? "tinted-emerald"}
-            onOpen={(k) => setOpenSheet(k)}
+            onOpen={(k) => openTab(k)}
           />
         ) : (
           <AllClearCard />
@@ -163,7 +195,7 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
                 cta={
                   sheet.contract
                     ? { label: "Open", href: `/contracts/${sheet.contract.id}` }
-                    : { label: "Add", onClick: () => setOpenSheet("contract") }
+                    : { label: "Add", onClick: () => openTab("contract") }
                 }
               />
             ) : (
@@ -195,7 +227,7 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
                       }
                     : {
                         label: "Add",
-                        onClick: () => setOpenSheet("flight_inbound"),
+                        onClick: () => openTab("flight_inbound"),
                       }
                 }
               />
@@ -228,7 +260,7 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
                       }
                     : {
                         label: "Add",
-                        onClick: () => setOpenSheet("flight_outbound"),
+                        onClick: () => openTab("flight_outbound"),
                       }
                 }
               />
@@ -256,7 +288,7 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
                 cta={
                   sheet.hotel
                     ? { label: "Open", href: "/hotels/bookings" }
-                    : { label: "Add", onClick: () => setOpenSheet("hotel") }
+                    : { label: "Add", onClick: () => openTab("hotel") }
                 }
               />
             ) : (
@@ -293,7 +325,7 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
                         : "")
                     : null
                 }
-                cta={{ label: "Add", onClick: () => setOpenSheet("pickup") }}
+                cta={{ label: "Add", onClick: () => openTab("pickup") }}
               />
             ) : (
               <Row
@@ -325,7 +357,7 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
                     ? { label: "Open", href: `/riders/${techRider.id}` }
                     : {
                         label: "Add",
-                        onClick: () => setOpenSheet("rider_tech"),
+                        onClick: () => openTab("rider_tech"),
                       }
                 }
               />
@@ -359,7 +391,7 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
                     ? { label: "Open", href: `/riders/${hospRider.id}` }
                     : {
                         label: "Add",
-                        onClick: () => setOpenSheet("rider_hosp"),
+                        onClick: () => openTab("rider_hosp"),
                       }
                 }
               />
@@ -379,7 +411,7 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
                 artistId={artist.id}
                 payments={sheet.payments}
                 outstandingCount={outstandingPayments.length}
-                onAddInvoice={() => setOpenSheet("invoice")}
+                onAddInvoice={() => openTab("invoice")}
                 onRefresh={onSuccess}
               />
             ) : (
@@ -492,125 +524,16 @@ export default function ArtistCockpit({ sheet, progress, reference }: Props) {
         </section>
       </div>
 
-      {/* ─── Side sheets ──────────────────────────────────────────────── */}
-      <SideSheet
-        open={openSheet === "contract"}
+      {/* ─── Logistics sheet (single, tabbed) ─────────────────────────── */}
+      <LogisticsSheet
+        open={logisticsTab !== null}
+        initialTab={logisticsTab ?? "travel"}
+        sheet={sheet}
+        reference={reference}
+        pickupPrefill={pickupPrefill(sheet)}
         onClose={close}
-        title="Add contract"
-        subtitle={artist.name}
-      >
-        <ContractForm
-          artists={reference.artists}
-          defaultArtistId={artist.id}
-          onSuccess={onSuccess}
-        />
-      </SideSheet>
-
-      <SideSheet
-        open={openSheet === "flight_inbound"}
-        onClose={close}
-        title="Add inbound flight"
-        subtitle={artist.name}
-      >
-        <FlightForm
-          people={reference.people}
-          defaultPerson={{ id: artist.id, kind: "artist" }}
-          defaultDirection="inbound"
-          onSuccess={onSuccess}
-        />
-      </SideSheet>
-
-      <SideSheet
-        open={openSheet === "flight_outbound"}
-        onClose={close}
-        title="Add outbound flight"
-        subtitle={artist.name}
-      >
-        <FlightForm
-          people={reference.people}
-          defaultPerson={{ id: artist.id, kind: "artist" }}
-          defaultDirection="outbound"
-          onSuccess={onSuccess}
-        />
-      </SideSheet>
-
-      <SideSheet
-        open={openSheet === "hotel"}
-        onClose={close}
-        title="Add hotel booking"
-        subtitle={artist.name}
-      >
-        {reference.hotels.length === 0 ? (
-          <EmptyHint
-            label="No hotels in the catalogue yet."
-            href="/hotels"
-            cta="Add a hotel first ->"
-          />
-        ) : (
-          <BookingForm
-            hotels={reference.hotels}
-            blocks={reference.blocks}
-            people={reference.people}
-            defaultPerson={{ id: artist.id, kind: "artist" }}
-            onSuccess={onSuccess}
-          />
-        )}
-      </SideSheet>
-
-      <SideSheet
-        open={openSheet === "pickup"}
-        onClose={close}
-        title="Schedule pickup"
-        subtitle={artist.name}
-      >
-        <PickupForm
-          people={reference.people}
-          vendors={reference.vendors}
-          defaultPerson={{ id: artist.id, kind: "artist" }}
-          onSuccess={onSuccess}
-        />
-      </SideSheet>
-
-      <SideSheet
-        open={openSheet === "rider_tech"}
-        onClose={close}
-        title="Add technical rider"
-        subtitle={artist.name}
-      >
-        <RiderForm
-          artists={reference.artists}
-          defaultArtistId={artist.id}
-          defaultKind="technical"
-          onSuccess={onSuccess}
-        />
-      </SideSheet>
-
-      <SideSheet
-        open={openSheet === "rider_hosp"}
-        onClose={close}
-        title="Add hospitality rider"
-        subtitle={artist.name}
-      >
-        <RiderForm
-          artists={reference.artists}
-          defaultArtistId={artist.id}
-          defaultKind="hospitality"
-          onSuccess={onSuccess}
-        />
-      </SideSheet>
-
-      <SideSheet
-        open={openSheet === "invoice"}
-        onClose={close}
-        title="Add invoice & payment"
-        subtitle={artist.name}
-      >
-        <InvoiceSheet
-          artistId={artist.id}
-          artistName={artist.name}
-          onSuccess={onSuccess}
-        />
-      </SideSheet>
+        onSuccess={onSuccess}
+      />
     </>
   );
 }
@@ -761,28 +684,6 @@ function ExtLink({ href, label }: { href: string; label: string }) {
     >
       {label}
     </a>
-  );
-}
-
-function EmptyHint({
-  label,
-  href,
-  cta,
-}: {
-  label: string;
-  href: string;
-  cta: string;
-}) {
-  return (
-    <div className="text-[13px] text-[--color-fg-muted] space-y-2">
-      <p>{label}</p>
-      <Link
-        href={href as Route}
-        className="inline-block text-[12px] text-[--color-brand] hover:underline"
-      >
-        {cta}
-      </Link>
-    </div>
   );
 }
 

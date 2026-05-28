@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { eq } from "drizzle-orm";
 import Topbar from "@/components/dashboard/Topbar";
+import { Button } from "@/components/ui/button";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
 import { listArtists } from "@/lib/artists/repo";
@@ -55,6 +56,7 @@ export default async function ContractDetailPage({ params }: PageProps) {
     festivalId: festival.id,
     archived: "active",
   });
+  const artist = artists.find((a) => a.id === contract.artistId);
 
   const canSign =
     !!contract.fileUrl &&
@@ -73,6 +75,15 @@ export default async function ContractDetailPage({ params }: PageProps) {
         title="Contract"
         subtitle={
           STATUS_LABELS[contract.status as ContractStatus] ?? contract.status
+        }
+        actions={
+          artist ? (
+            <Link href={`/artists/${artist.id}` as Route}>
+              <Button variant="ghost" size="sm">
+                &larr; {artist.name}
+              </Button>
+            </Link>
+          ) : undefined
         }
       />
       <div className="px-6 py-6 space-y-6">

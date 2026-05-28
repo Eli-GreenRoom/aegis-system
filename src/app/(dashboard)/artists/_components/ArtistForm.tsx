@@ -121,6 +121,8 @@ export default function ArtistForm({ artist, festivalLocation }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
+      {/* Day-1 required fields. Everything else is folded into "More details"
+       *  below so creating an artist costs just one input + a tab. */}
       <div className="grid grid-cols-2 gap-4">
         <Field label="Name" error={errors.name?.message} required>
           <Input {...register("name")} onBlur={autoSlug} autoComplete="off" />
@@ -128,131 +130,148 @@ export default function ArtistForm({ artist, festivalLocation }: Props) {
         <Field label="Slug" error={errors.slug?.message} required>
           <Input {...register("slug")} autoComplete="off" />
         </Field>
-        <Field label="Legal name" error={errors.legalName?.message}>
-          <Input {...register("legalName")} autoComplete="off" />
-        </Field>
-        <Field label="Nationality" error={errors.nationality?.message}>
-          <Input {...register("nationality")} autoComplete="off" />
-        </Field>
-        <Field label="Email" error={errors.email?.message}>
-          <Input type="email" {...register("email")} autoComplete="off" />
-        </Field>
-        <Field label="Phone" error={errors.phone?.message}>
-          <Input {...register("phone")} autoComplete="off" />
-        </Field>
-        <Field label="Agency" error={errors.agency?.message}>
-          <Input {...register("agency")} autoComplete="off" />
-        </Field>
-        <Field label="Agent email" error={errors.agentEmail?.message}>
-          <Input type="email" {...register("agentEmail")} autoComplete="off" />
-        </Field>
-        <Field label="Instagram" error={errors.instagram?.message}>
-          <Input {...register("instagram")} autoComplete="off" />
-        </Field>
-        <Field label="Soundcloud" error={errors.soundcloud?.message}>
-          <Input {...register("soundcloud")} autoComplete="off" />
-        </Field>
-        <Field label="Color (#RRGGBB)" error={errors.color?.message}>
-          <Input
-            {...register("color")}
-            placeholder="#E5B85A"
-            autoComplete="off"
-          />
-        </Field>
-        <Field label="Visa status" error={errors.visaStatus?.message}>
-          <select
-            {...register("visaStatus")}
-            className="w-full rounded-[--radius-md] border border-white/10 bg-white/4 px-3 py-2 text-sm text-[--color-fg]"
-          >
-            <option value="">-</option>
-            <option value="not_needed">Not needed</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
-        </Field>
-        <Field label="Press kit URL" error={errors.pressKitUrl?.message}>
-          <Input
-            {...register("pressKitUrl")}
-            placeholder="https://drive.google.com/..."
-            autoComplete="off"
-          />
-        </Field>
-        <Field label="Passport file" error={errors.passportFileUrl?.message}>
-          <Controller
-            control={control}
-            name="passportFileUrl"
-            render={({ field }) => (
-              <FileUpload
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                entityType="artist"
-                entityId={artist?.id}
-                tags={["passport"]}
-              />
-            )}
-          />
-        </Field>
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          id="local"
-          type="checkbox"
-          {...register("local")}
-          className="rounded-md border border-[--color-border-strong] bg-[--color-surface]"
-        />
-        <Label
-          htmlFor="local"
-          className="text-[12px]! normal-case! tracking-normal! text-[--color-fg]"
-        >
-          Local artist{festivalLocation ? ` (${festivalLocation})` : ""}
-        </Label>
-      </div>
-
-      {/* Logistics requirements */}
-      <div className="space-y-2">
-        <p className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted]">
-          Logistics requirements
-        </p>
-        <p className="text-[11px] text-[--color-fg-subtle]">
-          Uncheck modules this artist does not need. Unchecked = N/A on the
-          readiness grid and excluded from gap counts.
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
-          {(
-            [
-              { id: "needsFlight", label: "Flight" },
-              { id: "needsHotel", label: "Hotel" },
-              { id: "needsGround", label: "Ground transport" },
-              { id: "needsContract", label: "Contract" },
-              { id: "needsPayment", label: "Payment" },
-              { id: "needsRider", label: "Rider" },
-            ] as const
-          ).map(({ id, label }) => (
-            <label
-              key={id}
-              className="flex items-center gap-2 cursor-pointer select-none"
+      <details className="rounded-md border border-[--color-border] bg-[--color-surface]/40 px-4 py-3">
+        <summary className="cursor-pointer text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted] select-none">
+          More details (optional)
+        </summary>
+        <div className="grid grid-cols-2 gap-4 pt-4">
+          <Field label="Legal name" error={errors.legalName?.message}>
+            <Input {...register("legalName")} autoComplete="off" />
+          </Field>
+          <Field label="Nationality" error={errors.nationality?.message}>
+            <Input {...register("nationality")} autoComplete="off" />
+          </Field>
+          <Field label="Email" error={errors.email?.message}>
+            <Input type="email" {...register("email")} autoComplete="off" />
+          </Field>
+          <Field label="Phone" error={errors.phone?.message}>
+            <Input {...register("phone")} autoComplete="off" />
+          </Field>
+          <Field label="Agency" error={errors.agency?.message}>
+            <Input {...register("agency")} autoComplete="off" />
+          </Field>
+          <Field label="Agent email" error={errors.agentEmail?.message}>
+            <Input
+              type="email"
+              {...register("agentEmail")}
+              autoComplete="off"
+            />
+          </Field>
+          <Field label="Instagram" error={errors.instagram?.message}>
+            <Input {...register("instagram")} autoComplete="off" />
+          </Field>
+          <Field label="Soundcloud" error={errors.soundcloud?.message}>
+            <Input {...register("soundcloud")} autoComplete="off" />
+          </Field>
+          <Field label="Color (#RRGGBB)" error={errors.color?.message}>
+            <Input
+              {...register("color")}
+              placeholder="#E5B85A"
+              autoComplete="off"
+            />
+          </Field>
+          <Field label="Visa status" error={errors.visaStatus?.message}>
+            <select
+              {...register("visaStatus")}
+              className="w-full rounded-[--radius-md] border border-white/10 bg-white/4 px-3 py-2 text-sm text-[--color-fg]"
             >
-              <input
-                id={id}
-                type="checkbox"
-                {...register(id)}
-                className="rounded border border-[--color-border-strong] bg-[--color-surface]"
-              />
-              <span className="text-[13px] text-[--color-fg]">{label}</span>
-            </label>
-          ))}
+              <option value="">-</option>
+              <option value="not_needed">Not needed</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </Field>
+          <Field label="Press kit URL" error={errors.pressKitUrl?.message}>
+            <Input
+              {...register("pressKitUrl")}
+              placeholder="https://drive.google.com/..."
+              autoComplete="off"
+            />
+          </Field>
+          <Field label="Passport file" error={errors.passportFileUrl?.message}>
+            <Controller
+              control={control}
+              name="passportFileUrl"
+              render={({ field }) => (
+                <FileUpload
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  entityType="artist"
+                  entityId={artist?.id}
+                  tags={["passport"]}
+                />
+              )}
+            />
+          </Field>
         </div>
-      </div>
 
-      <Field label="Comments" error={errors.comments?.message}>
-        <textarea
-          {...register("comments")}
-          rows={4}
-          className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] focus:border-brand focus:outline-none focus:ring-1 focus:ring-[--color-brand]"
-        />
-      </Field>
+        <div className="flex items-center gap-2 pt-4">
+          <input
+            id="local"
+            type="checkbox"
+            {...register("local")}
+            className="rounded-md border border-[--color-border-strong] bg-[--color-surface]"
+          />
+          <Label
+            htmlFor="local"
+            className="text-[12px]! normal-case! tracking-normal! text-[--color-fg]"
+          >
+            Local artist{festivalLocation ? ` (${festivalLocation})` : ""}
+          </Label>
+        </div>
+
+        {/* Logistics requirements — only relevant on edit. Hidden on create;
+         *  DB defaults (all true) cover the common case. */}
+        {isEdit && (
+          <div className="space-y-2 pt-4">
+            <p className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted]">
+              Logistics requirements
+            </p>
+            <p className="text-[11px] text-[--color-fg-subtle]">
+              Uncheck modules this artist does not need. Unchecked = N/A on the
+              readiness grid and excluded from gap counts.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+              {(
+                [
+                  { id: "needsFlight", label: "Flight" },
+                  { id: "needsHotel", label: "Hotel" },
+                  { id: "needsGround", label: "Ground transport" },
+                  { id: "needsContract", label: "Contract" },
+                  { id: "needsPayment", label: "Payment" },
+                  { id: "needsRider", label: "Rider" },
+                ] as const
+              ).map(({ id, label }) => (
+                <label
+                  key={id}
+                  className="flex items-center gap-2 cursor-pointer select-none"
+                >
+                  <input
+                    id={id}
+                    type="checkbox"
+                    {...register(id)}
+                    className="rounded border border-[--color-border-strong] bg-[--color-surface]"
+                  />
+                  <span className="text-[13px] text-[--color-fg]">{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="pt-4">
+          <Field label="Comments" error={errors.comments?.message}>
+            <textarea
+              {...register("comments")}
+              rows={4}
+              className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] focus:border-brand focus:outline-none focus:ring-1 focus:ring-[--color-brand]"
+            />
+          </Field>
+        </div>
+      </details>
 
       {serverError && <p className="text-sm text-coral">{serverError}</p>}
 

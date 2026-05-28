@@ -40,19 +40,22 @@ function issueHref(
 }
 
 function gapHref(artistId: string, gap: ReadinessGap): Route {
+  // Land the operator on the artist cockpit with the right Logistics tab
+  // already open, so they keep the artist's context instead of dropping
+  // into a blank create form.
   switch (gap) {
     case "set":
       return "/lineup" as Route;
     case "contract":
-      return `/contracts/new?artistId=${artistId}` as Route;
+      return `/artists/${artistId}?focus=docs` as Route;
     case "inbound_flight":
-      return `/flights/new?personId=${artistId}&personKind=artist&direction=inbound` as Route;
+      return `/artists/${artistId}?focus=travel` as Route;
     case "hotel":
-      return `/hotels/bookings/new?personId=${artistId}&personKind=artist` as Route;
+      return `/artists/${artistId}?focus=stay` as Route;
     case "pickup":
-      return `/ground/new?personId=${artistId}&personKind=artist` as Route;
+      return `/artists/${artistId}?focus=ground` as Route;
     case "payment":
-      return `/payments/new?artistId=${artistId}` as Route;
+      return `/artists/${artistId}?focus=money` as Route;
   }
 }
 

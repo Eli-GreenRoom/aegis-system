@@ -24,6 +24,8 @@ export default async function PickupDetailPage({ params }: PageProps) {
     getPerson(pickup.personKind, pickup.personId),
     pickup.vendorId ? getVendor(pickup.vendorId) : Promise.resolve(null),
   ]);
+  const artistHref =
+    pickup.personKind === "artist" ? `/artists/${pickup.personId}` : null;
 
   return (
     <>
@@ -31,9 +33,18 @@ export default async function PickupDetailPage({ params }: PageProps) {
         title={`${pickup.routeFrom} -> ${pickup.routeTo}`}
         subtitle={`${person?.name ?? "Unknown"} · ${pickup.status}`}
         actions={
-          <Link href={`/ground/${pickup.id}/edit` as Route}>
-            <Button variant="secondary">Edit</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {artistHref && person && (
+              <Link href={artistHref as Route}>
+                <Button variant="ghost" size="sm">
+                  &larr; {person.name}
+                </Button>
+              </Link>
+            )}
+            <Link href={`/ground/${pickup.id}/edit` as Route}>
+              <Button variant="secondary">Edit</Button>
+            </Link>
+          </div>
         }
       />
       <div className="px-6 py-6">

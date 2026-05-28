@@ -5,7 +5,6 @@ import Topbar from "@/components/dashboard/Topbar";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
 import { listPeople, type PersonKind } from "@/lib/people";
-import { listVendors } from "@/lib/ground/repo";
 import PickupForm from "../_components/PickupForm";
 
 interface PageProps {
@@ -28,10 +27,7 @@ export default async function NewPickupPage({ searchParams }: PageProps) {
     );
 
   const sp = await searchParams;
-  const [people, vendors] = await Promise.all([
-    listPeople(festival.id),
-    listVendors(),
-  ]);
+  const people = await listPeople(festival.id);
 
   const kind: PersonKind | undefined =
     sp.personKind === "crew" || sp.personKind === "artist"
@@ -65,11 +61,7 @@ export default async function NewPickupPage({ searchParams }: PageProps) {
     <>
       <Topbar title="New pickup" subtitle="Schedule a ground transport job." />
       <div className="px-6 py-6">
-        <PickupForm
-          people={people}
-          vendors={vendors}
-          defaultPerson={defaultPerson}
-        />
+        <PickupForm people={people} defaultPerson={defaultPerson} />
       </div>
     </>
   );

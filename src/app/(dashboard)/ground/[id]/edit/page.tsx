@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import Topbar from "@/components/dashboard/Topbar";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
-import { getPickup, listVendors } from "@/lib/ground/repo";
+import { getPickup } from "@/lib/ground/repo";
 import { listPeople } from "@/lib/people";
 import PickupForm from "../../_components/PickupForm";
 
@@ -28,10 +28,7 @@ export default async function EditPickupPage({ params }: PageProps) {
       </div>
     );
 
-  const [people, vendors] = await Promise.all([
-    listPeople(festival.id),
-    listVendors(),
-  ]);
+  const people = await listPeople(festival.id);
 
   return (
     <>
@@ -40,7 +37,7 @@ export default async function EditPickupPage({ params }: PageProps) {
         subtitle={`${pickup.routeFrom} -> ${pickup.routeTo}`}
       />
       <div className="px-6 py-6">
-        <PickupForm pickup={pickup} people={people} vendors={vendors} />
+        <PickupForm pickup={pickup} people={people} />
       </div>
     </>
   );

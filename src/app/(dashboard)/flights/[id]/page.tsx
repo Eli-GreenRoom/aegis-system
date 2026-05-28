@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import Topbar from "@/components/dashboard/Topbar";
@@ -19,6 +20,8 @@ export default async function FlightDetailPage({ params }: PageProps) {
   if (!flight) notFound();
 
   const person = await getPerson(flight.personKind, flight.personId);
+  const artistHref =
+    flight.personKind === "artist" ? `/artists/${flight.personId}` : null;
 
   return (
     <>
@@ -26,9 +29,18 @@ export default async function FlightDetailPage({ params }: PageProps) {
         title={`${flight.flightNumber ?? "Flight"} - ${person?.name ?? "Unknown"}`}
         subtitle={`${flight.direction === "inbound" ? "Arrival" : "Departure"} - ${flight.status}`}
         actions={
-          <Link href={`/flights/${flight.id}/edit`}>
-            <Button variant="secondary">Edit</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {artistHref && person && (
+              <Link href={artistHref as Route}>
+                <Button variant="ghost" size="sm">
+                  &larr; {person.name}
+                </Button>
+              </Link>
+            )}
+            <Link href={`/flights/${flight.id}/edit`}>
+              <Button variant="secondary">Edit</Button>
+            </Link>
+          </div>
         }
       />
       <div className="px-6 py-6">

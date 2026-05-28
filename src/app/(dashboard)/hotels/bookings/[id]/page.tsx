@@ -1,11 +1,14 @@
 export const dynamic = "force-dynamic";
 
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import type { Route } from "next";
 import Topbar from "@/components/dashboard/Topbar";
+import { Button } from "@/components/ui/button";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
 import { getBooking, listHotels, listRoomBlocks } from "@/lib/hotels/repo";
-import { listPeople } from "@/lib/people";
+import { getPerson, listPeople } from "@/lib/people";
 import BookingForm from "../_components/BookingForm";
 import AuditHistory from "@/components/ui/AuditHistory";
 
@@ -29,17 +32,29 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </div>
     );
 
-  const [hotels, blocks, people] = await Promise.all([
+  const [hotels, blocks, people, person] = await Promise.all([
     listHotels(),
     listRoomBlocks({ festivalId: festival.id }),
     listPeople(festival.id),
+    getPerson(booking.personKind, booking.personId),
   ]);
+  const artistHref =
+    booking.personKind === "artist" ? `/artists/${booking.personId}` : null;
 
   return (
     <>
       <Topbar
         title="Booking"
         subtitle={`${booking.checkin} - ${booking.checkout}`}
+        actions={
+          artistHref && person ? (
+            <Link href={artistHref as Route}>
+              <Button variant="ghost" size="sm">
+                &larr; {person.name}
+              </Button>
+            </Link>
+          ) : undefined
+        }
       />
       <div className="px-6 py-6">
         <BookingForm
