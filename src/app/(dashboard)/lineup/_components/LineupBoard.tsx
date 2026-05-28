@@ -13,7 +13,6 @@ import CreatableCombobox, {
 import { formatCents } from "@/lib/utils";
 import type { SetStatus } from "@/lib/lineup/schema";
 import type {
-  Slot,
   SlotWithSets,
   StageWithSlots,
   SetWithArtist,
@@ -62,7 +61,7 @@ const SET_STATUSES: SetStatus[] = [
   "withdrawn",
 ];
 
-// ---- slugify (client-side, mirrors server) ---------------------------------
+// ---- utility ---------------------------------------------------------------
 
 function slugify(name: string): string {
   return name
@@ -72,50 +71,20 @@ function slugify(name: string): string {
     .slice(0, 120);
 }
 
-// ---- artist combobox -------------------------------------------------------
+function toArtistComboOptions(arr: ArtistOption[]): ComboOption[] {
+  return arr.map((a) => ({ id: a.id, label: a.name, sublabel: a.agency }));
+}
 
-function ArtistCombobox({
-  artists,
-  value,
-  onChange,
-  onCreated,
-}: {
-  artists: ArtistOption[];
-  value: string;
-  onChange: (id: string) => void;
-  onCreated: (artist: ArtistOption) => void;
-}) {
-  const options: ComboOption[] = artists.map((a) => ({
-    id: a.id,
-    label: a.name,
-    sublabel: a.agency,
-  }));
-
-  return (
-    <CreatableCombobox
-      options={options}
-      value={value}
-      onChange={onChange}
-      placeholder="Search or create artist..."
-      emptyText="No artists found"
-      onCreate={async (name) => {
-        const res = await fetch("/api/artists", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ name, slug: slugify(name) }),
-        });
-        if (!res.ok) return null;
-        const { artist } = await res.json();
-        const opt: ArtistOption = {
-          id: artist.id,
-          name: artist.name,
-          agency: artist.agency ?? null,
-        };
-        onCreated(opt);
-        return { id: opt.id, label: opt.name, sublabel: opt.agency };
-      }}
-    />
-  );
+/** Create an artist via the API and return it as an ArtistOption. */
+async function createArtistByName(name: string): Promise<ArtistOption | null> {
+  const res = await fetch("/api/artists", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ name, slug: slugify(name) }),
+  });
+  if (!res.ok) return null;
+  const { artist } = await res.json();
+  return { id: artist.id, name: artist.name, agency: artist.agency ?? null };
 }
 
 // ---- slide-over sheet ------------------------------------------------------
@@ -129,7 +98,6 @@ function Sheet({
   onClose: () => void;
   children: React.ReactNode;
 }) {
-  // Trap focus, close on Escape
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -150,7 +118,6 @@ function Sheet({
         justifyContent: "flex-end",
       }}
     >
-      {/* backdrop */}
       <div
         onClick={onClose}
         style={{
@@ -159,7 +126,6 @@ function Sheet({
           background: "rgba(0,0,0,0.55)",
         }}
       />
-      {/* panel */}
       <div
         className="relative flex flex-col w-full max-w-sm h-full overflow-y-auto"
         style={{
@@ -186,92 +152,52 @@ function Sheet({
   );
 }
 
-// ---- "Add to lineup" sheet -------------------------------------------------
+// ---- "Create slot" sheet (times only) --------------------------------------
 
-interface AddSheetProps {
+interface SlotSheetProps {
   day: string;
-  grid: StageWithSlots[];
-  artists: ArtistOption[];
-  preStageId?: string;
+  stageId: string;
+  stageName: string;
   onClose: () => void;
   onSaved: () => void;
 }
 
-function AddSheet({
+function SlotSheet({
   day,
-  grid,
-  artists,
-  preStageId,
+  stageId,
+  stageName,
   onClose,
   onSaved,
-}: AddSheetProps) {
-  const [stageId, setStageId] = useState(preStageId ?? grid[0]?.stage.id ?? "");
+}: SlotSheetProps) {
   const [startTime, setStartTime] = useState("22:00");
   const [endTime, setEndTime] = useState("23:30");
-  const [artistId, setArtistId] = useState(artists[0]?.id ?? "");
-  const [localArtists, setLocalArtists] = useState<ArtistOption[]>(artists);
-  const [status, setStatus] = useState<SetStatus>("option");
-  const [feeUsd, setFeeUsd] = useState("");
-  const [feeCurrency, setFeeCurrency] = useState<"USD" | "EUR">("USD");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!artistId) {
-      setError("Pick an artist.");
-      return;
-    }
     setError("");
     setSaving(true);
-
-    const feeAmountCents =
-      feeUsd === "" ? null : Math.round(Number(feeUsd) * 100);
-
-    const res = await fetch("/api/sets/quick-add", {
+    const res = await fetch("/api/slots", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        stageId,
-        date: day,
-        startTime,
-        endTime,
-        artistId,
-        status,
-        feeAmountCents,
-        feeCurrency: feeAmountCents != null ? feeCurrency : "",
-      }),
+      body: JSON.stringify({ stageId, date: day, startTime, endTime }),
     });
-
     setSaving(false);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Couldn't save.");
+      setError(body.error ?? "Couldn't create slot.");
       return;
     }
     onSaved();
   }
 
   return (
-    <Sheet title="Add to lineup" onClose={onClose}>
+    <Sheet title="New slot" onClose={onClose}>
+      <p className="text-[12px] text-[--color-fg-subtle] mb-5">
+        {stageName} - {day}
+      </p>
       <form onSubmit={submit} className="space-y-5">
-        {/* Stage */}
-        <div className="space-y-1.5">
-          <Label>Stage</Label>
-          <select
-            value={stageId}
-            onChange={(e) => setStageId(e.target.value)}
-            className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
-          >
-            {grid.map(({ stage }) => (
-              <option key={stage.id} value={stage.id}>
-                {stage.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Time */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Start</Label>
@@ -295,201 +221,11 @@ function AddSheet({
           </div>
         </div>
 
-        {/* Artist */}
-        <div className="space-y-1.5">
-          <Label>Artist</Label>
-          <ArtistCombobox
-            artists={localArtists}
-            value={artistId}
-            onChange={setArtistId}
-            onCreated={(a) => {
-              setLocalArtists((prev) => [...prev, a]);
-              setArtistId(a.id);
-            }}
-          />
-        </div>
-
-        {/* Status */}
-        <div className="space-y-1.5">
-          <Label>Status</Label>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as SetStatus)}
-            className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
-          >
-            {SET_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABEL[s]}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Fee */}
-        <div className="space-y-1.5">
-          <Label>Fee (optional)</Label>
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              inputMode="decimal"
-              value={feeUsd}
-              onChange={(e) => setFeeUsd(e.target.value)}
-              placeholder="2500.00"
-              className="flex-1"
-            />
-            <select
-              value={feeCurrency}
-              onChange={(e) => setFeeCurrency(e.target.value as "USD" | "EUR")}
-              className="rounded-md border border-[--color-border-strong] bg-[--color-surface] px-2 py-2 text-sm text-[--color-fg]"
-            >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-            </select>
-          </div>
-        </div>
-
         {error && <p className="text-xs text-coral">{error}</p>}
 
         <div className="flex items-center gap-2 pt-2">
-          <Button type="submit" disabled={saving || !artistId}>
-            {saving ? "Adding..." : "Add to lineup"}
-          </Button>
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-        </div>
-      </form>
-    </Sheet>
-  );
-}
-
-// ---- "Add second artist" sheet (b2b) ----------------------------------------
-
-interface AddB2bSheetProps {
-  slotId: string;
-  slotLabel: string;
-  artists: ArtistOption[];
-  existingArtistIds: string[];
-  onClose: () => void;
-  onSaved: () => void;
-}
-
-function AddB2bSheet({
-  slotId,
-  slotLabel,
-  artists,
-  existingArtistIds,
-  onClose,
-  onSaved,
-}: AddB2bSheetProps) {
-  const available = artists.filter((a) => !existingArtistIds.includes(a.id));
-  const [localAvailable, setLocalAvailable] =
-    useState<ArtistOption[]>(available);
-  const [artistId, setArtistId] = useState(available[0]?.id ?? "");
-  const [status, setStatus] = useState<SetStatus>("option");
-  const [feeUsd, setFeeUsd] = useState("");
-  const [feeCurrency, setFeeCurrency] = useState<"USD" | "EUR">("USD");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!artistId) {
-      setError("Pick an artist.");
-      return;
-    }
-    setError("");
-    setSaving(true);
-
-    const feeAmountCents =
-      feeUsd === "" ? null : Math.round(Number(feeUsd) * 100);
-
-    const res = await fetch("/api/sets", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        slotId,
-        artistId,
-        status,
-        feeAmountCents,
-        feeCurrency: feeAmountCents != null ? feeCurrency : "",
-      }),
-    });
-
-    setSaving(false);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Couldn't save.");
-      return;
-    }
-    onSaved();
-  }
-
-  return (
-    <Sheet title={`Add b2b partner`} onClose={onClose}>
-      <p className="text-[12px] text-[--color-fg-subtle] mb-5">{slotLabel}</p>
-      <form onSubmit={submit} className="space-y-5">
-        {available.length === 0 && (
-          <p className="text-xs text-coral">
-            All artists are already on this slot.
-          </p>
-        )}
-
-        <div className="space-y-1.5">
-          <Label>Artist</Label>
-          <ArtistCombobox
-            artists={localAvailable}
-            value={artistId}
-            onChange={setArtistId}
-            onCreated={(a) => {
-              setLocalAvailable((prev) => [...prev, a]);
-              setArtistId(a.id);
-            }}
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label>Status</Label>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as SetStatus)}
-            className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
-          >
-            {SET_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABEL[s]}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label>Fee (optional)</Label>
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              inputMode="decimal"
-              value={feeUsd}
-              onChange={(e) => setFeeUsd(e.target.value)}
-              placeholder="2500.00"
-              className="flex-1"
-            />
-            <select
-              value={feeCurrency}
-              onChange={(e) => setFeeCurrency(e.target.value as "USD" | "EUR")}
-              className="rounded-md border border-[--color-border-strong] bg-[--color-surface] px-2 py-2 text-sm text-[--color-fg]"
-            >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-            </select>
-          </div>
-        </div>
-
-        {error && <p className="text-xs text-coral">{error}</p>}
-
-        <div className="flex items-center gap-2 pt-2">
-          <Button type="submit" disabled={saving || !artistId}>
-            {saving ? "Adding..." : "Add b2b partner"}
+          <Button type="submit" disabled={saving}>
+            {saving ? "Creating..." : "Create slot"}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
@@ -544,7 +280,6 @@ function EditSetSheet({
     const feeAmountCents =
       feeUsd === "" ? null : Math.round(Number(feeUsd) * 100);
 
-    // Patch set fields
     const setRes = await fetch(`/api/sets/${set.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -564,7 +299,6 @@ function EditSetSheet({
       return;
     }
 
-    // Patch slot times if changed
     if (startTime !== slotStartTime || endTime !== slotEndTime) {
       const slotRes = await fetch(`/api/slots/${slotId}`, {
         method: "PATCH",
@@ -585,30 +319,23 @@ function EditSetSheet({
 
   async function remove() {
     const msg = isLastOnSlot
-      ? `Remove ${set.artist.name} from this slot? The empty slot will also be deleted.`
+      ? `Remove ${set.artist.name} from this slot? The slot will become empty.`
       : `Remove ${set.artist.name} from this slot?`;
     if (!confirm(msg)) return;
 
     setRemoving(true);
-    // Delete the set first
     const res = await fetch(`/api/sets/${set.id}`, { method: "DELETE" });
+    setRemoving(false);
     if (!res.ok) {
-      setRemoving(false);
       setError("Couldn't remove.");
       return;
     }
-    // If last artist on slot, delete the slot too
-    if (isLastOnSlot) {
-      await fetch(`/api/slots/${slotId}`, { method: "DELETE" });
-    }
-    setRemoving(false);
     onSaved();
   }
 
   return (
     <Sheet title={set.artist.name} onClose={onClose}>
       <form onSubmit={submit} className="space-y-5">
-        {/* Time */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Start</Label>
@@ -632,7 +359,6 @@ function EditSetSheet({
           </div>
         </div>
 
-        {/* Status */}
         <div className="space-y-1.5">
           <Label>Status</Label>
           <select
@@ -648,7 +374,6 @@ function EditSetSheet({
           </select>
         </div>
 
-        {/* Fee */}
         <div className="space-y-1.5">
           <Label>Fee</Label>
           <div className="flex gap-2">
@@ -677,7 +402,6 @@ function EditSetSheet({
           )}
         </div>
 
-        {/* Announce batch */}
         <div className="space-y-1.5">
           <Label>Announce batch</Label>
           <Input
@@ -687,7 +411,6 @@ function EditSetSheet({
           />
         </div>
 
-        {/* Agency override */}
         <div className="space-y-1.5">
           <Label>Agency override</Label>
           <Input
@@ -697,7 +420,6 @@ function EditSetSheet({
           />
         </div>
 
-        {/* Comments */}
         <div className="space-y-1.5">
           <Label>Comments</Label>
           <textarea
@@ -720,7 +442,6 @@ function EditSetSheet({
           </Button>
         </div>
 
-        {/* Danger zone */}
         <div className="pt-4 border-t border-[--color-border]">
           <button
             type="button"
@@ -728,7 +449,7 @@ function EditSetSheet({
             disabled={removing}
             className="text-[12px] text-coral hover:text-coral/80 transition-colors"
           >
-            {removing ? "Removing..." : "Remove from lineup"}
+            {removing ? "Removing..." : "Remove from slot"}
           </button>
         </div>
       </form>
@@ -742,10 +463,10 @@ interface SlotCardProps {
   slot: SlotWithSets;
   stageColor: string | null;
   artists: ArtistOption[];
-  isDragging: boolean;
-  onDragStart: () => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDragEnd: () => void;
+  onArtistsChange: (next: ArtistOption[]) => void;
+  onAssign: (slotId: string, artistId: string) => Promise<void>;
+  onSwap: (setId: string, artistId: string) => Promise<void>;
+  onDeleteSlot: (slotId: string) => Promise<void>;
   onEditSet: (set: SetWithArtist) => void;
   onAddB2b: (slot: SlotWithSets) => void;
 }
@@ -754,27 +475,19 @@ function SlotCard({
   slot,
   stageColor,
   artists,
-  isDragging,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
+  onArtistsChange,
+  onAssign,
+  onSwap,
+  onDeleteSlot,
   onEditSet,
   onAddB2b,
 }: SlotCardProps) {
+  const [swapping, setSwapping] = useState<string | null>(null);
+  const isEmpty = slot.sets.length === 0;
   const isB2b = slot.sets.length > 1;
 
   return (
-    <div
-      draggable
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDragEnd={onDragEnd}
-      className={`border rounded-md p-2.5 cursor-move transition-opacity select-none ${
-        isDragging
-          ? "border-brand/60 opacity-40"
-          : "border-[--color-border-subtle] hover:border-[--color-border]"
-      }`}
-    >
+    <div className="border rounded-md p-2.5 border-[--color-border-subtle] hover:border-[--color-border] transition-colors">
       {/* Time header */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-mono text-[11px] text-[--color-fg-muted] tabular-nums">
@@ -782,22 +495,63 @@ function SlotCard({
           <span className="text-[--color-fg-subtle] mx-0.5">-</span>
           {slot.endTime}
         </span>
-        <button
-          type="button"
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            onAddB2b(slot);
-          }}
-          className="text-mono text-[9px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-brand transition-colors"
-          title="Add b2b partner"
-        >
-          + b2b
-        </button>
+        <div className="flex items-center gap-2">
+          {!isEmpty && (
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                onAddB2b(slot);
+              }}
+              className="text-mono text-[9px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-brand transition-colors"
+              title="Add b2b partner"
+            >
+              + b2b
+            </button>
+          )}
+          {isEmpty && (
+            <button
+              type="button"
+              onClick={() => {
+                if (
+                  confirm(
+                    `Delete this slot (${slot.startTime}-${slot.endTime})?`,
+                  )
+                ) {
+                  void onDeleteSlot(slot.id);
+                }
+              }}
+              className="text-mono text-[9px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-coral transition-colors"
+              title="Delete empty slot"
+            >
+              x
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Sets */}
-      {slot.sets.length === 0 ? (
-        <p className="text-[11px] text-[--color-fg-subtle] italic">empty</p>
+      {/* Body */}
+      {isEmpty ? (
+        <div className="py-1">
+          <CreatableCombobox
+            options={toArtistComboOptions(artists)}
+            value=""
+            onChange={(id) => void onAssign(slot.id, id)}
+            placeholder="Search or create artist..."
+            emptyText="No artists found"
+            onCreate={async (name) => {
+              const created = await createArtistByName(name);
+              if (!created) return null;
+              onArtistsChange([...artists, created]);
+              await onAssign(slot.id, created.id);
+              return {
+                id: created.id,
+                label: created.name,
+                sublabel: created.agency,
+              };
+            }}
+          />
+        </div>
       ) : (
         <ul className="space-y-1.5">
           {slot.sets.map((s, idx) => (
@@ -811,32 +565,86 @@ function SlotCard({
                   <div className="flex-1 h-px bg-[--color-border]" />
                 </div>
               )}
-              <div className="flex items-center gap-2 min-w-0">
-                <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{
-                    background:
-                      stageColor ?? s.artist.color ?? "var(--color-fg-subtle)",
-                  }}
-                />
-                <Link
-                  href={`/artists/${s.artist.id}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex-1 truncate text-[13px] text-[--color-fg] hover:text-brand transition-colors"
-                >
-                  {s.artist.name}
-                </Link>
-                <button
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.stopPropagation();
-                    onEditSet(s);
-                  }}
-                  className={`text-mono text-[9px] uppercase tracking-[0.12em] px-1.5 py-px rounded-md shrink-0 ${STATUS_PILL[s.status as SetStatus]} hover:opacity-80`}
-                >
-                  {STATUS_LABEL[s.status as SetStatus]}
-                </button>
-              </div>
+              {swapping === s.id ? (
+                <div className="space-y-1">
+                  <CreatableCombobox
+                    options={toArtistComboOptions(
+                      artists.filter(
+                        (a) =>
+                          !slot.sets.some(
+                            (other) =>
+                              other.id !== s.id && other.artistId === a.id,
+                          ),
+                      ),
+                    )}
+                    value={s.artistId}
+                    onChange={async (newId) => {
+                      if (newId === s.artistId) {
+                        setSwapping(null);
+                        return;
+                      }
+                      await onSwap(s.id, newId);
+                      setSwapping(null);
+                    }}
+                    placeholder="Swap to..."
+                    emptyText="No other artists"
+                    onCreate={async (name) => {
+                      const created = await createArtistByName(name);
+                      if (!created) return null;
+                      onArtistsChange([...artists, created]);
+                      await onSwap(s.id, created.id);
+                      setSwapping(null);
+                      return {
+                        id: created.id,
+                        label: created.name,
+                        sublabel: created.agency,
+                      };
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSwapping(null)}
+                    className="text-mono text-[9px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-[--color-fg] transition-colors"
+                  >
+                    cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{
+                      background:
+                        stageColor ??
+                        s.artist.color ??
+                        "var(--color-fg-subtle)",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSwapping(s.id)}
+                    className="flex-1 min-w-0 text-left truncate text-[13px] text-[--color-fg] hover:text-brand transition-colors"
+                    title="Click to swap artist"
+                  >
+                    {s.artist.name}
+                  </button>
+                  <Link
+                    href={`/artists/${s.artist.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-mono text-[9px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-brand transition-colors shrink-0"
+                    title="Open artist page"
+                  >
+                    open
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => onEditSet(s)}
+                    className={`text-mono text-[9px] uppercase tracking-[0.12em] px-1.5 py-px rounded-md shrink-0 ${STATUS_PILL[s.status as SetStatus]} hover:opacity-80`}
+                  >
+                    {STATUS_LABEL[s.status as SetStatus]}
+                  </button>
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -845,104 +653,197 @@ function SlotCard({
   );
 }
 
+// ---- "Add b2b" sheet -------------------------------------------------------
+
+interface AddB2bSheetProps {
+  slotId: string;
+  slotLabel: string;
+  artists: ArtistOption[];
+  existingArtistIds: string[];
+  onArtistsChange: (next: ArtistOption[]) => void;
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+function AddB2bSheet({
+  slotId,
+  slotLabel,
+  artists,
+  existingArtistIds,
+  onArtistsChange,
+  onClose,
+  onSaved,
+}: AddB2bSheetProps) {
+  const available = artists.filter((a) => !existingArtistIds.includes(a.id));
+  const [artistId, setArtistId] = useState("");
+  const [status, setStatus] = useState<SetStatus>("option");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!artistId) {
+      setError("Pick an artist.");
+      return;
+    }
+    setError("");
+    setSaving(true);
+    const res = await fetch("/api/sets", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ slotId, artistId, status }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Couldn't save.");
+      return;
+    }
+    onSaved();
+  }
+
+  return (
+    <Sheet title="Add b2b partner" onClose={onClose}>
+      <p className="text-[12px] text-[--color-fg-subtle] mb-5">{slotLabel}</p>
+      <form onSubmit={submit} className="space-y-5">
+        {available.length === 0 && (
+          <p className="text-xs text-coral">
+            All artists are already on this slot.
+          </p>
+        )}
+
+        <div className="space-y-1.5">
+          <Label>Artist</Label>
+          <CreatableCombobox
+            options={toArtistComboOptions(available)}
+            value={artistId}
+            onChange={setArtistId}
+            placeholder="Search or create artist..."
+            emptyText="No artists available"
+            onCreate={async (name) => {
+              const created = await createArtistByName(name);
+              if (!created) return null;
+              onArtistsChange([...artists, created]);
+              setArtistId(created.id);
+              return {
+                id: created.id,
+                label: created.name,
+                sublabel: created.agency,
+              };
+            }}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Status</Label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as SetStatus)}
+            className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg]"
+          >
+            {SET_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {STATUS_LABEL[s]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {error && <p className="text-xs text-coral">{error}</p>}
+
+        <div className="flex items-center gap-2 pt-2">
+          <Button type="submit" disabled={saving || !artistId}>
+            {saving ? "Adding..." : "Add b2b partner"}
+          </Button>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </Sheet>
+  );
+}
+
 // ---- main board ------------------------------------------------------------
 
 export default function LineupBoard({ day, grid, artists }: Props) {
   const router = useRouter();
 
+  // Local artists list so inline-created ones show up immediately across the
+  // board without waiting for a server refresh.
+  const [localArtists, setLocalArtists] = useState<ArtistOption[]>(artists);
+
   // Sheet state
-  const [showAdd, setShowAdd] = useState(false);
-  const [addPreStageId, setAddPreStageId] = useState<string | undefined>();
+  const [createSlotFor, setCreateSlotFor] = useState<{
+    stageId: string;
+    stageName: string;
+  } | null>(null);
   const [b2bSlot, setB2bSlot] = useState<SlotWithSets | null>(null);
   const [editingSet, setEditingSet] = useState<{
     set: SetWithArtist;
     slot: SlotWithSets;
   } | null>(null);
 
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-
-  // Drag state
-  const [dragSlotId, setDragSlotId] = useState<string | null>(null);
-  const [localOrder, setLocalOrder] = useState<
-    Record<string, string[] | undefined>
-  >({});
 
   const refresh = useCallback(() => router.refresh(), [router]);
 
-  function openAdd(stageId?: string) {
-    setAddPreStageId(stageId);
-    setShowAdd(true);
-  }
-
-  function onSlotDragStart(slotId: string) {
-    setDragSlotId(slotId);
+  // Assign an artist to an existing empty slot.
+  async function assignArtist(slotId: string, artistId: string) {
     setError("");
-  }
-
-  function onSlotDragOver(
-    e: React.DragEvent,
-    targetSlotId: string,
-    stageId: string,
-    stageSlots: SlotWithSets[],
-  ) {
-    if (!dragSlotId || dragSlotId === targetSlotId) return;
-    const sourceBelongs = stageSlots.some((s) => s.id === dragSlotId);
-    if (!sourceBelongs) return;
-    e.preventDefault();
-    const current = localOrder[stageId] ?? stageSlots.map((s) => s.id);
-    const fromIdx = current.indexOf(dragSlotId);
-    const toIdx = current.indexOf(targetSlotId);
-    if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
-    const next = [...current];
-    next.splice(fromIdx, 1);
-    next.splice(toIdx, 0, dragSlotId);
-    setLocalOrder((o) => ({ ...o, [stageId]: next }));
-  }
-
-  async function onSlotDrop(stageId: string, stageSlots: SlotWithSets[]) {
-    const order = localOrder[stageId];
-    setDragSlotId(null);
-    if (!order) return;
-    const baseline = stageSlots.map((s) => s.id);
-    if (order.every((id, i) => id === baseline[i])) {
-      setLocalOrder((o) => ({ ...o, [stageId]: undefined }));
-      return;
-    }
-    setBusy(true);
-    const res = await fetch("/api/slots/reorder", {
+    const res = await fetch("/api/sets", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ stageId, date: day, slotIds: order }),
+      body: JSON.stringify({ slotId, artistId, status: "option" }),
     });
-    setBusy(false);
-    setLocalOrder((o) => ({ ...o, [stageId]: undefined }));
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Couldn't save order.");
+      setError(body.error ?? "Couldn't assign artist.");
+      return;
     }
     refresh();
   }
 
-  function displaySlots(
-    stageId: string,
-    stageSlots: SlotWithSets[],
-  ): SlotWithSets[] {
-    const order = localOrder[stageId];
-    if (!order) return stageSlots;
-    const byId = new Map(stageSlots.map((s) => [s.id, s]));
-    return order
-      .map((id) => byId.get(id))
-      .filter((s): s is SlotWithSets => !!s);
+  // Swap the artist on an existing set.
+  async function swapArtist(setId: string, artistId: string) {
+    setError("");
+    const res = await fetch(`/api/sets/${setId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ artistId }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Couldn't swap artist.");
+      return;
+    }
+    refresh();
   }
 
-  // Find the full slot for a given set (needed for edit sheet)
+  async function deleteSlot(slotId: string) {
+    setError("");
+    const res = await fetch(`/api/slots/${slotId}`, { method: "DELETE" });
+    if (!res.ok) {
+      setError("Couldn't delete slot.");
+      return;
+    }
+    refresh();
+  }
+
+  // Find the full slot for a given set (needed for edit sheet's time fields).
   function slotForSet(setId: string): SlotWithSets | undefined {
     for (const { slots } of grid) {
       for (const slot of slots) {
         if (slot.sets.some((s) => s.id === setId)) return slot;
       }
     }
+  }
+
+  // Sort slots chronologically by startTime (no manual reorder).
+  function sortByStart(stageSlots: SlotWithSets[]): SlotWithSets[] {
+    return [...stageSlots].sort((a, b) =>
+      a.startTime.localeCompare(b.startTime),
+    );
   }
 
   return (
@@ -972,47 +873,42 @@ export default function LineupBoard({ day, grid, artists }: Props) {
               </div>
               <button
                 type="button"
-                onClick={() => openAdd(stage.id)}
-                disabled={busy}
+                onClick={() =>
+                  setCreateSlotFor({ stageId: stage.id, stageName: stage.name })
+                }
                 className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-brand transition-colors"
               >
-                + add
+                + slot
               </button>
             </header>
 
             {/* Slots */}
-            <div
-              className="flex-1 p-2 space-y-2 min-h-20"
-              onDrop={() => onSlotDrop(stage.id, stageSlots)}
-              onDragOver={(e) => {
-                if (dragSlotId) e.preventDefault();
-              }}
-            >
+            <div className="flex-1 p-2 space-y-2 min-h-20">
               {stageSlots.length === 0 && (
                 <button
                   type="button"
-                  onClick={() => openAdd(stage.id)}
+                  onClick={() =>
+                    setCreateSlotFor({
+                      stageId: stage.id,
+                      stageName: stage.name,
+                    })
+                  }
                   className="w-full border border-dashed border-[--color-border] rounded-md py-5 text-[11px] text-[--color-fg-subtle] hover:border-brand hover:text-brand transition-colors"
                 >
-                  + Add to lineup
+                  + Create first slot
                 </button>
               )}
 
-              {displaySlots(stage.id, stageSlots).map((slot) => (
+              {sortByStart(stageSlots).map((slot) => (
                 <SlotCard
                   key={slot.id}
                   slot={slot}
                   stageColor={stage.color}
-                  artists={artists}
-                  isDragging={dragSlotId === slot.id}
-                  onDragStart={() => onSlotDragStart(slot.id)}
-                  onDragOver={(e) =>
-                    onSlotDragOver(e, slot.id, stage.id, stageSlots)
-                  }
-                  onDragEnd={() => {
-                    setDragSlotId(null);
-                    setLocalOrder({});
-                  }}
+                  artists={localArtists}
+                  onArtistsChange={setLocalArtists}
+                  onAssign={assignArtist}
+                  onSwap={swapArtist}
+                  onDeleteSlot={deleteSlot}
                   onEditSet={(s) => {
                     const fullSlot = slotForSet(s.id) ?? slot;
                     setEditingSet({ set: s, slot: fullSlot });
@@ -1025,16 +921,15 @@ export default function LineupBoard({ day, grid, artists }: Props) {
         ))}
       </div>
 
-      {/* Add sheet */}
-      {showAdd && (
-        <AddSheet
+      {/* Create slot sheet */}
+      {createSlotFor && (
+        <SlotSheet
           day={day}
-          grid={grid}
-          artists={artists}
-          preStageId={addPreStageId}
-          onClose={() => setShowAdd(false)}
+          stageId={createSlotFor.stageId}
+          stageName={createSlotFor.stageName}
+          onClose={() => setCreateSlotFor(null)}
           onSaved={() => {
-            setShowAdd(false);
+            setCreateSlotFor(null);
             refresh();
           }}
         />
@@ -1045,8 +940,9 @@ export default function LineupBoard({ day, grid, artists }: Props) {
         <AddB2bSheet
           slotId={b2bSlot.id}
           slotLabel={`${b2bSlot.startTime} - ${b2bSlot.endTime}`}
-          artists={artists}
+          artists={localArtists}
           existingArtistIds={b2bSlot.sets.map((s) => s.artistId)}
+          onArtistsChange={setLocalArtists}
           onClose={() => setB2bSlot(null)}
           onSaved={() => {
             setB2bSlot(null);
