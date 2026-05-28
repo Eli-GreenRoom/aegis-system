@@ -10,8 +10,10 @@ import { Label } from "@/components/ui/label";
 import CreatableCombobox, {
   type ComboOption,
 } from "@/components/ui/CreatableCombobox";
+import ArtistForm from "@/app/(dashboard)/artists/_components/ArtistForm";
 import { formatCents } from "@/lib/utils";
 import type { SetStatus } from "@/lib/lineup/schema";
+import type { Artist } from "@/lib/artists/repo";
 import type {
   SlotWithSets,
   StageWithSlots,
@@ -463,12 +465,15 @@ interface SlotCardProps {
   slot: SlotWithSets;
   stageColor: string | null;
   artists: ArtistOption[];
-  onArtistsChange: (next: ArtistOption[]) => void;
   onAssign: (slotId: string, artistId: string) => Promise<void>;
   onSwap: (setId: string, artistId: string) => Promise<void>;
   onDeleteSlot: (slotId: string) => Promise<void>;
   onEditSet: (set: SetWithArtist) => void;
   onAddB2b: (slot: SlotWithSets) => void;
+  /** Open the full create-artist sheet. When `swapSetId` is non-null the
+   *  new artist replaces that existing set; otherwise they're assigned
+   *  to the slot. */
+  onRequestCreate: (slotId: string, swapSetId: string | null) => void;
   isDragging: boolean;
   onDragStart: () => void;
   onDragOver: (e: React.DragEvent) => void;
@@ -479,12 +484,12 @@ function SlotCard({
   slot,
   stageColor,
   artists,
-  onArtistsChange,
   onAssign,
   onSwap,
   onDeleteSlot,
   onEditSet,
   onAddB2b,
+  onRequestCreate,
   isDragging,
   onDragStart,
   onDragOver,
@@ -558,25 +563,21 @@ function SlotCard({
 
       {/* Body */}
       {isEmpty ? (
-        <div className="py-1">
+        <div className="py-1 space-y-1.5">
           <CreatableCombobox
             options={toArtistComboOptions(artists)}
             value=""
             onChange={(id) => void onAssign(slot.id, id)}
-            placeholder="Search or create artist..."
+            placeholder="Search artist..."
             emptyText="No artists found"
-            onCreate={async (name) => {
-              const created = await createArtistByName(name);
-              if (!created) return null;
-              onArtistsChange([...artists, created]);
-              await onAssign(slot.id, created.id);
-              return {
-                id: created.id,
-                label: created.name,
-                sublabel: created.agency,
-              };
-            }}
           />
+          <button
+            type="button"
+            onClick={() => onRequestCreate(slot.id, null)}
+            className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-brand transition-colors"
+          >
+            + new artist
+          </button>
         </div>
       ) : (
         <ul className="space-y-1.5">
@@ -614,26 +615,26 @@ function SlotCard({
                     }}
                     placeholder="Swap to..."
                     emptyText="No other artists"
-                    onCreate={async (name) => {
-                      const created = await createArtistByName(name);
-                      if (!created) return null;
-                      onArtistsChange([...artists, created]);
-                      await onSwap(s.id, created.id);
-                      setSwapping(null);
-                      return {
-                        id: created.id,
-                        label: created.name,
-                        sublabel: created.agency,
-                      };
-                    }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setSwapping(null)}
-                    className="text-mono text-[9px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-[--color-fg] transition-colors"
-                  >
-                    cancel
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSwapping(null);
+                        onRequestCreate(slot.id, s.id);
+                      }}
+                      className="text-mono text-[9px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-brand transition-colors"
+                    >
+                      + new artist
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSwapping(null)}
+                      className="text-mono text-[9px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-[--color-fg] transition-colors"
+                    >
+                      cancel
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 min-w-0">
@@ -808,6 +809,13 @@ export default function LineupBoard({ day, grid, artists }: Props) {
   const [editingSet, setEditingSet] = useState<{
     set: SetWithArtist;
     slot: SlotWithSets;
+  } | null>(null);
+  // When set, the create-artist sheet is open. `swapSetId` non-null means
+  // the new artist replaces an existing set; null means assign to the
+  // empty slot.
+  const [createArtistFor, setCreateArtistFor] = useState<{
+    slotId: string;
+    swapSetId: string | null;
   } | null>(null);
 
   const [error, setError] = useState("");
@@ -1009,7 +1017,6 @@ export default function LineupBoard({ day, grid, artists }: Props) {
                   slot={slot}
                   stageColor={stage.color}
                   artists={localArtists}
-                  onArtistsChange={setLocalArtists}
                   onAssign={assignArtist}
                   onSwap={swapArtist}
                   onDeleteSlot={deleteSlot}
@@ -1018,6 +1025,9 @@ export default function LineupBoard({ day, grid, artists }: Props) {
                     setEditingSet({ set: s, slot: fullSlot });
                   }}
                   onAddB2b={(sl) => setB2bSlot(sl)}
+                  onRequestCreate={(slotId, swapSetId) =>
+                    setCreateArtistFor({ slotId, swapSetId })
+                  }
                   isDragging={dragSlotId === slot.id}
                   onDragStart={() => onSlotDragStart(slot.id)}
                   onDragOver={(e) =>
@@ -1046,6 +1056,30 @@ export default function LineupBoard({ day, grid, artists }: Props) {
             refresh();
           }}
         />
+      )}
+
+      {/* Create artist sheet */}
+      {createArtistFor && (
+        <Sheet title="New artist" onClose={() => setCreateArtistFor(null)}>
+          <ArtistForm
+            onCreated={async (created: Artist) => {
+              setLocalArtists((prev) => [
+                ...prev,
+                {
+                  id: created.id,
+                  name: created.name,
+                  agency: created.agency,
+                },
+              ]);
+              if (createArtistFor.swapSetId) {
+                await swapArtist(createArtistFor.swapSetId, created.id);
+              } else {
+                await assignArtist(createArtistFor.slotId, created.id);
+              }
+              setCreateArtistFor(null);
+            }}
+          />
+        </Sheet>
       )}
 
       {/* B2b sheet */}

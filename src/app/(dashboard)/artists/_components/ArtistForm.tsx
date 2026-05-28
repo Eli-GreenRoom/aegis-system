@@ -19,9 +19,19 @@ import type { Artist } from "@/lib/artists/repo";
 interface Props {
   artist?: Artist;
   festivalLocation?: string | null;
+  /** When supplied (modal use), called with the newly-created artist
+   *  instead of redirecting to its detail page. */
+  onCreated?: (artist: Artist) => void;
+  /** Optional initial name for create flows triggered with a known string. */
+  initialName?: string;
 }
 
-export default function ArtistForm({ artist, festivalLocation }: Props) {
+export default function ArtistForm({
+  artist,
+  festivalLocation,
+  onCreated,
+  initialName,
+}: Props) {
   const router = useRouter();
   const isEdit = !!artist;
   const [serverError, setServerError] = useState("");
@@ -37,8 +47,12 @@ export default function ArtistForm({ artist, festivalLocation }: Props) {
   } = useForm<ArtistInput>({
     resolver: zodResolver(artistInputSchema),
     defaultValues: {
-      name: artist?.name ?? "",
-      slug: artist?.slug ?? "",
+      name: artist?.name ?? initialName ?? "",
+      slug: artist?.slug
+        ? artist.slug
+        : initialName
+          ? slugify(initialName)
+          : "",
       legalName: artist?.legalName ?? "",
       nationality: artist?.nationality ?? "",
       email: artist?.email ?? "",
@@ -87,6 +101,10 @@ export default function ArtistForm({ artist, festivalLocation }: Props) {
     }
 
     const body = await res.json();
+    if (onCreated && !isEdit) {
+      onCreated(body.artist);
+      return;
+    }
     router.push(`/artists/${body.artist.id}` as Route);
     router.refresh();
   }
