@@ -15,6 +15,8 @@ const fixtureFestival = {
   description: null,
   tenantBrand: null,
   festivalModeActive: false,
+  defaultNightsCovered: null,
+  paymentTermDaysAfterEnd: 14,
   archivedAt: null,
   createdAt: new Date(),
 };

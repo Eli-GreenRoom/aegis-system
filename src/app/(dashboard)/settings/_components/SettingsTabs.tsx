@@ -36,6 +36,8 @@ interface FestivalData {
   endDate: string;
   location: string | null;
   description: string | null;
+  defaultNightsCovered: number | null;
+  paymentTermDaysAfterEnd: number;
 }
 
 interface SettingsTabsProps {
@@ -181,6 +183,8 @@ export function SettingsTabs({
           endDate={festival.endDate}
           location={festival.location}
           description={festival.description}
+          defaultNightsCovered={festival.defaultNightsCovered ?? null}
+          paymentTermDaysAfterEnd={festival.paymentTermDaysAfterEnd ?? 14}
           stages={stages}
           canEdit={!!permissions["festival.settings"]}
         />

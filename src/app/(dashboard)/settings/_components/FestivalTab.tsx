@@ -34,6 +34,8 @@ interface FestivalTabProps {
   endDate: string;
   location: string | null;
   description: string | null;
+  defaultNightsCovered: number | null;
+  paymentTermDaysAfterEnd: number;
   stages: StageRow[];
   canEdit: boolean;
 }
@@ -232,6 +234,8 @@ export function FestivalTab({
   endDate: initialEnd,
   location: initialLocation,
   description: initialDescription,
+  defaultNightsCovered: initialDefaultNights,
+  paymentTermDaysAfterEnd: initialPaymentTerm,
   stages: initialStages,
   canEdit,
 }: FestivalTabProps) {
@@ -243,6 +247,10 @@ export function FestivalTab({
   const [endDate, setEndDate] = useState(initialEnd);
   const [location, setLocation] = useState(initialLocation ?? "");
   const [description, setDescription] = useState(initialDescription ?? "");
+  const [defaultNights, setDefaultNights] = useState(
+    initialDefaultNights == null ? "" : String(initialDefaultNights),
+  );
+  const [paymentTerm, setPaymentTerm] = useState(String(initialPaymentTerm));
   const [festBusy, setFestBusy] = useState(false);
   const [festError, setFestError] = useState("");
   const [festSaved, setFestSaved] = useState(false);
@@ -266,6 +274,9 @@ export function FestivalTab({
       return;
     }
     setFestBusy(true);
+    const parsedDefaultNights =
+      defaultNights.trim() === "" ? null : Number(defaultNights);
+    const parsedPaymentTerm = Number(paymentTerm);
     const res = await fetch(`/api/festivals/${festivalId}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -275,6 +286,10 @@ export function FestivalTab({
         endDate,
         location: location || null,
         description: description || null,
+        defaultNightsCovered: parsedDefaultNights,
+        paymentTermDaysAfterEnd: Number.isFinite(parsedPaymentTerm)
+          ? parsedPaymentTerm
+          : 14,
       }),
     });
     setFestBusy(false);
@@ -416,6 +431,44 @@ export function FestivalTab({
               className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] placeholder:text-[--color-fg-muted] focus:border-brand focus:outline-none focus:ring-1 focus:ring-[--color-brand] disabled:opacity-50 resize-none"
             />
           </div>
+
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[--color-border]">
+            <div className="space-y-1">
+              <Label htmlFor="fest-nights">Default nights covered</Label>
+              <Input
+                id="fest-nights"
+                type="number"
+                min={0}
+                max={365}
+                step={1}
+                value={defaultNights}
+                onChange={(e) => setDefaultNights(e.target.value)}
+                placeholder="e.g. 2"
+                disabled={!canEdit}
+              />
+              <p className="text-mono text-[10px] text-[--color-fg-subtle]">
+                applied to new bookings; overrideable per artist
+              </p>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="fest-pay-term">Post-festival pay (days)</Label>
+              <Input
+                id="fest-pay-term"
+                type="number"
+                min={0}
+                max={365}
+                step={1}
+                value={paymentTerm}
+                onChange={(e) => setPaymentTerm(e.target.value)}
+                placeholder="14"
+                disabled={!canEdit}
+              />
+              <p className="text-mono text-[10px] text-[--color-fg-subtle]">
+                used by &quot;pay after festival&quot; invoices
+              </p>
+            </div>
+          </div>
+
           {festError && <p className="text-xs text-coral">{festError}</p>}
           {festSaved && <p className="text-xs text-brand">Changes saved.</p>}
           {canEdit && (

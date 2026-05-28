@@ -24,6 +24,8 @@ interface Props {
   /** Prefill values when opened from a context that already has them
    *  (e.g. the artist cockpit knows the flight dates). */
   prefill?: { checkin?: string; checkout?: string };
+  /** Festival-wide default for nights covered (from settings). */
+  festivalDefaultNights?: number | null;
   onSuccess?: () => void;
 }
 
@@ -45,6 +47,7 @@ export default function BookingForm({
   people,
   defaultPerson,
   prefill,
+  festivalDefaultNights,
   onSuccess,
 }: Props) {
   const router = useRouter();
@@ -59,6 +62,7 @@ export default function BookingForm({
     handleSubmit,
     control,
     setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -70,7 +74,7 @@ export default function BookingForm({
       roomType: booking?.roomType ?? "",
       checkin: booking?.checkin ?? prefill?.checkin ?? "",
       checkout: booking?.checkout ?? prefill?.checkout ?? "",
-      nightsCovered: booking?.nightsCovered ?? null,
+      nightsCovered: booking?.nightsCovered ?? festivalDefaultNights ?? null,
       bookingNumber: booking?.bookingNumber ?? "",
       status: booking?.status ?? "booked",
       confirmationUrl: booking?.confirmationUrl ?? "",
@@ -97,6 +101,7 @@ export default function BookingForm({
   // override.
   const watchedCheckin = useWatch({ control, name: "checkin" });
   const watchedCheckout = useWatch({ control, name: "checkout" });
+  const watchedNights = useWatch({ control, name: "nightsCovered" });
   const suggestedNights =
     watchedCheckin && watchedCheckout && watchedCheckin <= watchedCheckout
       ? Math.round(
@@ -105,6 +110,26 @@ export default function BookingForm({
             (1000 * 60 * 60 * 24),
         )
       : null;
+
+  // Over-coverage state: the stay exceeds the festival default and the
+  // operator has not yet chosen a resolution. Hides when matched.
+  const overCoverage =
+    festivalDefaultNights != null &&
+    suggestedNights != null &&
+    suggestedNights > festivalDefaultNights;
+  const extraNights =
+    overCoverage && suggestedNights != null && festivalDefaultNights != null
+      ? suggestedNights - festivalDefaultNights
+      : 0;
+
+  /** Append a line to the comments field without clobbering existing notes.
+   *  Used by the over-coverage buttons so each resolution leaves an audit
+   *  trail in the booking. */
+  function appendComment(line: string) {
+    const current = (getValues("comments") ?? "").trim();
+    const next = current ? `${current}\n${line}` : line;
+    setValue("comments", next, { shouldValidate: true });
+  }
 
   async function onSubmit(data: FormValues) {
     setServerError("");
@@ -269,6 +294,58 @@ export default function BookingForm({
         <Field label="Check-out" error={errors.checkout?.message} required>
           <Input type="date" {...register("checkout")} />
         </Field>
+
+        {overCoverage && watchedNights === festivalDefaultNights && (
+          <div className="col-span-2 rounded-md border border-[--color-warn]/40 bg-[--color-warn]/5 p-3 space-y-2">
+            <p className="text-xs text-[--color-warn]">
+              Stay is {suggestedNights} nights, but the festival default is{" "}
+              {festivalDefaultNights}. The artist arrives early or leaves late
+              by {extraNights} night{extraNights === 1 ? "" : "s"}.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  if (suggestedNights != null) {
+                    setValue("nightsCovered", suggestedNights, {
+                      shouldValidate: true,
+                    });
+                  }
+                }}
+              >
+                We cover the extra
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  appendComment(
+                    `Artist self-books ${extraNights} extra night${extraNights === 1 ? "" : "s"} outside festival window.`,
+                  );
+                }}
+              >
+                Artist self-books
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  if (suggestedNights != null) {
+                    setValue("nightsCovered", suggestedNights, {
+                      shouldValidate: true,
+                    });
+                  }
+                  appendComment(
+                    `Festival covers ${suggestedNights} nights; deduct ${extraNights} extra night${extraNights === 1 ? "" : "s"} from artist fee.`,
+                  );
+                }}
+              >
+                Cover &amp; deduct from fee
+              </Button>
+            </div>
+          </div>
+        )}
 
         <Field
           label="Nights covered"

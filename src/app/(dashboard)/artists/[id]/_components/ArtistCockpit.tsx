@@ -27,6 +27,12 @@ interface Props {
     hotels: Hotel[];
     blocks: RoomBlock[];
   };
+  /** Festival defaults piped into the Logistics sheet (Stay + Money tabs). */
+  festival: {
+    endDate: string;
+    defaultNightsCovered: number | null;
+    paymentTermDaysAfterEnd: number;
+  };
   /** When non-null, open the Logistics sheet on this tab on first render.
    *  Driven by `?focus=` on the artist page (set server-side). */
   initialFocus?: LogisticsTab | null;
@@ -67,6 +73,7 @@ export default function ArtistCockpit({
   sheet,
   progress,
   reference,
+  festival,
   initialFocus,
 }: Props) {
   const router = useRouter();
@@ -529,6 +536,9 @@ export default function ArtistCockpit({
         initialTab={logisticsTab ?? "travel"}
         sheet={sheet}
         reference={reference}
+        festivalDefaultNights={festival.defaultNightsCovered}
+        festivalEndDate={festival.endDate}
+        festivalPaymentTermDays={festival.paymentTermDaysAfterEnd}
         pickupPrefill={pickupPrefill(sheet)}
         onClose={close}
         onSuccess={onSuccess}

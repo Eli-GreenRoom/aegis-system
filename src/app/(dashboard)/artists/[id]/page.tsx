@@ -98,6 +98,11 @@ export default async function ArtistDetailPage({
         sheet={sheet}
         progress={progress}
         reference={{ artists, people, hotels, blocks }}
+        festival={{
+          endDate: festival.endDate,
+          defaultNightsCovered: festival.defaultNightsCovered ?? null,
+          paymentTermDaysAfterEnd: festival.paymentTermDaysAfterEnd,
+        }}
         initialFocus={initialFocus}
       />
       <div className="px-6 pb-6">

@@ -54,6 +54,8 @@ export default async function SettingsPage() {
                 endDate: festival.endDate,
                 location: festival.location ?? null,
                 description: festival.description ?? null,
+                defaultNightsCovered: festival.defaultNightsCovered ?? null,
+                paymentTermDaysAfterEnd: festival.paymentTermDaysAfterEnd,
               }
             : undefined
         }

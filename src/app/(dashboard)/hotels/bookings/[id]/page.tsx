@@ -62,6 +62,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           hotels={hotels}
           blocks={blocks}
           people={people}
+          festivalDefaultNights={festival.defaultNightsCovered ?? null}
         />
         <AuditHistory entityType="hotel_booking" entityId={booking.id} />
       </div>

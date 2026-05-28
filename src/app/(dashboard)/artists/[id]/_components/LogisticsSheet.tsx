@@ -33,6 +33,10 @@ interface Props {
     hotels: Hotel[];
     blocks: RoomBlock[];
   };
+  /** Festival-wide defaults piped into Stay and Money panels. */
+  festivalDefaultNights: number | null;
+  festivalEndDate: string;
+  festivalPaymentTermDays: number;
   onClose: () => void;
   onSuccess: () => void;
   /** Helper carried from the cockpit so pickup defaults stay consistent. */
@@ -44,6 +48,9 @@ export default function LogisticsSheet({
   initialTab,
   sheet,
   reference,
+  festivalDefaultNights,
+  festivalEndDate,
+  festivalPaymentTermDays,
   onClose,
   onSuccess,
   pickupPrefill,
@@ -76,6 +83,7 @@ export default function LogisticsSheet({
           <StayPanel
             sheet={sheet}
             reference={reference}
+            festivalDefaultNights={festivalDefaultNights}
             onSuccess={onSuccess}
           />
         )}
@@ -101,6 +109,8 @@ export default function LogisticsSheet({
           <MoneyPanel
             artistId={artist.id}
             artistName={artist.name}
+            festivalEndDate={festivalEndDate}
+            festivalPaymentTermDays={festivalPaymentTermDays}
             onSuccess={onSuccess}
           />
         )}
@@ -218,10 +228,12 @@ function DirectionToggle({
 function StayPanel({
   sheet,
   reference,
+  festivalDefaultNights,
   onSuccess,
 }: {
   sheet: ArtistRoadsheet;
   reference: Props["reference"];
+  festivalDefaultNights: number | null;
   onSuccess: () => void;
 }) {
   return (
@@ -238,6 +250,7 @@ function StayPanel({
           ? sheet.outboundFlight.scheduledDt.toISOString().slice(0, 10)
           : undefined,
       }}
+      festivalDefaultNights={festivalDefaultNights}
       onSuccess={onSuccess}
     />
   );
@@ -371,16 +384,22 @@ function SubTab({
 function MoneyPanel({
   artistId,
   artistName,
+  festivalEndDate,
+  festivalPaymentTermDays,
   onSuccess,
 }: {
   artistId: string;
   artistName: string;
+  festivalEndDate: string;
+  festivalPaymentTermDays: number;
   onSuccess: () => void;
 }) {
   return (
     <InvoiceSheet
       artistId={artistId}
       artistName={artistName}
+      festivalEndDate={festivalEndDate}
+      festivalPaymentTermDays={festivalPaymentTermDays}
       onSuccess={onSuccess}
     />
   );

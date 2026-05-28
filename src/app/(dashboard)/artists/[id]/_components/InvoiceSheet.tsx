@@ -65,16 +65,33 @@ type FormValues = z.infer<typeof formSchema>;
 interface Props {
   artistId: string;
   artistName: string;
+  festivalEndDate: string;
+  festivalPaymentTermDays: number;
   onSuccess: () => void;
+}
+
+/** Add `days` days to an ISO YYYY-MM-DD date string. */
+function addDays(isoDate: string, days: number): string {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
 }
 
 export default function InvoiceSheet({
   artistId,
   artistName,
+  festivalEndDate,
+  festivalPaymentTermDays,
   onSuccess,
 }: Props) {
   const router = useRouter();
   const [serverError, setServerError] = useState("");
+  const [payAfterFestival, setPayAfterFestival] = useState(false);
+  // Computed lazily so it stays correct if the operator changes the toggle.
+  const computedPostFestivalDue = addDays(
+    festivalEndDate,
+    festivalPaymentTermDays,
+  );
   const [aiOpen, setAiOpen] = useState(false);
   const [aiText, setAiText] = useState("");
   const [aiParsed, setAiParsed] = useState<Record<string, unknown> | null>(
@@ -334,8 +351,42 @@ export default function InvoiceSheet({
               <Input type="date" {...register("issueDate")} />
             </Field>
             <Field label="Due date" error={errors.dueDate?.message}>
-              <Input type="date" {...register("dueDate")} />
+              {payAfterFestival ? (
+                <Input
+                  type="date"
+                  value={computedPostFestivalDue}
+                  readOnly
+                  className="opacity-70"
+                />
+              ) : (
+                <Input type="date" {...register("dueDate")} />
+              )}
             </Field>
+
+            <div className="col-span-2 flex items-center gap-2">
+              <input
+                id="pay-after-festival"
+                type="checkbox"
+                checked={payAfterFestival}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  setPayAfterFestival(on);
+                  if (on) {
+                    setValue("dueDate", computedPostFestivalDue, {
+                      shouldValidate: true,
+                    });
+                  }
+                }}
+                className="rounded border border-[--color-border-strong] bg-[--color-surface]"
+              />
+              <label
+                htmlFor="pay-after-festival"
+                className="text-[12px] text-[--color-fg] cursor-pointer select-none"
+              >
+                Pay {festivalPaymentTermDays} days after festival end (
+                {computedPostFestivalDue})
+              </label>
+            </div>
 
             <Field label="Amount" error={errors.amount?.message} required>
               <Input

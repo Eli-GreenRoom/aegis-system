@@ -22,6 +22,14 @@ const PatchFestivalSchema = z
       .optional(),
     location: z.string().max(200).nullable().optional(),
     description: z.string().max(2000).nullable().optional(),
+    defaultNightsCovered: z
+      .number()
+      .int()
+      .min(0)
+      .max(365)
+      .nullable()
+      .optional(),
+    paymentTermDaysAfterEnd: z.number().int().min(0).max(365).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, {
     message: "Body must contain at least one field",
@@ -97,6 +105,10 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if ("location" in parsed.data) patch.location = parsed.data.location ?? null;
   if ("description" in parsed.data)
     patch.description = parsed.data.description ?? null;
+  if ("defaultNightsCovered" in parsed.data)
+    patch.defaultNightsCovered = parsed.data.defaultNightsCovered ?? null;
+  if (parsed.data.paymentTermDaysAfterEnd !== undefined)
+    patch.paymentTermDaysAfterEnd = parsed.data.paymentTermDaysAfterEnd;
 
   const [updated] = await db
     .update(festivals)

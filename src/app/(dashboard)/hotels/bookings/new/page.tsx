@@ -82,6 +82,7 @@ export default async function NewBookingPage({ searchParams }: PageProps) {
           blocks={blocks}
           people={people}
           defaultPerson={defaultPerson}
+          festivalDefaultNights={festival.defaultNightsCovered ?? null}
         />
       </div>
     </>

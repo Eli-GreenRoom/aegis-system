@@ -85,6 +85,13 @@
       "when": 1748476800000,
       "tag": "0012_hotel_booking_nights_covered",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1748563200000,
+      "tag": "0013_festival_defaults",
+      "breakpoints": true
     }
   ]
 }

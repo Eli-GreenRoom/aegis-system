@@ -197,6 +197,15 @@ export const festivals = pgTable(
     festivalModeActive: boolean("festival_mode_active")
       .notNull()
       .default(false),
+    // Default number of hotel nights the festival covers per booking. When
+    // a stay (checkout - checkin) exceeds this, the operator gets prompted
+    // to cover the extra, ask the artist to self-book, or deduct from fee.
+    defaultNightsCovered: integer("default_nights_covered"),
+    // Days after end_date that "pay after festival" invoices fall due.
+    // Used by the InvoiceSheet's "Pay after festival" toggle.
+    paymentTermDaysAfterEnd: integer("payment_term_days_after_end")
+      .notNull()
+      .default(14),
     archivedAt: timestamp("archived_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
