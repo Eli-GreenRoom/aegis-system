@@ -687,7 +687,7 @@ interface AddB2bSheetProps {
   slotLabel: string;
   artists: ArtistOption[];
   existingArtistIds: string[];
-  onArtistsChange: (next: ArtistOption[]) => void;
+  onRequestCreate: () => void;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -697,7 +697,7 @@ function AddB2bSheet({
   slotLabel,
   artists,
   existingArtistIds,
-  onArtistsChange,
+  onRequestCreate,
   onClose,
   onSaved,
 }: AddB2bSheetProps) {
@@ -745,20 +745,16 @@ function AddB2bSheet({
             options={toArtistComboOptions(available)}
             value={artistId}
             onChange={setArtistId}
-            placeholder="Search or create artist..."
+            placeholder="Search artist..."
             emptyText="No artists available"
-            onCreate={async (name) => {
-              const created = await createArtistByName(name);
-              if (!created) return null;
-              onArtistsChange([...artists, created]);
-              setArtistId(created.id);
-              return {
-                id: created.id,
-                label: created.name,
-                sublabel: created.agency,
-              };
-            }}
           />
+          <button
+            type="button"
+            onClick={onRequestCreate}
+            className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] hover:text-brand transition-colors"
+          >
+            + new artist
+          </button>
         </div>
 
         <div className="space-y-1.5">
@@ -810,13 +806,14 @@ export default function LineupBoard({ day, grid, artists }: Props) {
     set: SetWithArtist;
     slot: SlotWithSets;
   } | null>(null);
-  // When set, the create-artist sheet is open. `swapSetId` non-null means
-  // the new artist replaces an existing set; null means assign to the
-  // empty slot.
-  const [createArtistFor, setCreateArtistFor] = useState<{
-    slotId: string;
-    swapSetId: string | null;
-  } | null>(null);
+  // When set, the create-artist sheet is open. `mode` decides what to do
+  // with the new artist once it's saved.
+  const [createArtistFor, setCreateArtistFor] = useState<
+    | { mode: "assign"; slotId: string }
+    | { mode: "swap"; slotId: string; swapSetId: string }
+    | { mode: "b2b"; slotId: string }
+    | null
+  >(null);
 
   const [error, setError] = useState("");
 
@@ -1026,7 +1023,11 @@ export default function LineupBoard({ day, grid, artists }: Props) {
                   }}
                   onAddB2b={(sl) => setB2bSlot(sl)}
                   onRequestCreate={(slotId, swapSetId) =>
-                    setCreateArtistFor({ slotId, swapSetId })
+                    setCreateArtistFor(
+                      swapSetId
+                        ? { mode: "swap", slotId, swapSetId }
+                        : { mode: "assign", slotId },
+                    )
                   }
                   isDragging={dragSlotId === slot.id}
                   onDragStart={() => onSlotDragStart(slot.id)}
@@ -1071,11 +1072,14 @@ export default function LineupBoard({ day, grid, artists }: Props) {
                   agency: created.agency,
                 },
               ]);
-              if (createArtistFor.swapSetId) {
+              if (createArtistFor.mode === "swap") {
                 await swapArtist(createArtistFor.swapSetId, created.id);
               } else {
+                // "assign" (empty slot) and "b2b" both POST a new set on
+                // the slot. assignArtist also calls refresh().
                 await assignArtist(createArtistFor.slotId, created.id);
               }
+              if (createArtistFor.mode === "b2b") setB2bSlot(null);
               setCreateArtistFor(null);
             }}
           />
@@ -1089,7 +1093,9 @@ export default function LineupBoard({ day, grid, artists }: Props) {
           slotLabel={`${b2bSlot.startTime} - ${b2bSlot.endTime}`}
           artists={localArtists}
           existingArtistIds={b2bSlot.sets.map((s) => s.artistId)}
-          onArtistsChange={setLocalArtists}
+          onRequestCreate={() =>
+            setCreateArtistFor({ mode: "b2b", slotId: b2bSlot.id })
+          }
           onClose={() => setB2bSlot(null)}
           onSaved={() => {
             setB2bSlot(null);

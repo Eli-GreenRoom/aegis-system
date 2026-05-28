@@ -137,10 +137,47 @@ export default function ArtistForm({
     router.refresh();
   }
 
+  const needsCheckboxes = (
+    <div className="space-y-2">
+      <p className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted]">
+        Logistics requirements
+      </p>
+      <p className="text-[11px] text-[--color-fg-subtle]">
+        Uncheck modules this artist does not need. Unchecked = N/A on the
+        readiness grid and excluded from gap counts.
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+        {(
+          [
+            { id: "needsFlight", label: "Flight" },
+            { id: "needsHotel", label: "Hotel" },
+            { id: "needsGround", label: "Ground transport" },
+            { id: "needsContract", label: "Contract" },
+            { id: "needsPayment", label: "Payment" },
+            { id: "needsRider", label: "Rider" },
+          ] as const
+        ).map(({ id, label }) => (
+          <label
+            key={id}
+            className="flex items-center gap-2 cursor-pointer select-none"
+          >
+            <input
+              id={id}
+              type="checkbox"
+              {...register(id)}
+              className="rounded border border-[--color-border-strong] bg-[--color-surface]"
+            />
+            <span className="text-[13px] text-[--color-fg]">{label}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
-      {/* Day-1 required fields. Everything else is folded into "More details"
-       *  below so creating an artist costs just one input + a tab. */}
+      {/* Day-1 required fields. On create the logistics requirements show
+       *  here too so the operator can uncheck N/A modules up-front. */}
       <div className="grid grid-cols-2 gap-4">
         <Field label="Name" error={errors.name?.message} required>
           <Input {...register("name")} onBlur={autoSlug} autoComplete="off" />
@@ -149,6 +186,8 @@ export default function ArtistForm({
           <Input {...register("slug")} autoComplete="off" />
         </Field>
       </div>
+
+      {!isEdit && needsCheckboxes}
 
       <details className="rounded-md border border-[--color-border] bg-[--color-surface]/40 px-4 py-3">
         <summary className="cursor-pointer text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted] select-none">
@@ -241,44 +280,10 @@ export default function ArtistForm({
           </Label>
         </div>
 
-        {/* Logistics requirements — only relevant on edit. Hidden on create;
-         *  DB defaults (all true) cover the common case. */}
-        {isEdit && (
-          <div className="space-y-2 pt-4">
-            <p className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-muted]">
-              Logistics requirements
-            </p>
-            <p className="text-[11px] text-[--color-fg-subtle]">
-              Uncheck modules this artist does not need. Unchecked = N/A on the
-              readiness grid and excluded from gap counts.
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
-              {(
-                [
-                  { id: "needsFlight", label: "Flight" },
-                  { id: "needsHotel", label: "Hotel" },
-                  { id: "needsGround", label: "Ground transport" },
-                  { id: "needsContract", label: "Contract" },
-                  { id: "needsPayment", label: "Payment" },
-                  { id: "needsRider", label: "Rider" },
-                ] as const
-              ).map(({ id, label }) => (
-                <label
-                  key={id}
-                  className="flex items-center gap-2 cursor-pointer select-none"
-                >
-                  <input
-                    id={id}
-                    type="checkbox"
-                    {...register(id)}
-                    className="rounded border border-[--color-border-strong] bg-[--color-surface]"
-                  />
-                  <span className="text-[13px] text-[--color-fg]">{label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* On edit, the logistics requirements stay inside "More details"
+         *  so the edit page keeps its tidy two-column layout. On create
+         *  they're surfaced above next to name + slug. */}
+        {isEdit && <div className="pt-4">{needsCheckboxes}</div>}
 
         <div className="pt-4">
           <Field label="Comments" error={errors.comments?.message}>
