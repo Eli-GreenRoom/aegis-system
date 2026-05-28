@@ -41,6 +41,7 @@ export const fixtureBooking: Booking = {
   roomType: "Deluxe sea view",
   checkin: "2026-08-13",
   checkout: "2026-08-16",
+  nightsCovered: 3,
   bookingNumber: "BSM-001",
   creditsAmountCents: null,
   creditsCurrency: null,

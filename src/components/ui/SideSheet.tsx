@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 interface Props {
@@ -30,6 +30,16 @@ export default function SideSheet({
   widthClass = "w-full sm:max-w-[560px]",
   children,
 }: Props) {
+  // Portals can't render on the server. We must produce identical output
+  // on the server and the first client render to avoid hydration mismatch,
+  // then mount the portal in a second pass. This is the canonical "mounted
+  // flag" pattern; setting state in this effect is intentional.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
   // ESC + scroll lock — only while open.
   useEffect(() => {
     if (!open) return;
@@ -49,7 +59,7 @@ export default function SideSheet({
   }, [open, onClose]);
 
   if (!open) return null;
-  if (typeof document === "undefined") return null;
+  if (!mounted) return null;
 
   return createPortal(
     <div

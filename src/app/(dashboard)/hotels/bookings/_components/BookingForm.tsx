@@ -70,6 +70,7 @@ export default function BookingForm({
       roomType: booking?.roomType ?? "",
       checkin: booking?.checkin ?? prefill?.checkin ?? "",
       checkout: booking?.checkout ?? prefill?.checkout ?? "",
+      nightsCovered: booking?.nightsCovered ?? null,
       bookingNumber: booking?.bookingNumber ?? "",
       status: booking?.status ?? "booked",
       confirmationUrl: booking?.confirmationUrl ?? "",
@@ -91,6 +92,20 @@ export default function BookingForm({
     }
   }, [blocksForHotel, isEdit, setValue]);
 
+  // Suggested nights = checkout - checkin. Shown as a hint next to the
+  // "nights covered" field so the operator can match the stay length or
+  // override.
+  const watchedCheckin = useWatch({ control, name: "checkin" });
+  const watchedCheckout = useWatch({ control, name: "checkout" });
+  const suggestedNights =
+    watchedCheckin && watchedCheckout && watchedCheckin <= watchedCheckout
+      ? Math.round(
+          (new Date(watchedCheckout).getTime() -
+            new Date(watchedCheckin).getTime()) /
+            (1000 * 60 * 60 * 24),
+        )
+      : null;
+
   async function onSubmit(data: FormValues) {
     setServerError("");
     const url = isEdit
@@ -106,6 +121,10 @@ export default function BookingForm({
       roomType: data.roomType,
       checkin: data.checkin,
       checkout: data.checkout,
+      nightsCovered:
+        data.nightsCovered === undefined || data.nightsCovered === null
+          ? null
+          : Number(data.nightsCovered),
       bookingNumber: data.bookingNumber,
       status: data.status,
       confirmationUrl: data.confirmationUrl,
@@ -251,6 +270,30 @@ export default function BookingForm({
           <Input type="date" {...register("checkout")} />
         </Field>
 
+        <Field
+          label="Nights covered"
+          error={errors.nightsCovered?.message}
+          hint={
+            suggestedNights != null
+              ? `stay is ${suggestedNights} night${suggestedNights === 1 ? "" : "s"}`
+              : undefined
+          }
+        >
+          <Input
+            type="number"
+            min={0}
+            max={365}
+            step={1}
+            placeholder={
+              suggestedNights != null ? String(suggestedNights) : "e.g. 3"
+            }
+            {...register("nightsCovered", {
+              setValueAs: (v) =>
+                v === "" || v === null || v === undefined ? null : Number(v),
+            })}
+          />
+        </Field>
+
         <Field label="Booking number" error={errors.bookingNumber?.message}>
           <Input {...register("bookingNumber")} placeholder="BSM-001" />
         </Field>
@@ -331,11 +374,13 @@ function Field({
   label,
   error,
   required,
+  hint,
   children,
 }: {
   label: string;
   error?: string;
   required?: boolean;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -345,7 +390,11 @@ function Field({
         {required && <span className="text-brand ml-1">*</span>}
       </Label>
       {children}
-      {error && <p className="text-xs text-coral">{error}</p>}
+      {error ? (
+        <p className="text-xs text-coral">{error}</p>
+      ) : hint ? (
+        <p className="text-mono text-[10px] text-[--color-fg-subtle]">{hint}</p>
+      ) : null}
     </div>
   );
 }

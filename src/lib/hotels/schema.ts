@@ -214,6 +214,7 @@ export const hotelBookingBaseSchema = z.object({
   roomType: optionalString,
   checkin: isoDate,
   checkout: isoDate,
+  nightsCovered: z.number().int().min(0).max(365).nullable().optional(),
   bookingNumber: optionalString,
   creditsAmountCents: z
     .number()
@@ -260,6 +261,7 @@ export interface HotelBookingDbValues {
   roomType: string | null;
   checkin: string; // YYYY-MM-DD
   checkout: string;
+  nightsCovered: number | null;
   bookingNumber: string | null;
   creditsAmountCents: number | null;
   creditsCurrency: string | null;
@@ -293,6 +295,7 @@ export function hotelBookingToDbValues(
     roomType: null,
     checkin: input.checkin,
     checkout: input.checkout,
+    nightsCovered: intOrNull(input.nightsCovered),
     bookingNumber: null,
     creditsAmountCents: intOrNull(input.creditsAmountCents),
     creditsCurrency:
@@ -329,6 +332,9 @@ export function hotelBookingToDbPatchValues(
     out.checkin = input.checkin;
   if ("checkout" in input && input.checkout !== undefined)
     out.checkout = input.checkout;
+  if ("nightsCovered" in input) {
+    out.nightsCovered = intOrNull(input.nightsCovered);
+  }
   if ("status" in input && input.status !== undefined)
     out.status = input.status;
   if ("creditsAmountCents" in input) {

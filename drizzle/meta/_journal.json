@@ -78,6 +78,13 @@
       "when": 1748390400000,
       "tag": "0011_artist_needs_flags",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1748476800000,
+      "tag": "0012_hotel_booking_nights_covered",
+      "breakpoints": true
     }
   ]
 }

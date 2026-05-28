@@ -429,6 +429,10 @@ export const hotelBookings = pgTable("hotel_bookings", {
   roomType: text("room_type"),
   checkin: date("checkin").notNull(),
   checkout: date("checkout").notNull(),
+  // How many nights of this stay the festival covers (paid/comped).
+  // Distinct from (checkout - checkin) when the artist extends on their
+  // own dime, or when we comp only part of a longer stay.
+  nightsCovered: integer("nights_covered"),
   bookingNumber: text("booking_number"),
   creditsAmountCents: integer("credits_amount_cents"),
   creditsCurrency: varchar("credits_currency", { length: 3 }),

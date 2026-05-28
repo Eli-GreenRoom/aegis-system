@@ -114,12 +114,24 @@ export default function FlightForm({
     }
 
     const body = await res.json();
+    void body;
     if (onSuccess) {
       router.refresh();
+      // If the AI returned a round-trip and we just saved the first leg,
+      // pop the next one into the form so the operator can save it
+      // immediately - no toggling direction by hand, no remembering.
+      if (otherLegs.length > 0) {
+        const [nextLeg, ...rest] = otherLegs;
+        applyOneLeg(nextLeg as Record<string, unknown>);
+        setOtherLegs(rest);
+        return;
+      }
       onSuccess();
       return;
     }
-    router.push(`/flights/${body.flight.id}` as Route);
+    router.push(
+      `/flights/${(body as { flight: { id: string } }).flight.id}` as Route,
+    );
     router.refresh();
   }
 
@@ -366,8 +378,8 @@ export default function FlightForm({
       {otherLegs.length > 0 && (
         <div className="rounded-md border border-brand/30 bg-brand/5 px-4 py-3 space-y-1">
           <p className="text-xs font-medium text-brand">
-            {otherLegs.length} more leg{otherLegs.length > 1 ? "s" : ""} found
-            in this itinerary
+            {otherLegs.length} more leg{otherLegs.length > 1 ? "s" : ""} queued
+            - save this one and the next will auto-fill.
           </p>
           {otherLegs.map((leg, i) => (
             <p key={i} className="text-mono text-xs text-[--color-fg-muted]">
@@ -377,10 +389,6 @@ export default function FlightForm({
               {leg.scheduledDt
                 ? ` · ${toDtLocal(String(leg.scheduledDt))}`
                 : ""}
-              {" — "}
-              <span className="text-[--color-fg-subtle]">
-                Save this flight first, then create another.
-              </span>
             </p>
           ))}
         </div>
