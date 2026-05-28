@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import type { Route } from "next";
-import type { ArtistStatusSummary } from "@/lib/artists/status";
-import { hasGap } from "@/lib/artists/status";
+import type { ArtistStatusSummary } from "@/lib/artists/status-types";
+import { hasGap } from "@/lib/artists/status-types";
 
 export interface ReadinessRow {
   artist: { id: string; name: string; agency: string | null };

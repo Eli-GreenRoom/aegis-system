@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Artist } from "@/lib/artists/repo";
-import type { ArtistStatusSummary } from "@/lib/artists/status";
-import { hasGap } from "@/lib/artists/status";
+import type { ArtistStatusSummary } from "@/lib/artists/status-types";
+import { hasGap } from "@/lib/artists/status-types";
 
 interface Props {
   artists: Artist[];
