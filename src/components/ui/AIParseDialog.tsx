@@ -8,9 +8,14 @@ interface Props {
   title: string;
   /** Endpoint to POST `{text}` to. */
   endpoint: "/api/ai/parse-invoice" | "/api/ai/parse-flight";
+  /** Optional multipart endpoint that accepts a PDF file. When provided,
+   *  the dialog also surfaces a "Upload PDF" picker. */
+  pdfEndpoint?: "/api/ai/parse-flight-pdf";
   /** Called when the operator clicks "Apply" on a parse result. The
-   *  parent form decides which fields to map and how. */
-  onApply: (parsed: Record<string, unknown>) => void;
+   *  parent form decides which fields to map and how. If the parse came
+   *  from a PDF, the original file is forwarded so the parent can attach
+   *  it to the entity. */
+  onApply: (parsed: Record<string, unknown>, sourceFile?: File) => void;
   onClose: () => void;
 }
 
@@ -24,11 +29,13 @@ interface Props {
 export default function AIParseDialog({
   title,
   endpoint,
+  pdfEndpoint,
   onApply,
   onClose,
 }: Props) {
   const [text, setText] = useState("");
   const [parsed, setParsed] = useState<Record<string, unknown> | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -55,9 +62,32 @@ export default function AIParseDialog({
     }
   }
 
+  async function runPdfParse(file: File) {
+    if (!pdfEndpoint) return;
+    setError("");
+    setBusy(true);
+    setPdfFile(file);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(pdfEndpoint, { method: "POST", body: fd });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? `Parse failed (${res.status})`);
+        return;
+      }
+      const body = await res.json();
+      setParsed(body.parsed);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Parse failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function applyAndClose() {
     if (!parsed) return;
-    onApply(parsed);
+    onApply(parsed, pdfFile ?? undefined);
     onClose();
   }
 
@@ -76,14 +106,40 @@ export default function AIParseDialog({
 
         {!parsed ? (
           <>
+            {pdfEndpoint && (
+              <div className="rounded-md border border-dashed border-[--color-border-strong] bg-[--color-surface]/40 p-3 space-y-2">
+                <p className="text-xs text-[--color-fg-muted]">
+                  Upload the airline PDF and Claude will extract the inbound and
+                  outbound legs directly.
+                </p>
+                <label className="inline-flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    className="text-xs text-[--color-fg-muted] file:mr-2 file:rounded-md file:border file:border-[--color-border-strong] file:bg-[--color-surface] file:px-3 file:py-1 file:text-xs file:text-[--color-fg] hover:file:border-brand"
+                    disabled={busy}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void runPdfParse(f);
+                    }}
+                  />
+                </label>
+                {pdfFile && (
+                  <p className="text-mono text-[10px] text-[--color-fg-subtle]">
+                    selected: {pdfFile.name}
+                  </p>
+                )}
+              </div>
+            )}
             <p className="text-xs text-[--color-fg-muted]">
-              Paste the email body or the document text. Claude extracts the
-              structured fields; you confirm before saving.
+              {pdfEndpoint
+                ? "Or paste the email body / extracted text below."
+                : "Paste the email body or the document text. Claude extracts the structured fields; you confirm before saving."}
             </p>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              rows={12}
+              rows={pdfEndpoint ? 8 : 12}
               placeholder="Paste here..."
               className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] focus:border-brand focus:outline-none focus:ring-1 focus:ring-[--color-brand]"
             />

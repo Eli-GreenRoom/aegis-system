@@ -11,19 +11,40 @@ interface Ctx {
   params: Promise<{ id: string }>;
 }
 
+const singlePlacementSchema = z.object({
+  pageIndex: z.number().int().min(0),
+  xPct: z.number().min(0).max(1),
+  yPct: z.number().min(0).max(1),
+  widthPct: z.number().min(0.05).max(0.95).optional(),
+});
+
+const multiPlacementSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("signature"),
+    pageIndex: z.number().int().min(0),
+    xPct: z.number().min(0).max(1),
+    yPct: z.number().min(0).max(1),
+    widthPct: z.number().min(0.05).max(0.95).optional(),
+  }),
+  z.object({
+    kind: z.literal("text"),
+    pageIndex: z.number().int().min(0),
+    xPct: z.number().min(0).max(1),
+    yPct: z.number().min(0).max(1),
+    text: z.string().trim().min(1).max(500),
+  }),
+]);
+
 const bodySchema = z.object({
   signatureDataUrl: z
     .string()
     .regex(/^data:image\/(png|jpeg);base64,/, "Must be a base64 PNG or JPEG"),
   signerName: z.string().trim().max(200).optional(),
-  placement: z
-    .object({
-      pageIndex: z.number().int().min(0),
-      xPct: z.number().min(0).max(1),
-      yPct: z.number().min(0).max(1),
-      widthPct: z.number().min(0.05).max(0.95).optional(),
-    })
-    .optional(),
+  // Old shape (single signature) is still accepted for back-compat with any
+  // outstanding clients - the multi-placement client always sends the new
+  // `placements` array.
+  placement: singlePlacementSchema.optional(),
+  placements: z.array(multiPlacementSchema).min(1).max(20).optional(),
 });
 
 export async function POST(req: NextRequest, ctx: Ctx) {
@@ -90,54 +111,51 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   const arrayBuffer = await new Response(blobResult.stream).arrayBuffer();
   const pdfBytes = new Uint8Array(arrayBuffer);
 
-  // Overlay signature at user-specified position (or bottom-right of last page)
+  // Embed each placement (signature image or text label) onto the right page.
+  // Back-compat: if a legacy `placement` is sent without `placements`, treat
+  // it as a single signature placement.
   let signedPdfBytes: Uint8Array;
   try {
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const pdfPages = pdfDoc.getPages();
+    const { placement, placements } = parsed.data;
+    // Prefer client-supplied signerName, but fall back to the session's
+    // profile name so the stamp ("Name - 15 May 2026") is always populated.
+    const signerName = parsed.data.signerName ?? session.user.name ?? undefined;
 
-    const { placement, signerName } = parsed.data;
-    const targetIdx = placement
-      ? Math.min(placement.pageIndex, pdfPages.length - 1)
-      : pdfPages.length - 1;
-    const targetPage = pdfPages[targetIdx];
-    const { width: pageW, height: pageH } = targetPage.getSize();
+    const items =
+      placements && placements.length > 0
+        ? placements
+        : placement
+          ? [
+              {
+                kind: "signature" as const,
+                pageIndex: placement.pageIndex,
+                xPct: placement.xPct,
+                yPct: placement.yPct,
+                widthPct: placement.widthPct,
+              },
+            ]
+          : [
+              // No placement provided at all - fall back to the original
+              // bottom-right default on the last page.
+              {
+                kind: "signature" as const,
+                pageIndex: pdfPages.length - 1,
+                xPct: 0.85,
+                yPct: 0.9,
+              },
+            ];
 
-    // Decode the base64 signature image
+    // Decode and embed the signature image once (used by every signature
+    // placement).
     const dataUrl = parsed.data.signatureDataUrl;
     const base64 = dataUrl.split(",")[1];
     const imgBytes = Buffer.from(base64, "base64");
-
     const isPng = dataUrl.startsWith("data:image/png");
     const embeddedImg = isPng
       ? await pdfDoc.embedPng(imgBytes)
       : await pdfDoc.embedJpg(imgBytes);
-
-    // Compute signature size and position
-    const widthFrac = placement?.widthPct ?? 0.26;
-    const sigW = placement ? widthFrac * pageW : 220;
-    const sigH = (embeddedImg.height / embeddedImg.width) * sigW;
-
-    let sigX: number, sigY: number;
-    if (placement) {
-      sigX = placement.xPct * pageW - sigW / 2;
-      sigY = pageH - placement.yPct * pageH - sigH / 2;
-      sigX = Math.max(0, Math.min(pageW - sigW, sigX));
-      sigY = Math.max(0, Math.min(pageH - sigH, sigY));
-    } else {
-      const margin = 40;
-      sigX = pageW - sigW - margin;
-      sigY = margin + 20;
-    }
-
-    targetPage.drawImage(embeddedImg, {
-      x: sigX,
-      y: sigY,
-      width: sigW,
-      height: sigH,
-    });
-
-    // Signer name + date stamp below signature
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const dateStr = new Date().toLocaleDateString("en-GB", {
       day: "numeric",
@@ -145,21 +163,64 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       year: "numeric",
     });
     const stampLine = signerName ? `${signerName} - ${dateStr}` : dateStr;
-    targetPage.drawText(stampLine, {
-      x: sigX,
-      y: Math.max(0, sigY - 14),
-      size: 9,
-      font,
-      color: rgb(0.35, 0.35, 0.35),
-    });
 
-    // Divider line above signature
-    targetPage.drawLine({
-      start: { x: sigX, y: sigY + sigH + 8 },
-      end: { x: sigX + sigW, y: sigY + sigH + 8 },
-      thickness: 0.5,
-      color: rgb(0.7, 0.7, 0.7),
-    });
+    for (const item of items) {
+      const targetIdx = Math.min(item.pageIndex, pdfPages.length - 1);
+      const targetPage = pdfPages[targetIdx];
+      const { width: pageW, height: pageH } = targetPage.getSize();
+
+      if (item.kind === "signature") {
+        const widthFrac = item.widthPct ?? 0.26;
+        const sigW = widthFrac * pageW;
+        const sigH = (embeddedImg.height / embeddedImg.width) * sigW;
+        let sigX = item.xPct * pageW - sigW / 2;
+        let sigY = pageH - item.yPct * pageH - sigH / 2;
+        sigX = Math.max(0, Math.min(pageW - sigW, sigX));
+        sigY = Math.max(0, Math.min(pageH - sigH, sigY));
+
+        targetPage.drawImage(embeddedImg, {
+          x: sigX,
+          y: sigY,
+          width: sigW,
+          height: sigH,
+        });
+
+        // Signer name + date below every signature placement.
+        targetPage.drawText(stampLine, {
+          x: sigX,
+          y: Math.max(0, sigY - 14),
+          size: 9,
+          font,
+          color: rgb(0.35, 0.35, 0.35),
+        });
+
+        // Divider line above signature.
+        targetPage.drawLine({
+          start: { x: sigX, y: sigY + sigH + 8 },
+          end: { x: sigX + sigW, y: sigY + sigH + 8 },
+          thickness: 0.5,
+          color: rgb(0.7, 0.7, 0.7),
+        });
+      } else {
+        const fontSize = 11;
+        const textWidth = font.widthOfTextAtSize(item.text, fontSize);
+        const x = Math.max(
+          0,
+          Math.min(pageW - textWidth, item.xPct * pageW - textWidth / 2),
+        );
+        const y = Math.max(
+          0,
+          Math.min(pageH - fontSize, pageH - item.yPct * pageH - fontSize / 2),
+        );
+        targetPage.drawText(item.text, {
+          x,
+          y,
+          size: fontSize,
+          font,
+          color: rgb(0.1, 0.1, 0.1),
+        });
+      }
+    }
 
     signedPdfBytes = await pdfDoc.save();
   } catch (err) {

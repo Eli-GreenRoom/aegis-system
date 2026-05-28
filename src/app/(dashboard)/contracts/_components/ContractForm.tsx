@@ -143,12 +143,12 @@ export default function ContractForm({
           </select>
         </Field>
 
-        <Field label="Received at" error={errors.sentAt?.message}>
-          <Input type="datetime-local" step={60} {...register("sentAt")} />
-        </Field>
-        <Field label="Signed at" error={errors.signedAt?.message}>
-          <Input type="datetime-local" step={60} {...register("signedAt")} />
-        </Field>
+        {/* Received / signed timestamps are set automatically server-side:
+         *  - "received" stamps when the draft file is first uploaded.
+         *  - "signed" stamps when the contract is signed.
+         *  Hidden inputs keep RHF happy without showing manual date pickers. */}
+        <input type="hidden" {...register("sentAt")} />
+        <input type="hidden" {...register("signedAt")} />
 
         <div className="col-span-2">
           <Field label="Draft file" error={errors.fileUrl?.message}>

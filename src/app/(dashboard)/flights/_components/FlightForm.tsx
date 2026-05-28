@@ -183,7 +183,10 @@ export default function FlightForm({
       setValue("direction", p.direction, { shouldValidate: true });
   }
 
-  function applyParsed(raw: Record<string, unknown> | unknown[]) {
+  function applyParsed(
+    raw: Record<string, unknown> | unknown[],
+    sourceFile?: File,
+  ) {
     const legs = Array.isArray(raw)
       ? (raw as Record<string, unknown>[])
       : [raw as Record<string, unknown>];
@@ -195,6 +198,35 @@ export default function FlightForm({
     // Surface any other legs so the operator can create them next
     const rest = legs.filter((l) => l !== preferred);
     setOtherLegs(rest);
+
+    // If the parse came from a PDF, upload it to documents and stash the
+    // proxy URL on `ticketUrl` so the operator can re-read it later.
+    if (sourceFile) {
+      void uploadSourcePdf(sourceFile);
+    }
+  }
+
+  /** Background upload: post the source PDF to /api/documents so the
+   *  ticket reference points back to the airline PDF. Quiet on failure -
+   *  the operator can still attach it manually via the existing field. */
+  async function uploadSourcePdf(file: File) {
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("entityType", "flight");
+      fd.append("tags", "flight,ticket");
+      const res = await fetch("/api/documents", { method: "POST", body: fd });
+      if (!res.ok) return;
+      const body = (await res.json()) as {
+        document?: { proxyUrl?: string };
+      };
+      const proxyUrl = body.document?.proxyUrl;
+      if (proxyUrl) {
+        setValue("ticketUrl", proxyUrl, { shouldValidate: true });
+      }
+    } catch {
+      // ignore - operator can still attach manually
+    }
   }
 
   return (
@@ -398,6 +430,7 @@ export default function FlightForm({
         <AIParseDialog
           title="Parse flight confirmation with AI"
           endpoint="/api/ai/parse-flight"
+          pdfEndpoint="/api/ai/parse-flight-pdf"
           onApply={applyParsed}
           onClose={() => setAiOpen(false)}
         />

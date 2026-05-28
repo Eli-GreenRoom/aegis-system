@@ -5,6 +5,7 @@ import { Button } from "./button";
 
 const RENDER_SCALE = 1.5;
 const SIG_WIDTH_FRAC = 0.26; // signature width as fraction of page width
+const TEXT_WIDTH_FRAC = 0.2;
 
 interface PageInfo {
   dataUrl: string;
@@ -14,20 +15,36 @@ interface PageInfo {
   cssH: number;
 }
 
-export interface SigPlacement {
-  pageIndex: number;
-  xPct: number; // 0-1 from left, centre of signature
-  yPct: number; // 0-1 from top, centre of signature
-}
+/** A single placement on the PDF. Operator can add many before signing. */
+export type Placement =
+  | {
+      kind: "signature";
+      pageIndex: number;
+      xPct: number;
+      yPct: number;
+    }
+  | {
+      kind: "text";
+      pageIndex: number;
+      xPct: number;
+      yPct: number;
+      text: string;
+    };
+
+/** Backwards-compatible alias kept for any caller still importing the old name. */
+export type SigPlacement = Placement;
 
 interface Props {
   fileUrl: string;
   signatureDataUrl: string;
   loading?: boolean;
-  onSign: (placement: SigPlacement) => void;
+  /** Operator pressed "Sign Contract". Receives every placement to embed. */
+  onSign: (placements: Placement[]) => void;
   onChangeSig: () => void;
   onCancel: () => void;
 }
+
+type ToolMode = "signature" | "text";
 
 export default function PDFSigningModal({
   fileUrl,
@@ -40,12 +57,18 @@ export default function PDFSigningModal({
   const [pages, setPages] = useState<PageInfo[]>([]);
   const [pdfLoading, setPdfLoading] = useState(true);
   const [pdfError, setPdfError] = useState("");
-  const [placement, setPlacement] = useState<SigPlacement | null>(null);
-  const [cursor, setCursor] = useState<SigPlacement | null>(null);
+  const [placements, setPlacements] = useState<Placement[]>([]);
+  const [mode, setMode] = useState<ToolMode>("signature");
+  const [cursor, setCursor] = useState<{
+    pageIndex: number;
+    xPct: number;
+    yPct: number;
+  } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const dragRef = useRef<{
-    pageIndex: number;
+    idx: number;
     startCX: number;
     startCY: number;
     startXPct: number;
@@ -114,14 +137,17 @@ export default function PDFSigningModal({
       if (!d) return;
       const dx = (e.clientX - d.startCX) / d.pageW;
       const dy = (e.clientY - d.startCY) / d.pageH;
-      setPlacement({
-        pageIndex: d.pageIndex,
-        xPct: clamp(d.startXPct + dx, 0.02, 0.98),
-        yPct: clamp(d.startYPct + dy, 0.02, 0.98),
-      });
+      const nextX = clamp(d.startXPct + dx, 0.02, 0.98);
+      const nextY = clamp(d.startYPct + dy, 0.02, 0.98);
+      setPlacements((prev) =>
+        prev.map((p, i) =>
+          i === d.idx ? { ...p, xPct: nextX, yPct: nextY } : p,
+        ),
+      );
     };
     const onUp = () => {
       dragRef.current = null;
+      setIsDragging(false);
     };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
@@ -132,7 +158,7 @@ export default function PDFSigningModal({
   }, []);
 
   function handlePageMove(idx: number, e: React.MouseEvent<HTMLDivElement>) {
-    if (dragRef.current || placement) return;
+    if (dragRef.current) return;
     const r = e.currentTarget.getBoundingClientRect();
     setCursor({
       pageIndex: idx,
@@ -146,33 +172,56 @@ export default function PDFSigningModal({
   }
 
   function handlePageClick(idx: number, e: React.MouseEvent<HTMLDivElement>) {
-    if (placement) return;
-    e.stopPropagation();
+    if (dragRef.current) return;
     const r = e.currentTarget.getBoundingClientRect();
-    setPlacement({
-      pageIndex: idx,
-      xPct: (e.clientX - r.left) / r.width,
-      yPct: (e.clientY - r.top) / r.height,
-    });
+    const xPct = (e.clientX - r.left) / r.width;
+    const yPct = (e.clientY - r.top) / r.height;
+    if (mode === "signature") {
+      setPlacements((prev) => [
+        ...prev,
+        { kind: "signature", pageIndex: idx, xPct, yPct },
+      ]);
+    } else {
+      const text = window.prompt("Text to place on the contract:") ?? "";
+      if (!text.trim()) return;
+      setPlacements((prev) => [
+        ...prev,
+        { kind: "text", pageIndex: idx, xPct, yPct, text: text.trim() },
+      ]);
+    }
     setCursor(null);
   }
 
-  function handleSigMouseDown(e: React.MouseEvent, idx: number) {
+  function handlePlacementMouseDown(
+    e: React.MouseEvent,
+    pageIdx: number,
+    placementIdx: number,
+  ) {
     e.stopPropagation();
     e.preventDefault();
-    const el = pageRefs.current[idx];
-    if (!el || !placement) return;
+    const el = pageRefs.current[pageIdx];
+    if (!el) return;
     const r = el.getBoundingClientRect();
+    const p = placements[placementIdx];
+    if (!p) return;
     dragRef.current = {
-      pageIndex: idx,
+      idx: placementIdx,
       startCX: e.clientX,
       startCY: e.clientY,
-      startXPct: placement.xPct,
-      startYPct: placement.yPct,
+      startXPct: p.xPct,
+      startYPct: p.yPct,
       pageW: r.width,
       pageH: r.height,
     };
+    setIsDragging(true);
   }
+
+  function removePlacement(idx: number) {
+    setPlacements((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  const sigCount = placements.filter((p) => p.kind === "signature").length;
+  const textCount = placements.filter((p) => p.kind === "text").length;
 
   return (
     <div
@@ -183,7 +232,7 @@ export default function PDFSigningModal({
         minHeight: 0,
       }}
     >
-      {/* Instructions bar */}
+      {/* Toolbar */}
       <div
         style={{
           display: "flex",
@@ -193,18 +242,40 @@ export default function PDFSigningModal({
           borderBottom: "1px solid rgba(236,236,238,0.08)",
           marginBottom: "12px",
           flexShrink: 0,
+          gap: "12px",
+          flexWrap: "wrap",
         }}
       >
-        <p style={{ fontSize: "12px", color: "var(--color-fg-muted, #888)" }}>
-          {placement
-            ? "Drag to reposition. When ready, click Sign Contract."
-            : "Click anywhere on the document to place your signature."}
-        </p>
+        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+          <ModeButton
+            active={mode === "signature"}
+            onClick={() => setMode("signature")}
+            label="Signature"
+          />
+          <ModeButton
+            active={mode === "text"}
+            onClick={() => setMode("text")}
+            label="Text"
+          />
+          <span
+            style={{
+              fontSize: "11px",
+              color: "var(--color-fg-muted, #888)",
+              marginLeft: "8px",
+            }}
+          >
+            {placements.length === 0
+              ? mode === "signature"
+                ? "Click anywhere to drop your signature."
+                : "Click anywhere to drop a text label."
+              : `${sigCount} signature${sigCount === 1 ? "" : "s"} · ${textCount} text${textCount === 1 ? "" : "s"} placed`}
+          </span>
+        </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          {placement && (
+          {placements.length > 0 && (
             <button
               type="button"
-              onClick={() => setPlacement(null)}
+              onClick={() => setPlacements([])}
               style={{
                 fontSize: "12px",
                 color: "var(--color-fg-muted, #888)",
@@ -213,7 +284,7 @@ export default function PDFSigningModal({
                 cursor: "pointer",
               }}
             >
-              Reset
+              Reset all
             </button>
           )}
           <button
@@ -262,14 +333,12 @@ export default function PDFSigningModal({
           </div>
         )}
 
-        {pages.map((page, idx) => {
-          const isHover = cursor?.pageIndex === idx;
-          const isPlaced = placement?.pageIndex === idx;
-          const pos = isPlaced ? placement : isHover ? cursor : null;
+        {pages.map((page, pageIdx) => {
+          const cursorOnThisPage = cursor?.pageIndex === pageIdx && !isDragging;
           const sigW = SIG_WIDTH_FRAC * page.cssW;
 
           return (
-            <div key={idx}>
+            <div key={pageIdx}>
               <div
                 style={{
                   fontSize: "11px",
@@ -279,27 +348,27 @@ export default function PDFSigningModal({
                   fontFamily: "monospace",
                 }}
               >
-                {idx + 1}
+                {pageIdx + 1}
               </div>
               <div
                 ref={(el) => {
-                  pageRefs.current[idx] = el;
+                  pageRefs.current[pageIdx] = el;
                 }}
                 style={{
                   position: "relative",
-                  cursor: placement ? "default" : "crosshair",
+                  cursor: "crosshair",
                   userSelect: "none",
                   boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
                   display: "inline-block",
                 }}
-                onMouseMove={(e) => handlePageMove(idx, e)}
+                onMouseMove={(e) => handlePageMove(pageIdx, e)}
                 onMouseLeave={handlePageLeave}
-                onClick={(e) => handlePageClick(idx, e)}
+                onClick={(e) => handlePageClick(pageIdx, e)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={page.dataUrl}
-                  alt={`Page ${idx + 1}`}
+                  alt={`Page ${pageIdx + 1}`}
                   style={{
                     display: "block",
                     width: page.cssW,
@@ -308,41 +377,125 @@ export default function PDFSigningModal({
                   draggable={false}
                 />
 
-                {pos && (
+                {/* Cursor preview */}
+                {cursorOnThisPage && (
                   <div
                     style={{
                       position: "absolute",
-                      left: `${pos.xPct * 100}%`,
-                      top: `${pos.yPct * 100}%`,
+                      left: `${cursor!.xPct * 100}%`,
+                      top: `${cursor!.yPct * 100}%`,
                       transform: "translate(-50%, -50%)",
-                      pointerEvents: isPlaced ? "auto" : "none",
-                      cursor: isPlaced ? "move" : "none",
-                      border: isPlaced
-                        ? "1.5px solid #E5B85A"
-                        : "1.5px dashed rgba(229,184,90,0.55)",
+                      pointerEvents: "none",
+                      border: "1.5px dashed rgba(229,184,90,0.55)",
                       borderRadius: "3px",
                       padding: "3px",
-                      background: isPlaced
-                        ? "rgba(255,255,255,0.94)"
-                        : "rgba(255,255,255,0.6)",
-                      opacity: isPlaced ? 1 : 0.7,
+                      background: "rgba(255,255,255,0.6)",
+                      opacity: 0.7,
                     }}
-                    onMouseDown={
-                      isPlaced ? (e) => handleSigMouseDown(e, idx) : undefined
-                    }
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={signatureDataUrl}
-                      alt="Signature"
-                      style={{
-                        display: "block",
-                        width: sigW,
-                        maxWidth: "none",
-                      }}
-                      draggable={false}
-                    />
+                    {mode === "signature" ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={signatureDataUrl}
+                        alt=""
+                        style={{
+                          display: "block",
+                          width: sigW,
+                          maxWidth: "none",
+                        }}
+                        draggable={false}
+                      />
+                    ) : (
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "4px 6px",
+                          fontSize: "11px",
+                          color: "#333",
+                        }}
+                      >
+                        text
+                      </span>
+                    )}
                   </div>
+                )}
+
+                {/* Existing placements on this page */}
+                {placements.map((p, i) =>
+                  p.pageIndex !== pageIdx ? null : (
+                    <div
+                      key={i}
+                      style={{
+                        position: "absolute",
+                        left: `${p.xPct * 100}%`,
+                        top: `${p.yPct * 100}%`,
+                        transform: "translate(-50%, -50%)",
+                        cursor: "move",
+                        border: "1.5px solid #E5B85A",
+                        borderRadius: "3px",
+                        padding: "3px",
+                        background: "rgba(255,255,255,0.94)",
+                      }}
+                      onMouseDown={(e) =>
+                        handlePlacementMouseDown(e, pageIdx, i)
+                      }
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {p.kind === "signature" ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={signatureDataUrl}
+                          alt="Signature"
+                          style={{
+                            display: "block",
+                            width: sigW,
+                            maxWidth: "none",
+                          }}
+                          draggable={false}
+                        />
+                      ) : (
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "4px 6px",
+                            fontSize: `${0.022 * page.cssW}px`,
+                            color: "#111",
+                            whiteSpace: "nowrap",
+                            maxWidth: `${TEXT_WIDTH_FRAC * page.cssW}px`,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {p.text}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removePlacement(i);
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: -10,
+                          right: -10,
+                          width: 20,
+                          height: 20,
+                          borderRadius: "50%",
+                          border: "1px solid #E73E54",
+                          background: "#15151A",
+                          color: "#E73E54",
+                          fontSize: "12px",
+                          lineHeight: "18px",
+                          padding: 0,
+                          cursor: "pointer",
+                        }}
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ),
                 )}
               </div>
             </div>
@@ -362,8 +515,8 @@ export default function PDFSigningModal({
         }}
       >
         <Button
-          onClick={() => placement && onSign(placement)}
-          disabled={!placement || loading}
+          onClick={() => onSign(placements)}
+          disabled={placements.length === 0 || loading}
         >
           {loading ? "Signing…" : "Sign Contract"}
         </Button>
@@ -372,6 +525,38 @@ export default function PDFSigningModal({
         </Button>
       </div>
     </div>
+  );
+}
+
+function ModeButton({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        fontSize: "11px",
+        padding: "4px 10px",
+        borderRadius: "4px",
+        border: "1px solid",
+        borderColor: active ? "#E5B85A" : "rgba(236,236,238,0.18)",
+        background: active ? "rgba(229,184,90,0.16)" : "transparent",
+        color: active ? "#E5B85A" : "var(--color-fg-muted, #888)",
+        cursor: "pointer",
+        textTransform: "uppercase",
+        letterSpacing: "0.1em",
+        fontFamily: "monospace",
+      }}
+    >
+      {label}
+    </button>
   );
 }
 

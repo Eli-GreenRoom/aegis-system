@@ -37,20 +37,20 @@ export type ParsedFlight = z.infer<typeof parsedFlightSchema>;
 export const parsedFlightArraySchema = z
   .array(parsedFlightSchema)
   .min(1)
-  .max(4);
+  .max(2);
 export type ParsedFlightArray = z.infer<typeof parsedFlightArraySchema>;
 
 function buildSystemPrompt(festivalLocation?: string | null): string {
   const location = festivalLocation?.trim() || "Beirut, Lebanon (BEY)";
   return `You extract structured flight data from airline confirmation emails or booking summaries for a festival operator.
 
-The festival is in ${location}. Use this to classify each leg:
-- "inbound"  = leg arriving at the festival location/country
-- "outbound" = leg departing from the festival location/country
-- null       = cannot determine from the airport codes
+The festival is in ${location}. The operator only cares about TWO legs:
+- the "inbound" leg whose toAirport is the festival's airport, and
+- the "outbound" leg whose fromAirport is the festival's airport.
 
-Return ALL legs found as a JSON array (max 4). For a round-trip confirmation return BOTH legs.
-For a one-way return a single-element array.
+Ignore connection / intermediate legs. For example, on Lagos -> Paris -> Beirut, return ONLY Paris -> Beirut (inbound). Same on the way out: Beirut -> Frankfurt -> Lagos returns ONLY Beirut -> Frankfurt (outbound).
+
+Return the relevant legs as a JSON array (max 2). For a round trip that's both legs; for a one-way, one element.
 
 Each element must match this exact shape:
 {
@@ -66,6 +66,7 @@ Each element must match this exact shape:
 }
 
 Rules:
+- direction must be "inbound" when toAirport is the festival's airport, "outbound" when fromAirport is.
 - If a field isn't present, use null. Never guess.
 - IATA codes are exactly 3 uppercase letters. If only a city is given, use null.
 - Datetime: use the origin airport's local time as ISO with no offset if no timezone is provided; otherwise normalise to UTC.

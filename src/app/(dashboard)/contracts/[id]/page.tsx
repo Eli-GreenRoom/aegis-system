@@ -127,15 +127,25 @@ export default async function ContractDetailPage({ params }: PageProps) {
                 />
               )}
               {contract.signedFileUrl && (
-                <Link
-                  href={contract.signedFileUrl as Route}
-                  target="_blank"
-                  rel="noreferrer"
-                  download
-                  className="inline-flex items-center h-8 px-3 rounded-md bg-mint/10 border border-mint/30 text-xs text-mint hover:bg-mint/20 transition-colors"
-                >
-                  Download Signed
-                </Link>
+                <>
+                  <Link
+                    href={contract.signedFileUrl as Route}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center h-8 px-3 rounded-md border border-[--color-border-strong] text-xs text-[--color-fg-muted] hover:text-[--color-fg] hover:border-[--color-border-strong]/80 transition-colors"
+                  >
+                    View Signed
+                  </Link>
+                  <Link
+                    href={contract.signedFileUrl as Route}
+                    target="_blank"
+                    rel="noreferrer"
+                    download
+                    className="inline-flex items-center h-8 px-3 rounded-md bg-mint/10 border border-mint/30 text-xs text-mint hover:bg-mint/20 transition-colors"
+                  >
+                    Download Signed
+                  </Link>
+                </>
               )}
             </div>
           </div>

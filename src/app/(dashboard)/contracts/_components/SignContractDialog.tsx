@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import SignaturePad from "@/components/ui/SignaturePad";
 import PDFSigningModal, {
-  type SigPlacement,
+  type Placement,
 } from "@/components/ui/PDFSigningModal";
 
 interface Props {
@@ -82,23 +82,36 @@ function SignModal({
       });
   }, [savedSignatureUrl]);
 
-  async function handleSign(placement: SigPlacement) {
+  async function handleSign(placements: Placement[]) {
     if (!sigDataUrl) return;
+    if (placements.length === 0) {
+      setError("Add at least one signature before saving.");
+      return;
+    }
     setError("");
     setLoading(true);
     try {
       const res = await fetch(`/api/contracts/${contractId}/sign`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ signatureDataUrl: sigDataUrl, placement }),
+        body: JSON.stringify({ signatureDataUrl: sigDataUrl, placements }),
       });
       if (!res.ok) {
+        // Surface server message clearly so the operator knows what went
+        // wrong (blob upload, PDF processing, etc.) instead of leaving the
+        // button greyed-out with no signal.
         const body = await res.json().catch(() => ({}));
-        setError(body.error ?? "Signing failed.");
+        setError(body.error ?? `Signing failed (HTTP ${res.status}).`);
         return;
       }
       onClose();
       router.refresh();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `Network error: ${err.message}`
+          : "Network error while signing.",
+      );
     } finally {
       setLoading(false);
     }
