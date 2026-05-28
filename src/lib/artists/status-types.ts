@@ -28,7 +28,15 @@ export interface ArtistStatusSummary {
 }
 
 export function hasGap(s: ArtistStatusSummary): boolean {
-  if (!s.setStatus) return true;
+  // A withdrawn or not-available set status is operationally equivalent
+  // to "this artist is not playing" - the slot still needs filling, so
+  // count it as a gap on the readiness view.
+  if (
+    !s.setStatus ||
+    s.setStatus === "withdrawn" ||
+    s.setStatus === "not_available"
+  )
+    return true;
   if (s.needsContract && !s.contractStatus) return true;
   if (s.needsPayment && (!s.hasAnyPayment || s.outstandingPayments > 0))
     return true;

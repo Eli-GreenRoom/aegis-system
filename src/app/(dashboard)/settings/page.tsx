@@ -9,9 +9,21 @@ import { db } from "@/db/client";
 import { workspaces, teamMembers, stages } from "@/db/schema";
 import { SettingsTabs } from "./_components/SettingsTabs";
 
-export default async function SettingsPage() {
+interface PageProps {
+  searchParams: Promise<{ tab?: string }>;
+}
+
+const VALID_TABS = ["profile", "workspace", "festival", "team"] as const;
+type SettingsTab = (typeof VALID_TABS)[number];
+
+export default async function SettingsPage({ searchParams }: PageProps) {
   const session = await getAppSession();
   if (!session) redirect("/sign-in");
+  const sp = await searchParams;
+  const initialTab: SettingsTab =
+    sp.tab && (VALID_TABS as readonly string[]).includes(sp.tab)
+      ? (sp.tab as SettingsTab)
+      : "profile";
 
   const festival = await getActiveFestival(session);
 
@@ -43,6 +55,7 @@ export default async function SettingsPage() {
     <>
       <Topbar title="Settings" subtitle={subtitle} />
       <SettingsTabs
+        initialTab={initialTab}
         workspaceId={session.workspaceId}
         workspaceName={workspace?.name ?? ""}
         festival={

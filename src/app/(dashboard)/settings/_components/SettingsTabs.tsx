@@ -49,6 +49,8 @@ interface SettingsTabsProps {
   memberId: string;
   permissions: PermissionMap;
   members: MemberRow[];
+  /** Initial tab seeded server-side from ?tab=. */
+  initialTab?: "profile" | "workspace" | "festival" | "team";
 }
 
 type Tab = "profile" | "workspace" | "festival" | "team";
@@ -60,8 +62,9 @@ export function SettingsTabs({
   memberId,
   permissions,
   members: initialMembers,
+  initialTab,
 }: SettingsTabsProps) {
-  const [tab, setTab] = useState<Tab>("profile");
+  const [tab, setTab] = useState<Tab>(initialTab ?? "profile");
   const [members, setMembers] = useState<MemberRow[]>(initialMembers);
 
   // Invite form state

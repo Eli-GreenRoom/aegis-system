@@ -76,6 +76,11 @@ export default function PDFSigningModal({
     pageW: number;
     pageH: number;
   } | null>(null);
+  // Set while a placement is being dragged. The synthetic page click fires
+  // AFTER mouseup releases the drag, so checking dragRef in handlePageClick
+  // is too late - we'd add a stray new placement. didDragRef survives one
+  // click cycle so the page handler can ignore that click.
+  const didDragRef = useRef(false);
 
   // Render PDF pages
   useEffect(() => {
@@ -135,6 +140,7 @@ export default function PDFSigningModal({
     const onMove = (e: MouseEvent) => {
       const d = dragRef.current;
       if (!d) return;
+      didDragRef.current = true;
       const dx = (e.clientX - d.startCX) / d.pageW;
       const dy = (e.clientY - d.startCY) / d.pageH;
       const nextX = clamp(d.startXPct + dx, 0.02, 0.98);
@@ -172,6 +178,12 @@ export default function PDFSigningModal({
   }
 
   function handlePageClick(idx: number, e: React.MouseEvent<HTMLDivElement>) {
+    // Synthetic click from the end of a drag - swallow it so we don't drop
+    // a stray new placement when the operator just finished repositioning.
+    if (didDragRef.current) {
+      didDragRef.current = false;
+      return;
+    }
     if (dragRef.current) return;
     const r = e.currentTarget.getBoundingClientRect();
     const xPct = (e.clientX - r.left) / r.width;

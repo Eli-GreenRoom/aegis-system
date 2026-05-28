@@ -210,8 +210,18 @@ export default function InvoiceSheet({
     });
     if (!paymentRes.ok) {
       const body = await paymentRes.json().catch(() => ({}));
+      // Best-effort rollback: drop the orphan invoice so the user can
+      // retry without piling up zombie rows. If the rollback itself
+      // fails, surface that in the error message so it's not invisible.
+      const rollback = await fetch(`/api/invoices/${invoice.id}`, {
+        method: "DELETE",
+      });
+      const baseMsg =
+        body.error ?? "Couldn't create the linked payment. Try again.";
       setServerError(
-        body.error ?? "Invoice saved but payment creation failed.",
+        rollback.ok
+          ? baseMsg
+          : `${baseMsg} (orphan invoice ${invoice.id} could not be removed - check it manually.)`,
       );
       return;
     }
@@ -351,16 +361,15 @@ export default function InvoiceSheet({
               <Input type="date" {...register("issueDate")} />
             </Field>
             <Field label="Due date" error={errors.dueDate?.message}>
-              {payAfterFestival ? (
-                <Input
-                  type="date"
-                  value={computedPostFestivalDue}
-                  readOnly
-                  className="opacity-70"
-                />
-              ) : (
-                <Input type="date" {...register("dueDate")} />
-              )}
+              {/* Always render the registered RHF input. When the toggle is
+               *  on, lock it to the computed post-festival date so the value
+               *  shown on screen and the value RHF holds can never drift. */}
+              <Input
+                type="date"
+                {...register("dueDate")}
+                readOnly={payAfterFestival}
+                className={payAfterFestival ? "opacity-70" : undefined}
+              />
             </Field>
 
             <div className="col-span-2 flex items-center gap-2">

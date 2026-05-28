@@ -494,9 +494,12 @@ describe("getArtistRoadsheet", () => {
     expect(out!.pickups).toHaveLength(1);
     expect(out!.riders).toHaveLength(1);
     expect(out!.contract?.status).toBe("signed");
-    // Outstanding only by default - 'paid' filtered out.
-    expect(out!.payments).toHaveLength(1);
-    expect(out!.payments[0].id).toBe("pay-pending");
+    // All payments returned (any status). Consumers derive outstanding.
+    expect(out!.payments).toHaveLength(2);
+    expect(out!.payments.map((p) => p.id).sort()).toEqual([
+      "pay-paid",
+      "pay-pending",
+    ]);
   });
 
   it("filters flights to a specific day when day passed", async () => {

@@ -39,7 +39,8 @@ export interface ArtistRoadsheet {
   pickups: (typeof groundTransportPickups.$inferSelect)[];
   /** Riders for this artist (both kinds). */
   riders: (typeof riders.$inferSelect)[];
-  /** Outstanding payments by default (status not in 'paid' / 'void'). */
+  /** All payments for this artist (any status). Consumers compute their
+   *  own "outstanding" view - this aggregator is purely descriptive. */
   payments: (typeof payments.$inferSelect)[];
   /** Most recent contract for this artist, if any. */
   contract: typeof contracts.$inferSelect | null;
@@ -193,10 +194,6 @@ export async function getArtistRoadsheet(
       .orderBy(asc(payments.dueDate)),
   ]);
 
-  const outstanding = paymentRows.filter(
-    (p) => p.status !== "paid" && p.status !== "void",
-  );
-
   return {
     artist,
     set: setEntry,
@@ -205,7 +202,7 @@ export async function getArtistRoadsheet(
     hotel,
     pickups: pickupRows,
     riders: riderRows,
-    payments: outstanding,
+    payments: paymentRows,
     contract: contractRows[0] ?? null,
   };
 }

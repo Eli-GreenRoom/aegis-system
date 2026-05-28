@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import type { ArtistStatusSummary } from "@/lib/artists/status-types";
 import { hasGap } from "@/lib/artists/status-types";
@@ -369,6 +370,10 @@ export default function ReadinessGrid({
   dayOptions,
   festivalMode,
 }: Props) {
+  const router = useRouter();
+  function go(href: Route) {
+    router.push(href);
+  }
   // Outside the festival window, "live" and "done" are operationally
   // irrelevant - drop them from the chip row.
   const setStatusOptions = festivalMode
@@ -597,43 +602,31 @@ export default function ReadinessGrid({
                   </td>
                   <SetCell
                     status={row.status}
-                    onClick={() => (window.location.href = "/lineup")}
+                    onClick={() => go("/lineup" as Route)}
                   />
                   <FlightCell
                     status={row.status}
-                    onClick={() =>
-                      (window.location.href = cellHref(aid, "travel"))
-                    }
+                    onClick={() => go(cellHref(aid, "travel"))}
                   />
                   <HotelCell
                     status={row.status}
-                    onClick={() =>
-                      (window.location.href = cellHref(aid, "stay"))
-                    }
+                    onClick={() => go(cellHref(aid, "stay"))}
                   />
                   <GroundCell
                     status={row.status}
-                    onClick={() =>
-                      (window.location.href = cellHref(aid, "ground"))
-                    }
+                    onClick={() => go(cellHref(aid, "ground"))}
                   />
                   <ContractCell
                     status={row.status}
-                    onClick={() =>
-                      (window.location.href = cellHref(aid, "docs"))
-                    }
+                    onClick={() => go(cellHref(aid, "docs"))}
                   />
                   <PaymentCell
                     status={row.status}
-                    onClick={() =>
-                      (window.location.href = cellHref(aid, "money"))
-                    }
+                    onClick={() => go(cellHref(aid, "money"))}
                   />
                   <RiderCell
                     status={row.status}
-                    onClick={() =>
-                      (window.location.href = cellHref(aid, "docs"))
-                    }
+                    onClick={() => go(cellHref(aid, "docs"))}
                   />
                 </tr>
               );

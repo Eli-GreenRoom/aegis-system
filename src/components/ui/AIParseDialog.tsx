@@ -12,10 +12,14 @@ interface Props {
    *  the dialog also surfaces a "Upload PDF" picker. */
   pdfEndpoint?: "/api/ai/parse-flight-pdf";
   /** Called when the operator clicks "Apply" on a parse result. The
-   *  parent form decides which fields to map and how. If the parse came
-   *  from a PDF, the original file is forwarded so the parent can attach
-   *  it to the entity. */
-  onApply: (parsed: Record<string, unknown>, sourceFile?: File) => void;
+   *  parent form decides which fields to map and how. The shape can be
+   *  a single object (e.g. invoice) or an array (e.g. flight legs). If
+   *  the parse came from a PDF, the original file is forwarded so the
+   *  parent can attach it to the entity. */
+  onApply: (
+    parsed: Record<string, unknown> | Record<string, unknown>[],
+    sourceFile?: File,
+  ) => void;
   onClose: () => void;
 }
 
@@ -34,7 +38,9 @@ export default function AIParseDialog({
   onClose,
 }: Props) {
   const [text, setText] = useState("");
-  const [parsed, setParsed] = useState<Record<string, unknown> | null>(null);
+  const [parsed, setParsed] = useState<
+    Record<string, unknown> | Record<string, unknown>[] | null
+  >(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -175,26 +181,26 @@ export default function AIParseDialog({
               <span className="text-brand">Apply</span> to fill the form below;
               you can still edit anything before saving.
             </p>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              {Object.entries(parsed).map(([k, v]) => (
-                <div key={k} className="contents">
-                  <dt className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] self-center">
-                    {k}
-                  </dt>
-                  <dd className="text-[--color-fg] text-mono text-xs break-all">
-                    {v === null || v === undefined ? (
-                      <span className="text-[--color-fg-subtle]">null</span>
-                    ) : typeof v === "object" ? (
-                      <pre className="text-[10px] whitespace-pre-wrap">
-                        {JSON.stringify(v, null, 2)}
-                      </pre>
-                    ) : (
-                      String(v)
-                    )}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            {Array.isArray(parsed) ? (
+              <div className="space-y-3">
+                {parsed.map((leg, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-md border border-[--color-border] bg-[--color-surface]/40 p-3"
+                  >
+                    <p className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-subtle] mb-2">
+                      Leg {idx + 1}
+                      {typeof leg.direction === "string"
+                        ? ` · ${leg.direction}`
+                        : ""}
+                    </p>
+                    <ParsedFields fields={leg} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ParsedFields fields={parsed} />
+            )}
             <div className="flex items-center gap-2 pt-2">
               <Button type="button" onClick={applyAndClose}>
                 Apply
@@ -217,5 +223,30 @@ export default function AIParseDialog({
         )}
       </div>
     </div>
+  );
+}
+
+function ParsedFields({ fields }: { fields: Record<string, unknown> }) {
+  return (
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+      {Object.entries(fields).map(([k, v]) => (
+        <div key={k} className="contents">
+          <dt className="text-mono text-[10px] uppercase tracking-[0.16em] text-[--color-fg-subtle] self-center">
+            {k}
+          </dt>
+          <dd className="text-[--color-fg] text-mono text-xs break-all">
+            {v === null || v === undefined ? (
+              <span className="text-[--color-fg-subtle]">null</span>
+            ) : typeof v === "object" ? (
+              <pre className="text-[10px] whitespace-pre-wrap">
+                {JSON.stringify(v, null, 2)}
+              </pre>
+            ) : (
+              String(v)
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }

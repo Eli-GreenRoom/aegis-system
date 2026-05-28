@@ -290,7 +290,10 @@ export default function ArtistCockpit({
                 }
                 cta={
                   sheet.hotel
-                    ? { label: "Open", href: "/hotels/bookings" }
+                    ? {
+                        label: "Open",
+                        href: `/hotels/bookings/${sheet.hotel.booking.id}`,
+                      }
                     : { label: "Add", onClick: () => openTab("hotel") }
                 }
               />

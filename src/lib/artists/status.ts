@@ -141,9 +141,25 @@ export async function getArtistStatusMap(
     s.needsRider = r.needsRider;
   }
 
+  // Pick the most "advanced" set per artist. Confirmed > live > done >
+  // option > not_available > withdrawn. Lower index wins.
+  const setRank = [
+    "confirmed",
+    "live",
+    "done",
+    "option",
+    "not_available",
+    "withdrawn",
+  ];
   for (const r of setRows) {
     const s = map.get(r.artistId);
-    if (s && !s.setStatus) s.setStatus = r.status;
+    if (!s) continue;
+    if (
+      !s.setStatus ||
+      setRank.indexOf(r.status) < setRank.indexOf(s.setStatus)
+    ) {
+      s.setStatus = r.status;
+    }
   }
 
   // Pick the most-advanced contract status per artist.

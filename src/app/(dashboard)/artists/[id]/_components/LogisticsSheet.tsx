@@ -244,10 +244,12 @@ function StayPanel({
       defaultPerson={{ id: sheet.artist.id, kind: "artist" }}
       prefill={{
         checkin: sheet.inboundFlight?.scheduledDt
-          ? sheet.inboundFlight.scheduledDt.toISOString().slice(0, 10)
+          ? new Date(sheet.inboundFlight.scheduledDt).toISOString().slice(0, 10)
           : undefined,
         checkout: sheet.outboundFlight?.scheduledDt
-          ? sheet.outboundFlight.scheduledDt.toISOString().slice(0, 10)
+          ? new Date(sheet.outboundFlight.scheduledDt)
+              .toISOString()
+              .slice(0, 10)
           : undefined,
       }}
       festivalDefaultNights={festivalDefaultNights}

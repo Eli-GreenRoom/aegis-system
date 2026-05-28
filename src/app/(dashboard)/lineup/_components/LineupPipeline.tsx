@@ -47,7 +47,10 @@ export default function LineupPipeline({ cards, festivalMode }: Props) {
   const [dragSetId, setDragSetId] = useState<string | null>(null);
   const [hoverColumn, setHoverColumn] = useState<SetStatus | null>(null);
 
-  // Apply optimistic override when grouping.
+  // Apply optimistic override when grouping. Outside festival mode the
+  // live/done columns are hidden, so any leftover sets in those statuses
+  // collapse into "confirmed" so they remain visible (and movable) rather
+  // than silently disappearing.
   const grouped = useMemo(() => {
     const out: Record<SetStatus, PipelineCard[]> = {
       option: [],
@@ -58,11 +61,14 @@ export default function LineupPipeline({ cards, festivalMode }: Props) {
       withdrawn: [],
     };
     for (const c of cards) {
-      const status = override[c.set.id] ?? c.set.status;
+      let status = override[c.set.id] ?? c.set.status;
+      if (!festivalMode && (status === "live" || status === "done")) {
+        status = "confirmed";
+      }
       out[status].push(c);
     }
     return out;
-  }, [cards, override]);
+  }, [cards, override, festivalMode]);
 
   async function moveSet(setId: string, toStatus: SetStatus) {
     const current = cards.find((c) => c.set.id === setId);

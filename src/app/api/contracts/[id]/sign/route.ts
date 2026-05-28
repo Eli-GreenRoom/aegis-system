@@ -237,7 +237,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   try {
     const result = await uploadToBlob(
       signedPathname,
-      signedPdfBytes.buffer as ArrayBuffer,
+      signedPdfBytes,
       "application/pdf",
     );
     signedBlobUrl = result.url;

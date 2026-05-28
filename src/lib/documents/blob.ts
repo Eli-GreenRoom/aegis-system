@@ -20,10 +20,16 @@ export interface BlobUploadResult {
  */
 export async function uploadToBlob(
   pathname: string,
-  body: ArrayBuffer | Buffer | Blob,
+  body: ArrayBuffer | Uint8Array | Buffer | Blob,
   contentType?: string,
 ): Promise<BlobUploadResult> {
-  const result = await put(pathname, body, {
+  // Vercel's PutBody doesn't include Uint8Array; promote it to a tight
+  // Buffer copy so callers can pass whatever bytes shape they have.
+  const payload: ArrayBuffer | Buffer | Blob =
+    body instanceof Uint8Array && !(body instanceof Buffer)
+      ? Buffer.from(body)
+      : (body as ArrayBuffer | Buffer | Blob);
+  const result = await put(pathname, payload, {
     access: "private",
     contentType,
     allowOverwrite: true,

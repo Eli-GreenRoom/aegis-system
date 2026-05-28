@@ -55,6 +55,10 @@ export default function FlightForm({
   const [deleting, setDeleting] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [otherLegs, setOtherLegs] = useState<Record<string, unknown>[]>([]);
+  // PDF source from the AI parse, held until the flight is created so we
+  // can attach the document with the right entityId. Avoids orphan
+  // /api/documents rows if the operator cancels before saving.
+  const [pendingPdf, setPendingPdf] = useState<File | null>(null);
 
   const {
     register,
@@ -113,8 +117,13 @@ export default function FlightForm({
       return;
     }
 
-    const body = await res.json();
-    void body;
+    const body = (await res.json()) as { flight: { id: string } };
+    // Attach the AI-source PDF to the freshly created flight (if any).
+    // Only fires for create, not edit - the existing flight already has
+    // whatever ticket the operator chose to keep.
+    if (!isEdit) {
+      await attachPendingPdf(body.flight.id);
+    }
     if (onSuccess) {
       router.refresh();
       // If the AI returned a round-trip and we just saved the first leg,
@@ -129,9 +138,7 @@ export default function FlightForm({
       onSuccess();
       return;
     }
-    router.push(
-      `/flights/${(body as { flight: { id: string } }).flight.id}` as Route,
-    );
+    router.push(`/flights/${body.flight.id}` as Route);
     router.refresh();
   }
 
@@ -199,21 +206,22 @@ export default function FlightForm({
     const rest = legs.filter((l) => l !== preferred);
     setOtherLegs(rest);
 
-    // If the parse came from a PDF, upload it to documents and stash the
-    // proxy URL on `ticketUrl` so the operator can re-read it later.
-    if (sourceFile) {
-      void uploadSourcePdf(sourceFile);
-    }
+    // If the parse came from a PDF, stash it locally; we upload only after
+    // the flight is actually created so the document is linked to the
+    // right entityId and we don't leak orphans on cancel.
+    if (sourceFile) setPendingPdf(sourceFile);
   }
 
-  /** Background upload: post the source PDF to /api/documents so the
-   *  ticket reference points back to the airline PDF. Quiet on failure -
+  /** Upload the PDF to /api/documents AFTER the flight is created, so
+   *  the document row is tied to the new flight's id. Quiet on failure -
    *  the operator can still attach it manually via the existing field. */
-  async function uploadSourcePdf(file: File) {
+  async function attachPendingPdf(flightId: string) {
+    if (!pendingPdf) return;
     try {
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", pendingPdf);
       fd.append("entityType", "flight");
+      fd.append("entityId", flightId);
       fd.append("tags", "flight,ticket");
       const res = await fetch("/api/documents", { method: "POST", body: fd });
       if (!res.ok) return;
@@ -222,10 +230,18 @@ export default function FlightForm({
       };
       const proxyUrl = body.document?.proxyUrl;
       if (proxyUrl) {
-        setValue("ticketUrl", proxyUrl, { shouldValidate: true });
+        // PATCH the new flight with the ticket URL so the operator sees it
+        // pre-filled when they open the detail page.
+        await fetch(`/api/flights/${flightId}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ ticketUrl: proxyUrl }),
+        });
       }
     } catch {
       // ignore - operator can still attach manually
+    } finally {
+      setPendingPdf(null);
     }
   }
 
