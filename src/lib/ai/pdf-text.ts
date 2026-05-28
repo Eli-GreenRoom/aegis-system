@@ -27,8 +27,19 @@ interface PDFDocumentProxy {
   getPage: (n: number) => Promise<PDFPageProxy>;
 }
 
+interface GetDocumentParams {
+  data: Uint8Array;
+  /** Run pdfjs in-process; no worker fetch. Required server-side under
+   *  Turbopack, which can't resolve pdf.worker.mjs from chunked output. */
+  disableWorker?: boolean;
+  /** Some Node setups don't support function-eval; disabling keeps
+   *  pdfjs happy without falling back to a worker. */
+  isEvalSupported?: boolean;
+  useSystemFonts?: boolean;
+}
+
 interface PDFJS {
-  getDocument: (src: { data: Uint8Array }) => {
+  getDocument: (src: GetDocumentParams) => {
     promise: Promise<PDFDocumentProxy>;
   };
 }
@@ -39,7 +50,16 @@ export async function extractPdfText(bytes: Uint8Array): Promise<string> {
   const pdfjs =
     (await import("pdfjs-dist/legacy/build/pdf.mjs")) as unknown as PDFJS;
 
-  const doc = await pdfjs.getDocument({ data: bytes }).promise;
+  const doc = await pdfjs.getDocument({
+    data: bytes,
+    // Run pdfjs in-process. Under Turbopack the dev server can't resolve
+    // pdf.worker.mjs from the chunked output ("Setting up fake worker
+    // failed"); disabling the worker keeps everything in the request
+    // process where it just works.
+    disableWorker: true,
+    isEvalSupported: false,
+    useSystemFonts: false,
+  }).promise;
   const out: string[] = [];
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i);
