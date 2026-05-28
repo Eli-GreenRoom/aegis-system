@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import type { ArtistStatusSummary } from "@/lib/artists/status-types";
@@ -8,18 +9,62 @@ import { hasGap } from "@/lib/artists/status-types";
 export interface ReadinessRow {
   artist: { id: string; name: string; agency: string | null };
   status: ArtistStatusSummary;
+  stageId: string | null;
+  stageName: string | null;
+  slotDate: string | null;
+}
+
+interface StageOption {
+  id: string;
+  name: string;
 }
 
 interface Props {
   rows: ReadinessRow[];
+  stageOptions: StageOption[];
+  dayOptions: string[];
 }
+
+// ---- types -----------------------------------------------------------------
+
+type LogisticsTab = "travel" | "stay" | "ground" | "docs" | "money";
+
+const SET_STATUS_OPTIONS = [
+  "no_set",
+  "confirmed",
+  "option",
+  "live",
+  "done",
+  "not_available",
+  "withdrawn",
+] as const;
+type SetStatusFilter = (typeof SET_STATUS_OPTIONS)[number];
 
 // ---- cell helpers ----------------------------------------------------------
 
-function Cell({ children }: { children: React.ReactNode }) {
+function Cell({
+  children,
+  onClick,
+  title,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  title?: string;
+}) {
   return (
     <td className="px-3 py-2 text-[11px] whitespace-nowrap border-b border-[--color-border]">
-      {children}
+      {onClick ? (
+        <button
+          type="button"
+          onClick={onClick}
+          title={title}
+          className="text-left hover:opacity-80 transition-opacity cursor-pointer"
+        >
+          {children}
+        </button>
+      ) : (
+        children
+      )}
     </td>
   );
 }
@@ -58,10 +103,16 @@ function PillNA() {
 
 // ---- per-module cell renderers ---------------------------------------------
 
-function SetCell({ status }: { status: ArtistStatusSummary }) {
+function SetCell({
+  status,
+  onClick,
+}: {
+  status: ArtistStatusSummary;
+  onClick: () => void;
+}) {
   if (!status.setStatus)
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Open lineup">
         <PillMissing />
       </Cell>
     );
@@ -75,7 +126,7 @@ function SetCell({ status }: { status: ArtistStatusSummary }) {
   };
   const cls = pills[status.setStatus] ?? "pill-amber";
   return (
-    <Cell>
+    <Cell onClick={onClick} title="Open lineup">
       <span className={`${cls} text-[9px] uppercase tracking-[0.1em]`}>
         {status.setStatus}
       </span>
@@ -83,7 +134,13 @@ function SetCell({ status }: { status: ArtistStatusSummary }) {
   );
 }
 
-function FlightCell({ status }: { status: ArtistStatusSummary }) {
+function FlightCell({
+  status,
+  onClick,
+}: {
+  status: ArtistStatusSummary;
+  onClick: () => void;
+}) {
   if (!status.needsFlight)
     return (
       <Cell>
@@ -94,24 +151,30 @@ function FlightCell({ status }: { status: ArtistStatusSummary }) {
   const outOk = status.outboundFlight && status.outboundFlight !== "cancelled";
   if (!inOk && !outOk)
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Add flights">
         <PillMissing />
       </Cell>
     );
   if (!inOk || !outOk)
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Add missing flight">
         <PillWarn label={!inOk ? "no inbound" : "no outbound"} />
       </Cell>
     );
   return (
-    <Cell>
-      <PillOk label={`in + out`} />
+    <Cell onClick={onClick} title="Edit flights">
+      <PillOk label="in + out" />
     </Cell>
   );
 }
 
-function HotelCell({ status }: { status: ArtistStatusSummary }) {
+function HotelCell({
+  status,
+  onClick,
+}: {
+  status: ArtistStatusSummary;
+  onClick: () => void;
+}) {
   if (!status.needsHotel)
     return (
       <Cell>
@@ -120,7 +183,7 @@ function HotelCell({ status }: { status: ArtistStatusSummary }) {
     );
   if (!status.hotelStatus)
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Add hotel booking">
         <PillMissing />
       </Cell>
     );
@@ -129,24 +192,30 @@ function HotelCell({ status }: { status: ArtistStatusSummary }) {
   );
   if (ok)
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Edit hotel">
         <PillOk label={status.hotelStatus} />
       </Cell>
     );
   if (status.hotelStatus === "cancelled" || status.hotelStatus === "no_show")
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Re-book hotel">
         <PillMissing />
       </Cell>
     );
   return (
-    <Cell>
+    <Cell onClick={onClick} title="Edit hotel">
       <PillWarn label={status.hotelStatus} />
     </Cell>
   );
 }
 
-function GroundCell({ status }: { status: ArtistStatusSummary }) {
+function GroundCell({
+  status,
+  onClick,
+}: {
+  status: ArtistStatusSummary;
+  onClick: () => void;
+}) {
   if (!status.needsGround)
     return (
       <Cell>
@@ -155,7 +224,7 @@ function GroundCell({ status }: { status: ArtistStatusSummary }) {
     );
   if (!status.groundStatus)
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Add pickup">
         <PillMissing />
       </Cell>
     );
@@ -165,24 +234,30 @@ function GroundCell({ status }: { status: ArtistStatusSummary }) {
   );
   if (ok)
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Edit pickups">
         <PillOk label="scheduled" />
       </Cell>
     );
   if (warn)
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Edit pickups">
         <PillWarn label={status.groundStatus} />
       </Cell>
     );
   return (
-    <Cell>
+    <Cell onClick={onClick} title="Add pickup">
       <PillMissing />
     </Cell>
   );
 }
 
-function ContractCell({ status }: { status: ArtistStatusSummary }) {
+function ContractCell({
+  status,
+  onClick,
+}: {
+  status: ArtistStatusSummary;
+  onClick: () => void;
+}) {
   if (!status.needsContract)
     return (
       <Cell>
@@ -191,24 +266,30 @@ function ContractCell({ status }: { status: ArtistStatusSummary }) {
     );
   if (!status.contractStatus)
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Add contract">
         <PillMissing />
       </Cell>
     );
   if (status.contractStatus === "signed")
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Open contract">
         <PillOk label="signed" />
       </Cell>
     );
   return (
-    <Cell>
+    <Cell onClick={onClick} title="Open contract">
       <PillWarn label={status.contractStatus} />
     </Cell>
   );
 }
 
-function PaymentCell({ status }: { status: ArtistStatusSummary }) {
+function PaymentCell({
+  status,
+  onClick,
+}: {
+  status: ArtistStatusSummary;
+  onClick: () => void;
+}) {
   if (!status.needsPayment)
     return (
       <Cell>
@@ -217,24 +298,30 @@ function PaymentCell({ status }: { status: ArtistStatusSummary }) {
     );
   if (!status.hasAnyPayment)
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Add invoice + payment">
         <PillMissing />
       </Cell>
     );
   if (status.outstandingPayments > 0)
     return (
-      <Cell>
+      <Cell onClick={onClick} title="View payments">
         <PillWarn label={`${status.outstandingPayments} pending`} />
       </Cell>
     );
   return (
-    <Cell>
+    <Cell onClick={onClick} title="View payments">
       <PillOk label="clear" />
     </Cell>
   );
 }
 
-function RiderCell({ status }: { status: ArtistStatusSummary }) {
+function RiderCell({
+  status,
+  onClick,
+}: {
+  status: ArtistStatusSummary;
+  onClick: () => void;
+}) {
   if (!status.needsRider)
     return (
       <Cell>
@@ -243,18 +330,18 @@ function RiderCell({ status }: { status: ArtistStatusSummary }) {
     );
   if (status.ridersReady === null)
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Add rider">
         <PillMissing />
       </Cell>
     );
   if (status.ridersReady)
     return (
-      <Cell>
+      <Cell onClick={onClick} title="Edit riders">
         <PillOk label="confirmed" />
       </Cell>
     );
   return (
-    <Cell>
+    <Cell onClick={onClick} title="Edit riders">
       <PillWarn label="unconfirmed" />
     </Cell>
   );
@@ -273,12 +360,142 @@ const COLS = [
   "Rider",
 ] as const;
 
-export default function ReadinessGrid({ rows }: Props) {
-  const gaps = rows.filter((r) => hasGap(r.status));
-  const ready = rows.filter((r) => !hasGap(r.status));
+export default function ReadinessGrid({
+  rows,
+  stageOptions,
+  dayOptions,
+}: Props) {
+  // Filter state.
+  const [search, setSearch] = useState("");
+  const [gapsOnly, setGapsOnly] = useState(false);
+  const [setStatusFilter, setSetStatusFilter] = useState<Set<SetStatusFilter>>(
+    new Set(),
+  );
+  const [stageFilter, setStageFilter] = useState<Set<string>>(new Set());
+  const [dayFilter, setDayFilter] = useState<Set<string>>(new Set());
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (q) {
+        const matchesName = r.artist.name.toLowerCase().includes(q);
+        const matchesAgency = (r.artist.agency ?? "").toLowerCase().includes(q);
+        if (!matchesName && !matchesAgency) return false;
+      }
+      if (gapsOnly && !hasGap(r.status)) return false;
+      if (setStatusFilter.size > 0) {
+        const v: SetStatusFilter = r.status.setStatus
+          ? (r.status.setStatus as SetStatusFilter)
+          : "no_set";
+        if (!setStatusFilter.has(v)) return false;
+      }
+      if (stageFilter.size > 0) {
+        if (!r.stageId || !stageFilter.has(r.stageId)) return false;
+      }
+      if (dayFilter.size > 0) {
+        if (!r.slotDate || !dayFilter.has(r.slotDate)) return false;
+      }
+      return true;
+    });
+  }, [rows, search, gapsOnly, setStatusFilter, stageFilter, dayFilter]);
+
+  const gaps = filtered.filter((r) => hasGap(r.status));
+  const ready = filtered.filter((r) => !hasGap(r.status));
+
+  const anyFilter =
+    !!search ||
+    gapsOnly ||
+    setStatusFilter.size > 0 ||
+    stageFilter.size > 0 ||
+    dayFilter.size > 0;
+
+  function clearFilters() {
+    setSearch("");
+    setGapsOnly(false);
+    setSetStatusFilter(new Set());
+    setStageFilter(new Set());
+    setDayFilter(new Set());
+  }
+
+  function toggleInSet<T>(s: Set<T>, value: T): Set<T> {
+    const next = new Set(s);
+    if (next.has(value)) next.delete(value);
+    else next.add(value);
+    return next;
+  }
+
+  function cellHref(artistId: string, tab: LogisticsTab): Route {
+    return `/artists/${artistId}?focus=${tab}` as Route;
+  }
 
   return (
     <div className="space-y-6">
+      {/* Filter bar */}
+      <div className="space-y-3 rounded-md border border-[--color-border] bg-[--color-surface]/40 p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="search"
+            placeholder="Search artist or agency..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 min-w-[180px] rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-1.5 text-sm text-[--color-fg] placeholder:text-[--color-fg-subtle] focus:border-brand focus:outline-none"
+          />
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={gapsOnly}
+              onChange={(e) => setGapsOnly(e.target.checked)}
+              className="rounded border border-[--color-border-strong] bg-[--color-surface]"
+            />
+            <span className="text-mono text-[10px] uppercase tracking-[0.14em] text-[--color-fg-muted]">
+              Gaps only
+            </span>
+          </label>
+          {anyFilter && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-mono text-[10px] uppercase tracking-[0.14em] text-[--color-fg-subtle] hover:text-brand transition-colors"
+            >
+              clear
+            </button>
+          )}
+        </div>
+
+        <ChipRow
+          label="Set"
+          options={SET_STATUS_OPTIONS.map((s) => ({
+            id: s,
+            label: s === "no_set" ? "no set" : s.replace(/_/g, " "),
+          }))}
+          selected={setStatusFilter}
+          onToggle={(id) =>
+            setSetStatusFilter(
+              toggleInSet(setStatusFilter, id as SetStatusFilter),
+            )
+          }
+        />
+
+        {stageOptions.length > 0 && (
+          <ChipRow
+            label="Stage"
+            options={stageOptions.map((s) => ({ id: s.id, label: s.name }))}
+            selected={stageFilter}
+            onToggle={(id) => setStageFilter(toggleInSet(stageFilter, id))}
+          />
+        )}
+
+        {dayOptions.length > 0 && (
+          <ChipRow
+            label="Day"
+            options={dayOptions.map((d) => ({ id: d, label: d }))}
+            selected={dayFilter}
+            onToggle={(id) => setDayFilter(toggleInSet(dayFilter, id))}
+          />
+        )}
+      </div>
+
+      {/* Counts */}
       <div className="flex items-center gap-4 text-mono text-[10px] uppercase tracking-[0.14em] text-[--color-fg-subtle]">
         <span>
           <span className="text-coral font-medium">{gaps.length}</span> with
@@ -287,9 +504,12 @@ export default function ReadinessGrid({ rows }: Props) {
         <span>
           <span className="text-brand font-medium">{ready.length}</span> ready
         </span>
-        <span>{rows.length} total</span>
+        <span>
+          {filtered.length} shown / {rows.length} total
+        </span>
       </div>
 
+      {/* Table */}
       <div className="overflow-x-auto rounded-md border border-[--color-border]">
         <table className="w-full min-w-[700px] border-collapse bg-[--color-surface]">
           <thead>
@@ -305,26 +525,29 @@ export default function ReadinessGrid({ rows }: Props) {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && (
+            {filtered.length === 0 && (
               <tr>
                 <td
                   colSpan={COLS.length}
                   className="px-3 py-8 text-center text-[11px] text-[--color-fg-subtle]"
                 >
-                  No artists yet.
+                  {rows.length === 0
+                    ? "No artists yet."
+                    : "No artists match the current filters."}
                 </td>
               </tr>
             )}
             {/* Gap artists first, then ready */}
             {[...gaps, ...ready].map((row) => {
               const gap = hasGap(row.status);
+              const aid = row.artist.id;
               return (
                 <tr
-                  key={row.artist.id}
+                  key={aid}
                   className={
                     gap
                       ? "hover:bg-[rgba(255,107,122,0.04)]"
-                      : "hover:bg-white/[0.02]"
+                      : "hover:bg-white/2"
                   }
                 >
                   <td className="px-3 py-2 border-b border-[--color-border]">
@@ -334,26 +557,68 @@ export default function ReadinessGrid({ rows }: Props) {
                       )}
                       <div className="min-w-0">
                         <Link
-                          href={`/artists/${row.artist.id}` as Route}
+                          href={`/artists/${aid}` as Route}
                           className="text-[13px] text-[--color-fg] hover:text-brand transition-colors truncate block"
                         >
                           {row.artist.name}
                         </Link>
-                        {row.artist.agency && (
-                          <div className="text-[10px] text-[--color-fg-subtle] truncate">
-                            {row.artist.agency}
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2 text-[10px] text-[--color-fg-subtle] truncate">
+                          {row.artist.agency && (
+                            <span className="truncate">
+                              {row.artist.agency}
+                            </span>
+                          )}
+                          {(row.stageName || row.slotDate) && (
+                            <span className="text-mono whitespace-nowrap">
+                              {row.stageName ?? ""}
+                              {row.stageName && row.slotDate ? " - " : ""}
+                              {row.slotDate ?? ""}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <SetCell status={row.status} />
-                  <FlightCell status={row.status} />
-                  <HotelCell status={row.status} />
-                  <GroundCell status={row.status} />
-                  <ContractCell status={row.status} />
-                  <PaymentCell status={row.status} />
-                  <RiderCell status={row.status} />
+                  <SetCell
+                    status={row.status}
+                    onClick={() => (window.location.href = "/lineup")}
+                  />
+                  <FlightCell
+                    status={row.status}
+                    onClick={() =>
+                      (window.location.href = cellHref(aid, "travel"))
+                    }
+                  />
+                  <HotelCell
+                    status={row.status}
+                    onClick={() =>
+                      (window.location.href = cellHref(aid, "stay"))
+                    }
+                  />
+                  <GroundCell
+                    status={row.status}
+                    onClick={() =>
+                      (window.location.href = cellHref(aid, "ground"))
+                    }
+                  />
+                  <ContractCell
+                    status={row.status}
+                    onClick={() =>
+                      (window.location.href = cellHref(aid, "docs"))
+                    }
+                  />
+                  <PaymentCell
+                    status={row.status}
+                    onClick={() =>
+                      (window.location.href = cellHref(aid, "money"))
+                    }
+                  />
+                  <RiderCell
+                    status={row.status}
+                    onClick={() =>
+                      (window.location.href = cellHref(aid, "docs"))
+                    }
+                  />
                 </tr>
               );
             })}
@@ -362,9 +627,49 @@ export default function ReadinessGrid({ rows }: Props) {
       </div>
 
       <p className="text-mono text-[10px] uppercase tracking-[0.14em] text-[--color-fg-subtle]">
-        gaps listed first. click an artist name to open their cockpit. mark
-        modules N/A on the artist edit form.
+        gaps first. click any cell to jump to that module on the artist cockpit.
       </p>
+    </div>
+  );
+}
+
+// ---- chip row --------------------------------------------------------------
+
+function ChipRow({
+  label,
+  options,
+  selected,
+  onToggle,
+}: {
+  label: string;
+  options: { id: string; label: string }[];
+  selected: Set<string>;
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-mono text-[10px] uppercase tracking-[0.14em] text-[--color-fg-subtle] shrink-0">
+        {label}
+      </span>
+      <div className="flex items-center gap-1 flex-wrap">
+        {options.map((o) => {
+          const on = selected.has(o.id);
+          return (
+            <button
+              key={o.id}
+              type="button"
+              onClick={() => onToggle(o.id)}
+              className={`text-mono text-[10px] uppercase tracking-[0.14em] px-2 py-0.5 rounded-md border transition-colors ${
+                on
+                  ? "border-brand text-brand bg-brand/10"
+                  : "border-[--color-border] text-[--color-fg-subtle] hover:border-[--color-border-strong] hover:text-[--color-fg]"
+              }`}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

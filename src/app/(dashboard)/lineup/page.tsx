@@ -6,9 +6,15 @@ import Topbar from "@/components/dashboard/Topbar";
 import { Button } from "@/components/ui/button";
 import { getAppSession } from "@/lib/session";
 import { getActiveFestival } from "@/lib/festivals";
-import { getLineupGrid, getLineupPipeline } from "@/lib/lineup/repo";
+import {
+  getLineupGrid,
+  getLineupPipeline,
+  listArtistSetSlots,
+  listStages,
+} from "@/lib/lineup/repo";
 import { listArtists } from "@/lib/artists/repo";
 import { getArtistStatusMap } from "@/lib/artists/status";
+import { festivalDates } from "@/lib/festivals";
 import { slotDateSchema } from "@/lib/lineup/schema";
 import DayTabs from "./_components/DayTabs";
 import LineupBoard from "./_components/LineupBoard";
@@ -66,11 +72,27 @@ export default async function LineupPage({ searchParams }: PageProps) {
       festivalId: festival.id,
       archived: "active",
     });
-    const statusMap = await getArtistStatusMap(allArtists.map((a) => a.id));
-    const rows = allArtists.map((a) => ({
-      artist: { id: a.id, name: a.name, agency: a.agency },
-      status: statusMap.get(a.id)!,
-    }));
+    const [statusMap, setSlots, allStages] = await Promise.all([
+      getArtistStatusMap(allArtists.map((a) => a.id)),
+      listArtistSetSlots(festival.id),
+      listStages(festival.id),
+    ]);
+    const slotByArtist = new Map(setSlots.map((s) => [s.artistId, s]));
+    const rows = allArtists.map((a) => {
+      const slot = slotByArtist.get(a.id);
+      return {
+        artist: { id: a.id, name: a.name, agency: a.agency },
+        status: statusMap.get(a.id)!,
+        stageId: slot?.stageId ?? null,
+        stageName: slot?.stageName ?? null,
+        slotDate: slot?.slotDate ?? null,
+      };
+    });
+    const stageOptions = allStages.map((s) => ({ id: s.id, name: s.name }));
+    const dayOptions = festivalDates({
+      startDate: festival.startDate,
+      endDate: festival.endDate,
+    });
 
     return (
       <>
@@ -85,7 +107,11 @@ export default async function LineupPage({ searchParams }: PageProps) {
         />
         <div className="px-6 py-6 space-y-5">
           <ViewToggle active="readiness" />
-          <ReadinessGrid rows={rows} />
+          <ReadinessGrid
+            rows={rows}
+            stageOptions={stageOptions}
+            dayOptions={dayOptions}
+          />
         </div>
       </>
     );

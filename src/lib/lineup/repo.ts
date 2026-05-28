@@ -365,3 +365,46 @@ export async function getLineupPipeline(
     };
   });
 }
+
+export interface ArtistSetSlot {
+  artistId: string;
+  stageId: string;
+  stageName: string;
+  slotDate: string; // YYYY-MM-DD
+}
+
+/**
+ * One row per artist's earliest set for the festival, joined to its slot
+ * and stage. Used by the readiness view to filter by stage and day.
+ * Multi-set artists pick their chronologically-first slot.
+ */
+export async function listArtistSetSlots(
+  festivalId: string,
+): Promise<ArtistSetSlot[]> {
+  const rows = await db
+    .select({
+      artistId: sets.artistId,
+      stageId: stages.id,
+      stageName: stages.name,
+      slotDate: slots.date,
+      slotStart: slots.startTime,
+    })
+    .from(sets)
+    .innerJoin(slots, eq(sets.slotId, slots.id))
+    .innerJoin(stages, eq(slots.stageId, stages.id))
+    .where(eq(stages.festivalId, festivalId))
+    .orderBy(asc(slots.date), asc(slots.startTime));
+
+  // First slot per artist wins (rows already sorted chronologically).
+  const map = new Map<string, ArtistSetSlot>();
+  for (const r of rows) {
+    if (map.has(r.artistId)) continue;
+    map.set(r.artistId, {
+      artistId: r.artistId,
+      stageId: r.stageId,
+      stageName: r.stageName,
+      slotDate: r.slotDate,
+    });
+  }
+  return Array.from(map.values());
+}
