@@ -4,18 +4,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 interface Props {
-  /** Display label, e.g. "Parse invoice with AI". */
   title: string;
-  /** Endpoint to POST `{text}` to. */
   endpoint: "/api/ai/parse-invoice" | "/api/ai/parse-flight";
-  /** Optional multipart endpoint that accepts a PDF file. When provided,
-   *  the dialog also surfaces a "Upload PDF" picker. */
-  pdfEndpoint?: "/api/ai/parse-flight-pdf";
-  /** Called when the operator clicks "Apply" on a parse result. The
-   *  parent form decides which fields to map and how. The shape can be
-   *  a single object (e.g. invoice) or an array (e.g. flight legs). If
-   *  the parse came from a PDF, the original file is forwarded so the
-   *  parent can attach it to the entity. */
+  /** Multipart endpoint accepting PDF/image. When provided, shown as the
+   *  primary upload zone. For invoice mode set fileOnly=true to hide
+   *  the text fallback entirely. */
+  pdfEndpoint?: "/api/ai/parse-flight-pdf" | "/api/ai/parse-invoice-pdf";
+  /** When true, hides the text paste area — file upload is the only input. */
+  fileOnly?: boolean;
   onApply: (
     parsed: Record<string, unknown> | Record<string, unknown>[],
     sourceFile?: File,
@@ -23,17 +19,11 @@ interface Props {
   onClose: () => void;
 }
 
-/**
- * Reusable AI-parse dialog. Paste an email body or extracted PDF text,
- * hit Parse, see the structured JSON, click Apply to fill the parent
- * form. The AI never writes to the DB - this dialog only returns the
- * parsed shape to the parent's `onApply`. Operator submits the parent
- * form normally to persist.
- */
 export default function AIParseDialog({
   title,
   endpoint,
   pdfEndpoint,
+  fileOnly,
   onApply,
   onClose,
 }: Props) {
@@ -41,7 +31,7 @@ export default function AIParseDialog({
   const [parsed, setParsed] = useState<
     Record<string, unknown> | Record<string, unknown>[] | null
   >(null);
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -68,11 +58,11 @@ export default function AIParseDialog({
     }
   }
 
-  async function runPdfParse(file: File) {
+  async function runFileParse(file: File) {
     if (!pdfEndpoint) return;
     setError("");
     setBusy(true);
-    setPdfFile(file);
+    setUploadedFile(file);
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -93,9 +83,17 @@ export default function AIParseDialog({
 
   function applyAndClose() {
     if (!parsed) return;
-    onApply(parsed, pdfFile ?? undefined);
+    onApply(parsed, uploadedFile ?? undefined);
     onClose();
   }
+
+  const acceptAttr = fileOnly
+    ? "application/pdf,.pdf,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+    : "application/pdf,.pdf";
+
+  const dropZoneHint = fileOnly
+    ? "PDF or image (jpg, png, webp)"
+    : "Airline ticket PDF — Claude extracts both legs";
 
   return (
     <div
@@ -123,53 +121,59 @@ export default function AIParseDialog({
 
         {!parsed ? (
           <>
+            {/* File upload zone */}
             {pdfEndpoint && (
-              <label className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[--color-border-strong] bg-[--color-surface]/30 px-4 py-6 cursor-pointer hover:border-[--color-brand]/50 hover:bg-[--color-surface]/50 transition-colors">
+              <label className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[--color-border-strong] bg-[--color-surface]/30 px-4 py-8 cursor-pointer hover:border-[--color-brand]/50 hover:bg-[--color-surface]/50 transition-colors">
                 <span className="text-2xl text-[--color-fg-muted]">↑</span>
                 <span className="text-sm font-medium text-[--color-fg]">
-                  {busy && pdfFile ? "Parsing…" : "Drop PDF or click to upload"}
+                  {busy && uploadedFile
+                    ? "Parsing…"
+                    : "Drop file or click to upload"}
                 </span>
-                {pdfFile ? (
+                {uploadedFile ? (
                   <span className="text-mono text-[11px] text-[--color-brand]">
-                    {pdfFile.name}
+                    {uploadedFile.name}
                   </span>
                 ) : (
                   <span className="text-xs text-[--color-fg-muted]">
-                    Airline ticket PDF — Claude extracts both legs
+                    {dropZoneHint}
                   </span>
                 )}
                 <input
                   type="file"
-                  accept="application/pdf,.pdf"
+                  accept={acceptAttr}
                   className="sr-only"
                   disabled={busy}
                   onChange={(e) => {
                     const f = e.target.files?.[0];
-                    if (f) void runPdfParse(f);
+                    if (f) void runFileParse(f);
                   }}
                 />
               </label>
             )}
 
-            <div className="relative">
-              {pdfEndpoint && (
-                <div className="absolute inset-x-0 -top-2.5 flex justify-center">
-                  <span className="bg-[--color-bg] px-2 text-[10px] uppercase tracking-widest text-[--color-fg-muted]">
-                    or paste text
-                  </span>
-                </div>
-              )}
-              <textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                rows={pdfEndpoint ? 6 : 10}
-                placeholder="Paste email body or flight confirmation text…"
-                className="w-full rounded-lg border border-[--color-border-strong] bg-[--color-surface]/40 px-3 py-2.5 text-sm text-[--color-fg] placeholder:text-[--color-fg-subtle] focus:border-[--color-brand] focus:outline-none focus:ring-1 focus:ring-[--color-brand] resize-none"
-              />
-              <span className="absolute bottom-2 right-3 text-mono text-[10px] text-[--color-fg-subtle]">
-                {text.length}/50 000
-              </span>
-            </div>
+            {/* Text fallback — hidden in fileOnly mode */}
+            {!fileOnly && (
+              <div className="relative">
+                {pdfEndpoint && (
+                  <div className="absolute inset-x-0 -top-2.5 flex justify-center">
+                    <span className="bg-[--color-bg] px-2 text-[10px] uppercase tracking-widest text-[--color-fg-muted]">
+                      or paste text
+                    </span>
+                  </div>
+                )}
+                <textarea
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  rows={pdfEndpoint ? 6 : 10}
+                  placeholder="Paste email body or confirmation text…"
+                  className="w-full rounded-lg border border-[--color-border-strong] bg-[--color-surface]/40 px-3 py-2.5 text-sm text-[--color-fg] placeholder:text-[--color-fg-subtle] focus:border-[--color-brand] focus:outline-none focus:ring-1 focus:ring-[--color-brand] resize-none"
+                />
+                <span className="absolute bottom-2 right-3 text-mono text-[10px] text-[--color-fg-subtle]">
+                  {text.length}/50 000
+                </span>
+              </div>
+            )}
 
             {error && (
               <p className="rounded-md bg-coral/10 border border-coral/30 px-3 py-2 text-xs text-coral">
@@ -177,24 +181,40 @@ export default function AIParseDialog({
               </p>
             )}
 
-            <div className="flex items-center gap-2 pt-1">
-              <Button
-                type="button"
-                onClick={runParse}
-                loading={busy}
-                disabled={text.trim().length < 20 || busy}
-              >
-                {busy ? "Parsing…" : "Parse"}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onClose}
-                disabled={busy}
-              >
-                Cancel
-              </Button>
-            </div>
+            {/* Text parse button — only shown when text area is visible */}
+            {!fileOnly && (
+              <div className="flex items-center gap-2 pt-1">
+                <Button
+                  type="button"
+                  onClick={runParse}
+                  loading={busy}
+                  disabled={text.trim().length < 20 || busy}
+                >
+                  {busy ? "Parsing…" : "Parse"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={onClose}
+                  disabled={busy}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+
+            {fileOnly && (
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={onClose}
+                  disabled={busy}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
           </>
         ) : (
           <>

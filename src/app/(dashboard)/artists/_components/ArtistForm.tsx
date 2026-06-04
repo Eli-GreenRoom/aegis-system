@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Route } from "next";
 import {
@@ -70,6 +70,7 @@ export default function ArtistForm({
       visaStatus: artist?.visaStatus ?? "",
       pressKitUrl: artist?.pressKitUrl ?? "",
       passportFileUrl: artist?.passportFileUrl ?? "",
+      links: (artist?.links as { label: string; url: string }[] | null) ?? [],
       comments: artist?.comments ?? "",
       needsFlight: artist?.needsFlight ?? true,
       needsHotel: artist?.needsHotel ?? true,
@@ -78,6 +79,15 @@ export default function ArtistForm({
       needsPayment: artist?.needsPayment ?? true,
       needsRider: artist?.needsRider ?? true,
     },
+  });
+
+  const {
+    fields: linkFields,
+    append: appendLink,
+    remove: removeLink,
+  } = useFieldArray({
+    control,
+    name: "links" as never,
   });
 
   function autoSlug() {
@@ -252,6 +262,49 @@ export default function ArtistForm({
               autoComplete="off"
             />
           </Field>
+          {/* Additional links */}
+          <div className="col-span-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Additional links</Label>
+              <button
+                type="button"
+                onClick={() => appendLink({ label: "", url: "" })}
+                className="text-xs text-[--color-brand] hover:underline"
+              >
+                + Add link
+              </button>
+            </div>
+            {(linkFields as { id: string; label: string; url: string }[]).map(
+              (field, i) => (
+                <div key={field.id} className="flex items-center gap-2">
+                  <Input
+                    {...register(`links.${i}.label` as never)}
+                    placeholder="Label (e.g. Spotify)"
+                    className="w-32 shrink-0"
+                  />
+                  <Input
+                    {...register(`links.${i}.url` as never)}
+                    placeholder="https://..."
+                    className="flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeLink(i)}
+                    className="text-[--color-fg-subtle] hover:text-coral text-lg leading-none shrink-0"
+                    aria-label="Remove link"
+                  >
+                    ×
+                  </button>
+                </div>
+              ),
+            )}
+            {linkFields.length === 0 && (
+              <p className="text-xs text-[--color-fg-subtle]">
+                No additional links yet.
+              </p>
+            )}
+          </div>
+
           <Field label="Passport file" error={errors.passportFileUrl?.message}>
             <Controller
               control={control}

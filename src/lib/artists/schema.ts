@@ -73,6 +73,14 @@ export const artistInputSchema = z.object({
   visaStatus: optionalVisaStatus,
   pressKitUrl: optionalUrl,
   passportFileUrl: optionalUrl,
+  links: z
+    .array(
+      z.object({
+        label: z.string().trim().max(100),
+        url: z.string().trim().max(500),
+      }),
+    )
+    .optional(),
   comments: z.string().trim().max(4000).optional().or(z.literal("")),
   // Logistics requirement flags - false = N/A for this artist
   needsFlight: z.boolean().optional(),
@@ -116,6 +124,7 @@ export interface ArtistDbValues {
   visaStatus: VisaStatus | null;
   pressKitUrl: string | null;
   passportFileUrl: string | null;
+  links: { label: string; url: string }[] | null;
   comments: string | null;
   needsFlight: boolean;
   needsHotel: boolean;
@@ -172,6 +181,9 @@ export function toDbPatchValues(input: ArtistPatch): Partial<ArtistDbValues> {
       out[k] = v === undefined || v === "" ? null : v;
     }
   }
+  if ("links" in input) {
+    out.links = input.links?.length ? input.links : null;
+  }
   return out;
 }
 
@@ -200,6 +212,7 @@ export function toDbValues(
         : input.visaStatus,
     pressKitUrl: null,
     passportFileUrl: null,
+    links: input.links?.length ? input.links : null,
     comments: null,
     needsFlight: input.needsFlight ?? true,
     needsHotel: input.needsHotel ?? true,

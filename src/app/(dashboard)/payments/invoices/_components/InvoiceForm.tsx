@@ -263,9 +263,9 @@ export default function InvoiceForm({ invoice }: Props) {
         <AIParseDialog
           title="Parse invoice with AI"
           endpoint="/api/ai/parse-invoice"
+          pdfEndpoint="/api/ai/parse-invoice-pdf"
+          fileOnly
           onApply={(p) => {
-            // Invoice parses always return a single object; this is just
-            // a type-narrowing adapter for AIParseDialog's wider signature.
             if (!Array.isArray(p)) applyParsed(p);
           }}
           onClose={() => setAiOpen(false)}
