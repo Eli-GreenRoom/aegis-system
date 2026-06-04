@@ -98,8 +98,10 @@ export function hotelToDbPatchValues(
   for (const k of HOTEL_NULLABLE) {
     if (k in input) out[k] = emptyToNull(input[k]);
   }
-  if ("minsToAirport" in input) out.minsToAirport = intOrNull(input.minsToAirport);
-  if ("minsFromAirport" in input) out.minsFromAirport = intOrNull(input.minsFromAirport);
+  if ("minsToAirport" in input)
+    out.minsToAirport = intOrNull(input.minsToAirport);
+  if ("minsFromAirport" in input)
+    out.minsFromAirport = intOrNull(input.minsFromAirport);
   if ("minsToVenue" in input) out.minsToVenue = intOrNull(input.minsToVenue);
   return out;
 }

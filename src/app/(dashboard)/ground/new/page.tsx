@@ -45,7 +45,10 @@ export default async function NewPickupPage({ searchParams }: PageProps) {
   if (people.length === 0) {
     return (
       <>
-        <Topbar title="New pickup" subtitle="Add an artist or crew member first." />
+        <Topbar
+          title="New pickup"
+          subtitle="Add an artist or crew member first."
+        />
         <div className="px-6 py-6 max-w-2xl">
           <p className="text-[--color-fg-muted]">
             No people on this edition yet. Create an artist or crew member
@@ -74,7 +77,6 @@ export default async function NewPickupPage({ searchParams }: PageProps) {
     <>
       <Topbar title="New pickup" subtitle="Schedule ground transport." />
       <div className="px-6 py-6 max-w-2xl space-y-10">
-
         {/* Smart suggester */}
         <section className="space-y-3">
           <div>
@@ -88,7 +90,9 @@ export default async function NewPickupPage({ searchParams }: PageProps) {
           </div>
           <SuggestPickups
             people={people}
-            defaultPerson={defaultPerson ?? { id: people[0]!.id, kind: people[0]!.kind }}
+            defaultPerson={
+              defaultPerson ?? { id: people[0]!.id, kind: people[0]!.kind }
+            }
             initialSuggestions={initialSuggestions}
             initialHotelName={initialHotelName}
           />
@@ -106,7 +110,6 @@ export default async function NewPickupPage({ searchParams }: PageProps) {
         <section>
           <PickupForm people={people} defaultPerson={defaultPerson} />
         </section>
-
       </div>
     </>
   );

@@ -16,7 +16,10 @@ export async function GET(req: NextRequest) {
   const personKind = searchParams.get("personKind");
 
   if (!personId || !personKind)
-    return Response.json({ error: "personId and personKind are required" }, { status: 400 });
+    return Response.json(
+      { error: "personId and personKind are required" },
+      { status: 400 },
+    );
   if (personKind !== "artist" && personKind !== "crew")
     return Response.json({ error: "invalid personKind" }, { status: 400 });
 

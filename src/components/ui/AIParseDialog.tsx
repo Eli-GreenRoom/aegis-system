@@ -186,7 +186,12 @@ export default function AIParseDialog({
               >
                 {busy ? "Parsing…" : "Parse"}
               </Button>
-              <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onClose}
+                disabled={busy}
+              >
                 Cancel
               </Button>
             </div>

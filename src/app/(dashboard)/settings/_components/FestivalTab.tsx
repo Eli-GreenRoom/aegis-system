@@ -474,7 +474,9 @@ export function FestivalTab({
               </p>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="fest-ground-buffer">Arrive before set (min)</Label>
+              <Label htmlFor="fest-ground-buffer">
+                Arrive before set (min)
+              </Label>
               <Input
                 id="fest-ground-buffer"
                 type="number"

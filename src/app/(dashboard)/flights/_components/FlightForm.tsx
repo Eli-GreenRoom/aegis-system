@@ -89,7 +89,9 @@ export default function FlightForm({
     },
   });
 
-  async function createOneFlight(payload: Record<string, unknown>): Promise<{ id: string } | null> {
+  async function createOneFlight(
+    payload: Record<string, unknown>,
+  ): Promise<{ id: string } | null> {
     const res = await fetch("/api/flights", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -128,7 +130,11 @@ export default function FlightForm({
         setServerError(body.error ?? "Couldn't save. Try again.");
         return;
       }
-      if (onSuccess) { router.refresh(); onSuccess(); return; }
+      if (onSuccess) {
+        router.refresh();
+        onSuccess();
+        return;
+      }
       router.push(`/flights/${flight!.id}` as Route);
       router.refresh();
       return;
@@ -139,13 +145,21 @@ export default function FlightForm({
     const extraPayloads = otherLegs.map((leg) => ({
       ...basePayload,
       ...(typeof leg.airline === "string" && { airline: leg.airline }),
-      ...(typeof leg.flightNumber === "string" && { flightNumber: leg.flightNumber }),
-      ...(typeof leg.fromAirport === "string" && { fromAirport: leg.fromAirport }),
+      ...(typeof leg.flightNumber === "string" && {
+        flightNumber: leg.flightNumber,
+      }),
+      ...(typeof leg.fromAirport === "string" && {
+        fromAirport: leg.fromAirport,
+      }),
       ...(typeof leg.toAirport === "string" && { toAirport: leg.toAirport }),
-      ...(typeof leg.scheduledDt === "string" && { scheduledDt: fromDtLocal(leg.scheduledDt) }),
+      ...(typeof leg.scheduledDt === "string" && {
+        scheduledDt: fromDtLocal(leg.scheduledDt),
+      }),
       ...(typeof leg.pnr === "string" && { pnr: leg.pnr }),
       ...(typeof leg.seat === "string" && { seat: leg.seat }),
-      ...((leg.direction === "inbound" || leg.direction === "outbound") && { direction: leg.direction }),
+      ...((leg.direction === "inbound" || leg.direction === "outbound") && {
+        direction: leg.direction,
+      }),
     }));
 
     const [primary, ...secondaries] = await Promise.all([
@@ -159,7 +173,11 @@ export default function FlightForm({
     await attachPendingPdf(primary.id);
     setOtherLegs([]);
 
-    if (onSuccess) { router.refresh(); onSuccess(); return; }
+    if (onSuccess) {
+      router.refresh();
+      onSuccess();
+      return;
+    }
     router.push(`/flights/${primary.id}` as Route);
     router.refresh();
 
@@ -466,7 +484,8 @@ export default function FlightForm({
           </p>
           {otherLegs.map((leg, i) => (
             <p key={i} className="text-mono text-xs text-[--color-fg-subtle]">
-              {String(leg.direction ?? "?")} · {String(leg.fromAirport ?? "?")} → {String(leg.toAirport ?? "?")}{" "}
+              {String(leg.direction ?? "?")} · {String(leg.fromAirport ?? "?")}{" "}
+              → {String(leg.toAirport ?? "?")}{" "}
               {leg.flightNumber ? `(${String(leg.flightNumber)})` : ""}
             </p>
           ))}

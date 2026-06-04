@@ -57,7 +57,9 @@ export default function SuggestPickups({
   const [steps, setSteps] = useState<StepState[]>(
     initialSuggestions ? buildSteps(initialSuggestions) : [],
   );
-  const [hotelName, setHotelName] = useState<string | null>(initialHotelName ?? null);
+  const [hotelName, setHotelName] = useState<string | null>(
+    initialHotelName ?? null,
+  );
   const [stepIndex, setStepIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -78,7 +80,10 @@ export default function SuggestPickups({
         `/api/ground/suggest?personId=${id}&personKind=${kind}`,
       );
       const body = await res.json();
-      if (!res.ok) { setError(body.error ?? "Couldn't load."); return; }
+      if (!res.ok) {
+        setError(body.error ?? "Couldn't load.");
+        return;
+      }
       setSteps(buildSteps(body.suggestions as SuggestedPickup[]));
       setHotelName(body.hotelName ?? null);
     } catch {
@@ -96,11 +101,13 @@ export default function SuggestPickups({
       fetchedOnMount.current = true;
       void fetchSuggestions(initialPerson);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function patch(index: number, update: Partial<StepState>) {
-    setSteps((prev) => prev.map((s, i) => (i === index ? { ...s, ...update } : s)));
+    setSteps((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, ...update } : s)),
+    );
   }
 
   function confirm(index: number) {
@@ -130,7 +137,11 @@ export default function SuggestPickups({
     const [kind, id] = selectedPerson.split(":");
     const confirmed = steps.filter((s) => s.status === "confirmed");
     if (confirmed.length === 0) {
-      if (onSuccess) { onSuccess(); } else { router.push("/ground"); }
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/ground");
+      }
       return;
     }
     setSaving(true);
@@ -173,14 +184,23 @@ export default function SuggestPickups({
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
-    return <p className="text-sm text-[--color-fg-muted]">Loading transfers…</p>;
+    return (
+      <p className="text-sm text-[--color-fg-muted]">Loading transfers…</p>
+    );
   }
 
   // ── No suggestions ───────────────────────────────────────────────────────
   if (steps.length === 0) {
     return (
       <div className="space-y-3">
-        <PersonRow people={people} value={selectedPerson} onChange={(v) => { setSelectedPerson(v); void fetchSuggestions(v); }} />
+        <PersonRow
+          people={people}
+          value={selectedPerson}
+          onChange={(v) => {
+            setSelectedPerson(v);
+            void fetchSuggestions(v);
+          }}
+        />
         <p className="text-sm text-[--color-fg-muted] py-2">
           No suggestions — add flights and a hotel booking first.
         </p>
@@ -192,26 +212,47 @@ export default function SuggestPickups({
   if (done) {
     return (
       <div className="space-y-4">
-        <PersonRow people={people} value={selectedPerson} onChange={(v) => { setSelectedPerson(v); void fetchSuggestions(v); }} />
+        <PersonRow
+          people={people}
+          value={selectedPerson}
+          onChange={(v) => {
+            setSelectedPerson(v);
+            void fetchSuggestions(v);
+          }}
+        />
 
         <div className="space-y-1">
           {steps.map((s, i) => (
-            <div key={i} className="flex items-center gap-3 py-2 border-b border-[--color-border] last:border-0">
-              <span className={`text-base leading-none ${s.status === "confirmed" ? "text-[--color-brand]" : "text-[--color-fg-subtle]"}`}>
+            <div
+              key={i}
+              className="flex items-center gap-3 py-2 border-b border-[--color-border] last:border-0"
+            >
+              <span
+                className={`text-base leading-none ${s.status === "confirmed" ? "text-[--color-brand]" : "text-[--color-fg-subtle]"}`}
+              >
                 {s.status === "confirmed" ? "✓" : "—"}
               </span>
               <div className="flex-1">
-                <span className={`text-sm ${s.status === "skipped" ? "line-through text-[--color-fg-muted]" : "text-[--color-fg]"}`}>
-                  {ROUTE_LABELS[s.pickup.routeFrom]} → {ROUTE_LABELS[s.pickup.routeTo]}
+                <span
+                  className={`text-sm ${s.status === "skipped" ? "line-through text-[--color-fg-muted]" : "text-[--color-fg]"}`}
+                >
+                  {ROUTE_LABELS[s.pickup.routeFrom]} →{" "}
+                  {ROUTE_LABELS[s.pickup.routeTo]}
                 </span>
                 {s.status === "confirmed" && (
-                  <p className="text-mono text-[11px] text-[--color-fg-muted]">{s.pickupDtLocal}</p>
+                  <p className="text-mono text-[11px] text-[--color-fg-muted]">
+                    {s.pickupDtLocal}
+                  </p>
                 )}
               </div>
               <button
                 type="button"
                 className="text-xs text-[--color-fg-muted] hover:text-[--color-fg]"
-                onClick={() => { patch(i, { status: "pending" }); setStepIndex(i); setDone(false); }}
+                onClick={() => {
+                  patch(i, { status: "pending" });
+                  setStepIndex(i);
+                  setDone(false);
+                }}
               >
                 edit
               </button>
@@ -223,9 +264,21 @@ export default function SuggestPickups({
 
         <div className="flex gap-2 pt-1">
           <Button type="button" onClick={createConfirmed} disabled={saving}>
-            {saving ? "Creating…" : confirmedCount === 0 ? "Done" : `Create ${confirmedCount} transfer${confirmedCount === 1 ? "" : "s"}`}
+            {saving
+              ? "Creating…"
+              : confirmedCount === 0
+                ? "Done"
+                : `Create ${confirmedCount} transfer${confirmedCount === 1 ? "" : "s"}`}
           </Button>
-          <Button type="button" variant="ghost" onClick={() => { setStepIndex(0); setDone(false); setSteps(buildSteps(steps.map((s) => s.pickup))); }}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setStepIndex(0);
+              setDone(false);
+              setSteps(buildSteps(steps.map((s) => s.pickup)));
+            }}
+          >
             Start over
           </Button>
         </div>
@@ -238,33 +291,49 @@ export default function SuggestPickups({
 
   return (
     <div className="space-y-4">
-      <PersonRow people={people} value={selectedPerson} onChange={(v) => { setSelectedPerson(v); void fetchSuggestions(v); }} />
+      <PersonRow
+        people={people}
+        value={selectedPerson}
+        onChange={(v) => {
+          setSelectedPerson(v);
+          void fetchSuggestions(v);
+        }}
+      />
 
       {/* Step dots */}
       <div className="flex gap-1.5 items-center">
         {steps.map((s, i) => (
-          <div key={i} className={`h-1 rounded-full flex-1 transition-colors ${
-            i < stepIndex
-              ? s.status === "confirmed" ? "bg-[--color-brand]" : "bg-[--color-border-strong]"
-              : i === stepIndex ? "bg-[--color-brand]/40" : "bg-[--color-border]"
-          }`} />
+          <div
+            key={i}
+            className={`h-1 rounded-full flex-1 transition-colors ${
+              i < stepIndex
+                ? s.status === "confirmed"
+                  ? "bg-[--color-brand]"
+                  : "bg-[--color-border-strong]"
+                : i === stepIndex
+                  ? "bg-[--color-brand]/40"
+                  : "bg-[--color-border]"
+            }`}
+          />
         ))}
       </div>
 
       {/* Card */}
       <div className="rounded-xl border border-[--color-border-strong] bg-[--color-surface]/50 overflow-hidden">
-
         {/* Title row */}
         <div className="px-5 pt-5 pb-3">
           <p className="text-[10px] text-mono uppercase tracking-widest text-[--color-fg-muted] mb-1">
-            {stepIndex + 1} / {steps.length}{hotelName ? ` · ${hotelName}` : ""}
+            {stepIndex + 1} / {steps.length}
+            {hotelName ? ` · ${hotelName}` : ""}
           </p>
           <p className="text-xl font-semibold text-[--color-fg]">
             {ROUTE_LABELS[current.pickup.routeFrom]}
             <span className="text-[--color-fg-muted] font-normal mx-2">→</span>
             {ROUTE_LABELS[current.pickup.routeTo]}
           </p>
-          <p className="text-xs text-[--color-fg-muted] mt-1">{current.pickup.reason}</p>
+          <p className="text-xs text-[--color-fg-muted] mt-1">
+            {current.pickup.reason}
+          </p>
         </div>
 
         {/* Time — big tap target, editable inline */}
@@ -275,7 +344,9 @@ export default function SuggestPickups({
                 type="datetime-local"
                 step={60}
                 value={current.pickupDtLocal}
-                onChange={(e) => patch(stepIndex, { pickupDtLocal: e.target.value })}
+                onChange={(e) =>
+                  patch(stepIndex, { pickupDtLocal: e.target.value })
+                }
                 className="max-w-55 text-sm"
                 autoFocus
               />
@@ -306,16 +377,26 @@ export default function SuggestPickups({
         {/* Action buttons */}
         <div className="px-4 pb-4 flex items-center gap-2">
           {stepIndex > 0 && (
-            <button type="button" onClick={goBack} className="text-xs text-[--color-fg-muted] hover:text-[--color-fg] mr-auto">
+            <button
+              type="button"
+              onClick={goBack}
+              className="text-xs text-[--color-fg-muted] hover:text-[--color-fg] mr-auto"
+            >
               ← back
             </button>
           )}
           <div className="flex gap-2 ml-auto">
-            <Button type="button" variant="ghost" onClick={() => skip(stepIndex)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => skip(stepIndex)}
+            >
               Skip
             </Button>
             <Button type="button" onClick={() => confirm(stepIndex)}>
-              {stepIndex === steps.length - 1 ? "Confirm & finish" : "Confirm →"}
+              {stepIndex === steps.length - 1
+                ? "Confirm & finish"
+                : "Confirm →"}
             </Button>
           </div>
         </div>

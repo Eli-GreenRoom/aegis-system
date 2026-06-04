@@ -5,10 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Route } from "next";
-import {
-  hotelInputSchema,
-  type HotelInput,
-} from "@/lib/hotels/schema";
+import { hotelInputSchema, type HotelInput } from "@/lib/hotels/schema";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -70,7 +67,7 @@ export default function HotelForm({ hotel }: Props) {
     if (!hotel) return;
     if (
       !confirm(
-        `Delete ${hotel.name}? This is permanent. Room blocks and bookings on this hotel will not be deleted.`
+        `Delete ${hotel.name}? This is permanent. Room blocks and bookings on this hotel will not be deleted.`,
       )
     )
       return;
@@ -92,7 +89,11 @@ export default function HotelForm({ hotel }: Props) {
           <Input {...register("name")} autoComplete="off" />
         </Field>
         <Field label="Location" error={errors.location?.message}>
-          <Input {...register("location")} placeholder="Byblos" autoComplete="off" />
+          <Input
+            {...register("location")}
+            placeholder="Byblos"
+            autoComplete="off"
+          />
         </Field>
         <div className="col-span-2">
           <Field label="Address" error={errors.address?.message}>
@@ -118,7 +119,10 @@ export default function HotelForm({ hotel }: Props) {
             Travel times — used to suggest ground transport pickup times
           </p>
           <div className="grid grid-cols-3 gap-3">
-            <Field label="Airport → Hotel (min)" error={errors.minsFromAirport?.message}>
+            <Field
+              label="Airport → Hotel (min)"
+              error={errors.minsFromAirport?.message}
+            >
               <Input
                 type="number"
                 min={0}
@@ -130,7 +134,10 @@ export default function HotelForm({ hotel }: Props) {
                 })}
               />
             </Field>
-            <Field label="Hotel → Venue (min)" error={errors.minsToVenue?.message}>
+            <Field
+              label="Hotel → Venue (min)"
+              error={errors.minsToVenue?.message}
+            >
               <Input
                 type="number"
                 min={0}
@@ -142,7 +149,10 @@ export default function HotelForm({ hotel }: Props) {
                 })}
               />
             </Field>
-            <Field label="Hotel → Airport (min)" error={errors.minsToAirport?.message}>
+            <Field
+              label="Hotel → Airport (min)"
+              error={errors.minsToAirport?.message}
+            >
               <Input
                 type="number"
                 min={0}

@@ -1,6 +1,13 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "@/db/client";
-import { flights, hotelBookings, hotels, sets, slots, artists } from "@/db/schema";
+import {
+  flights,
+  hotelBookings,
+  hotels,
+  sets,
+  slots,
+  artists,
+} from "@/db/schema";
 
 export interface SuggestedPickup {
   routeFrom: "airport" | "hotel" | "stage";
@@ -57,9 +64,13 @@ export async function suggestPickupsForPerson(
     )
     .limit(1);
 
-  let hotel: (typeof hotels.$inferSelect) | null = null;
+  let hotel: typeof hotels.$inferSelect | null = null;
   if (booking?.hotelId) {
-    const [h] = await db.select().from(hotels).where(eq(hotels.id, booking.hotelId)).limit(1);
+    const [h] = await db
+      .select()
+      .from(hotels)
+      .where(eq(hotels.id, booking.hotelId))
+      .limit(1);
     hotel = h ?? null;
   }
 
@@ -86,13 +97,23 @@ export async function suggestPickupsForPerson(
   }
 
   if (personKind === "artist") {
-    const [artist] = await db.select({ id: artists.id }).from(artists).where(eq(artists.id, personId)).limit(1);
+    const [artist] = await db
+      .select({ id: artists.id })
+      .from(artists)
+      .where(eq(artists.id, personId))
+      .limit(1);
     if (artist) {
       const artistSets = await db
-        .select({ date: slots.date, startTime: slots.startTime, endTime: slots.endTime })
+        .select({
+          date: slots.date,
+          startTime: slots.startTime,
+          endTime: slots.endTime,
+        })
         .from(sets)
         .innerJoin(slots, eq(sets.slotId, slots.id))
-        .where(and(eq(sets.artistId, artist.id), eq(slots.festivalId, festivalId)))
+        .where(
+          and(eq(sets.artistId, artist.id), eq(slots.festivalId, festivalId)),
+        )
         .orderBy(slots.date, slots.startTime)
         .limit(1);
 
@@ -103,7 +124,9 @@ export async function suggestPickupsForPerson(
         suggestions.push({
           routeFrom: "hotel",
           routeTo: "stage",
-          pickupDtLocal: toLocal(addMins(setStart, -(arrivalBufferMins + minsToVenue))),
+          pickupDtLocal: toLocal(
+            addMins(setStart, -(arrivalBufferMins + minsToVenue)),
+          ),
           label: "Hotel → Venue",
           reason: `arrive ${arrivalBufferMins} min before set at ${s.startTime} (+${minsToVenue} min drive)`,
         });

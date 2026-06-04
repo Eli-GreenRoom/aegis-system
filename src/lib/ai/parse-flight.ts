@@ -99,7 +99,10 @@ export async function parseFlightText(
   }
 
   // Strip markdown code fences the model occasionally emits despite instructions.
-  const raw = block.text.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/i, "").trim();
+  const raw = block.text
+    .replace(/^```[a-z]*\n?/i, "")
+    .replace(/\n?```$/i, "")
+    .trim();
 
   let parsed: unknown;
   try {
