@@ -69,6 +69,7 @@ export default async function SettingsPage({ searchParams }: PageProps) {
                 description: festival.description ?? null,
                 defaultNightsCovered: festival.defaultNightsCovered ?? null,
                 paymentTermDaysAfterEnd: festival.paymentTermDaysAfterEnd,
+                groundArrivalBufferMins: festival.groundArrivalBufferMins,
               }
             : undefined
         }

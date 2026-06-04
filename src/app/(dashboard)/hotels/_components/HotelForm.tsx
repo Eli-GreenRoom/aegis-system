@@ -38,6 +38,9 @@ export default function HotelForm({ hotel }: Props) {
       contactEmail: hotel?.contactEmail ?? "",
       contactPhone: hotel?.contactPhone ?? "",
       notes: hotel?.notes ?? "",
+      minsToAirport: hotel?.minsToAirport ?? null,
+      minsFromAirport: hotel?.minsFromAirport ?? null,
+      minsToVenue: hotel?.minsToVenue ?? null,
     },
   });
 
@@ -109,6 +112,50 @@ export default function HotelForm({ hotel }: Props) {
         <Field label="Contact phone" error={errors.contactPhone?.message}>
           <Input {...register("contactPhone")} autoComplete="off" />
         </Field>
+
+        <div className="col-span-2 pt-2 border-t border-[--color-border]">
+          <p className="text-xs font-medium text-[--color-fg-muted] mb-3">
+            Travel times — used to suggest ground transport pickup times
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Airport → Hotel (min)" error={errors.minsFromAirport?.message}>
+              <Input
+                type="number"
+                min={0}
+                max={600}
+                step={5}
+                placeholder="30"
+                {...register("minsFromAirport", {
+                  setValueAs: (v) => (v === "" || v == null ? null : Number(v)),
+                })}
+              />
+            </Field>
+            <Field label="Hotel → Venue (min)" error={errors.minsToVenue?.message}>
+              <Input
+                type="number"
+                min={0}
+                max={600}
+                step={5}
+                placeholder="20"
+                {...register("minsToVenue", {
+                  setValueAs: (v) => (v === "" || v == null ? null : Number(v)),
+                })}
+              />
+            </Field>
+            <Field label="Hotel → Airport (min)" error={errors.minsToAirport?.message}>
+              <Input
+                type="number"
+                min={0}
+                max={600}
+                step={5}
+                placeholder="30"
+                {...register("minsToAirport", {
+                  setValueAs: (v) => (v === "" || v == null ? null : Number(v)),
+                })}
+              />
+            </Field>
+          </div>
+        </div>
       </div>
 
       <Field label="Notes" error={errors.notes?.message}>

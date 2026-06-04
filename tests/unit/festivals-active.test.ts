@@ -17,6 +17,7 @@ const fixtureFestival = {
   festivalModeActive: false,
   defaultNightsCovered: null,
   paymentTermDaysAfterEnd: 14,
+  groundArrivalBufferMins: 120,
   archivedAt: null,
   createdAt: new Date(),
 };

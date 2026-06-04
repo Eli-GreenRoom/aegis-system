@@ -99,9 +99,11 @@ export default async function ArtistDetailPage({
         progress={progress}
         reference={{ artists, people, hotels, blocks }}
         festival={{
+          id: festival.id,
           endDate: festival.endDate,
           defaultNightsCovered: festival.defaultNightsCovered ?? null,
           paymentTermDaysAfterEnd: festival.paymentTermDaysAfterEnd,
+          groundArrivalBufferMins: festival.groundArrivalBufferMins,
         }}
         initialFocus={initialFocus}
       />

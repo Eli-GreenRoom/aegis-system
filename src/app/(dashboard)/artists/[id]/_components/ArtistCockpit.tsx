@@ -29,9 +29,11 @@ interface Props {
   };
   /** Festival defaults piped into the Logistics sheet (Stay + Money tabs). */
   festival: {
+    id: string;
     endDate: string;
     defaultNightsCovered: number | null;
     paymentTermDaysAfterEnd: number;
+    groundArrivalBufferMins: number;
   };
   /** When non-null, open the Logistics sheet on this tab on first render.
    *  Driven by `?focus=` on the artist page (set server-side). */
@@ -139,9 +141,9 @@ export default function ArtistCockpit({
               Progress
             </h2>
             {/* bar */}
-            <div className="flex-1 h-1.5 rounded-full bg-white/8 overflow-hidden">
+            <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                className={`h-full transition-all duration-500 ${barColor}`}
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -539,10 +541,11 @@ export default function ArtistCockpit({
         initialTab={logisticsTab ?? "travel"}
         sheet={sheet}
         reference={reference}
+        festivalId={festival.id}
         festivalDefaultNights={festival.defaultNightsCovered}
         festivalEndDate={festival.endDate}
         festivalPaymentTermDays={festival.paymentTermDaysAfterEnd}
-        pickupPrefill={pickupPrefill(sheet)}
+        groundArrivalBufferMins={festival.groundArrivalBufferMins}
         onClose={close}
         onSuccess={onSuccess}
       />

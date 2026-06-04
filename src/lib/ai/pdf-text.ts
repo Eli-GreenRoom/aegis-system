@@ -29,16 +29,16 @@ interface PDFDocumentProxy {
 
 interface GetDocumentParams {
   data: Uint8Array;
-  /** Run pdfjs in-process; no worker fetch. Required server-side under
-   *  Turbopack, which can't resolve pdf.worker.mjs from chunked output. */
-  disableWorker?: boolean;
-  /** Some Node setups don't support function-eval; disabling keeps
-   *  pdfjs happy without falling back to a worker. */
   isEvalSupported?: boolean;
   useSystemFonts?: boolean;
 }
 
+interface GlobalWorkerOptions {
+  workerSrc: string;
+}
+
 interface PDFJS {
+  GlobalWorkerOptions: GlobalWorkerOptions;
   getDocument: (src: GetDocumentParams) => {
     promise: Promise<PDFDocumentProxy>;
   };
@@ -46,17 +46,20 @@ interface PDFJS {
 
 /** Extract all text from a PDF, page-separated by "\n\n---\n\n". */
 export async function extractPdfText(bytes: Uint8Array): Promise<string> {
-  // Import the legacy build to avoid bundler resolution issues server-side.
-  const pdfjs =
-    (await import("pdfjs-dist/legacy/build/pdf.mjs")) as unknown as PDFJS;
+  // Import both the main module and the worker module together. In pdfjs v5,
+  // importing the worker alongside the main build causes it to self-register
+  // its worker class, which satisfies the "No GlobalWorkerOptions.workerSrc
+  // specified" guard without spawning a real worker thread or fetching a URL.
+  const [pdfjs] = await Promise.all([
+    import("pdfjs-dist/legacy/build/pdf.mjs"),
+    // @ts-expect-error — no types shipped for the worker subpath; side-effect
+    // import self-registers the worker class so pdfjs runs without a URL.
+    import("pdfjs-dist/legacy/build/pdf.worker.mjs"),
+  ]);
+  const lib = pdfjs as unknown as PDFJS;
 
-  const doc = await pdfjs.getDocument({
+  const doc = await lib.getDocument({
     data: bytes,
-    // Run pdfjs in-process. Under Turbopack the dev server can't resolve
-    // pdf.worker.mjs from the chunked output ("Setting up fake worker
-    // failed"); disabling the worker keeps everything in the request
-    // process where it just works.
-    disableWorker: true,
     isEvalSupported: false,
     useSystemFonts: false,
   }).promise;

@@ -65,6 +65,7 @@ export default function FlightForm({
     handleSubmit,
     control,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FlightInput>({
     resolver: zodResolver(flightInputSchema),
@@ -88,58 +89,81 @@ export default function FlightForm({
     },
   });
 
+  async function createOneFlight(payload: Record<string, unknown>): Promise<{ id: string } | null> {
+    const res = await fetch("/api/flights", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setServerError(body.error ?? "Couldn't save. Try again.");
+      return null;
+    }
+    const body = (await res.json()) as { flight: { id: string } };
+    return body.flight;
+  }
+
   async function onSubmit(data: FlightInput) {
     setServerError("");
-    const url = isEdit ? `/api/flights/${flight!.id}` : "/api/flights";
-    const method = isEdit ? "PATCH" : "POST";
 
-    const payload = {
+    const basePayload = {
       ...data,
       scheduledDt: data.scheduledDt ? fromDtLocal(data.scheduledDt) : "",
       actualDt: data.actualDt ? fromDtLocal(data.actualDt) : "",
-      // RHF gives NaN when the numeric input is empty; coerce to null so the
-      // server clears the column rather than rejecting the value.
       delayMinutes:
         data.delayMinutes == null || Number.isNaN(data.delayMinutes)
           ? null
           : data.delayMinutes,
     };
 
-    const res = await fetch(url, {
-      method,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setServerError(body.error ?? "Couldn't save. Try again.");
-      return;
-    }
-
-    const body = (await res.json()) as { flight: { id: string } };
-    // Attach the AI-source PDF to the freshly created flight (if any).
-    // Only fires for create, not edit - the existing flight already has
-    // whatever ticket the operator chose to keep.
-    if (!isEdit) {
-      await attachPendingPdf(body.flight.id);
-    }
-    if (onSuccess) {
-      router.refresh();
-      // If the AI returned a round-trip and we just saved the first leg,
-      // pop the next one into the form so the operator can save it
-      // immediately - no toggling direction by hand, no remembering.
-      if (otherLegs.length > 0) {
-        const [nextLeg, ...rest] = otherLegs;
-        applyOneLeg(nextLeg as Record<string, unknown>);
-        setOtherLegs(rest);
+    if (isEdit) {
+      const res = await fetch(`/api/flights/${flight!.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(basePayload),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setServerError(body.error ?? "Couldn't save. Try again.");
         return;
       }
-      onSuccess();
+      if (onSuccess) { router.refresh(); onSuccess(); return; }
+      router.push(`/flights/${flight!.id}` as Route);
+      router.refresh();
       return;
     }
-    router.push(`/flights/${body.flight.id}` as Route);
+
+    // For new flights: if the AI gave us extra legs, create all of them now
+    // in one go rather than requiring a second save.
+    const extraPayloads = otherLegs.map((leg) => ({
+      ...basePayload,
+      ...(typeof leg.airline === "string" && { airline: leg.airline }),
+      ...(typeof leg.flightNumber === "string" && { flightNumber: leg.flightNumber }),
+      ...(typeof leg.fromAirport === "string" && { fromAirport: leg.fromAirport }),
+      ...(typeof leg.toAirport === "string" && { toAirport: leg.toAirport }),
+      ...(typeof leg.scheduledDt === "string" && { scheduledDt: fromDtLocal(leg.scheduledDt) }),
+      ...(typeof leg.pnr === "string" && { pnr: leg.pnr }),
+      ...(typeof leg.seat === "string" && { seat: leg.seat }),
+      ...((leg.direction === "inbound" || leg.direction === "outbound") && { direction: leg.direction }),
+    }));
+
+    const [primary, ...secondaries] = await Promise.all([
+      createOneFlight(basePayload),
+      ...extraPayloads.map((p) => createOneFlight(p)),
+    ]);
+
+    if (!primary) return; // error already set
+
+    // Attach PDF to the first created flight only.
+    await attachPendingPdf(primary.id);
+    setOtherLegs([]);
+
+    if (onSuccess) { router.refresh(); onSuccess(); return; }
+    router.push(`/flights/${primary.id}` as Route);
     router.refresh();
+
+    void secondaries; // created in parallel; operator can see them in the list
   }
 
   async function onDelete() {
@@ -198,11 +222,13 @@ export default function FlightForm({
       ? (raw as Record<string, unknown>[])
       : [raw as Record<string, unknown>];
 
-    // Pick the leg that matches the current direction preference (inbound first for new flights)
-    const preferred = legs.find((l) => l.direction === "inbound") ?? legs[0];
+    // Match the leg to whatever direction the form currently shows.
+    const currentDirection = watch("direction") ?? "inbound";
+    const preferred =
+      legs.find((l) => l.direction === currentDirection) ?? legs[0];
     applyOneLeg(preferred);
 
-    // Surface any other legs so the operator can create them next
+    // Queue the other leg(s) so the operator can save them next.
     const rest = legs.filter((l) => l !== preferred);
     setOtherLegs(rest);
 
@@ -315,9 +341,12 @@ export default function FlightForm({
         <Field label="Scheduled" error={errors.scheduledDt?.message}>
           <Input type="datetime-local" step={60} {...register("scheduledDt")} />
         </Field>
-        <Field label="Actual" error={errors.actualDt?.message}>
-          <Input type="datetime-local" step={60} {...register("actualDt")} />
-        </Field>
+
+        {isEdit && (
+          <Field label="Actual" error={errors.actualDt?.message}>
+            <Input type="datetime-local" step={60} {...register("actualDt")} />
+          </Field>
+        )}
 
         <Field label="Status" error={errors.status?.message}>
           <select
@@ -334,17 +363,19 @@ export default function FlightForm({
           </select>
         </Field>
 
-        <Field label="Delay (min)" error={errors.delayMinutes?.message}>
-          <Input
-            type="number"
-            min={0}
-            step={5}
-            placeholder="45"
-            {...register("delayMinutes", {
-              setValueAs: (v) => (v === "" || v == null ? null : Number(v)),
-            })}
-          />
-        </Field>
+        {isEdit && (
+          <Field label="Delay (min)" error={errors.delayMinutes?.message}>
+            <Input
+              type="number"
+              min={0}
+              step={5}
+              placeholder="45"
+              {...register("delayMinutes", {
+                setValueAs: (v) => (v === "" || v == null ? null : Number(v)),
+              })}
+            />
+          </Field>
+        )}
 
         <Field label="PNR" error={errors.pnr?.message}>
           <Input {...register("pnr")} placeholder="ABC123" />
@@ -353,39 +384,44 @@ export default function FlightForm({
         <Field label="Seat" error={errors.seat?.message}>
           <Input {...register("seat")} placeholder="14A" />
         </Field>
-        <Field label="Ticket file" error={errors.ticketUrl?.message}>
-          <Controller
-            control={control}
-            name="ticketUrl"
-            render={({ field }) => (
-              <FileUpload
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                entityType="flight"
-                entityId={flight?.id}
-                tags={["ticket"]}
+
+        {isEdit && (
+          <>
+            <Field label="Ticket file" error={errors.ticketUrl?.message}>
+              <Controller
+                control={control}
+                name="ticketUrl"
+                render={({ field }) => (
+                  <FileUpload
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    entityType="flight"
+                    entityId={flight?.id}
+                    tags={["ticket"]}
+                  />
+                )}
               />
-            )}
-          />
-        </Field>
-        <Field
-          label="Confirmation email"
-          error={errors.confirmationEmailUrl?.message}
-        >
-          <Controller
-            control={control}
-            name="confirmationEmailUrl"
-            render={({ field }) => (
-              <FileUpload
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                entityType="flight"
-                entityId={flight?.id}
-                tags={["confirmation"]}
+            </Field>
+            <Field
+              label="Confirmation email"
+              error={errors.confirmationEmailUrl?.message}
+            >
+              <Controller
+                control={control}
+                name="confirmationEmailUrl"
+                render={({ field }) => (
+                  <FileUpload
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    entityType="flight"
+                    entityId={flight?.id}
+                    tags={["confirmation"]}
+                  />
+                )}
               />
-            )}
-          />
-        </Field>
+            </Field>
+          </>
+        )}
       </div>
 
       <Field label="Comments" error={errors.comments?.message}>
@@ -424,19 +460,14 @@ export default function FlightForm({
       </div>
 
       {otherLegs.length > 0 && (
-        <div className="rounded-md border border-brand/30 bg-brand/5 px-4 py-3 space-y-1">
-          <p className="text-xs font-medium text-brand">
-            {otherLegs.length} more leg{otherLegs.length > 1 ? "s" : ""} queued
-            - save this one and the next will auto-fill.
+        <div className="rounded-md border border-[--color-border] bg-[--color-surface]/40 px-4 py-3 space-y-1">
+          <p className="text-xs text-[--color-fg-muted]">
+            Round trip detected — both legs will be created when you save.
           </p>
           {otherLegs.map((leg, i) => (
-            <p key={i} className="text-mono text-xs text-[--color-fg-muted]">
-              {String(leg.direction ?? "?")} · {String(leg.fromAirport ?? "?")}{" "}
-              → {String(leg.toAirport ?? "?")}{" "}
+            <p key={i} className="text-mono text-xs text-[--color-fg-subtle]">
+              {String(leg.direction ?? "?")} · {String(leg.fromAirport ?? "?")} → {String(leg.toAirport ?? "?")}{" "}
               {leg.flightNumber ? `(${String(leg.flightNumber)})` : ""}
-              {leg.scheduledDt
-                ? ` · ${toDtLocal(String(leg.scheduledDt))}`
-                : ""}
             </p>
           ))}
         </div>

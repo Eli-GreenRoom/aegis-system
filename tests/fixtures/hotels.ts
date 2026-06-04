@@ -16,6 +16,9 @@ export const fixtureHotel: Hotel = {
   contactEmail: null,
   contactPhone: null,
   notes: null,
+  minsToAirport: null,
+  minsFromAirport: null,
+  minsToVenue: null,
 };
 
 export const fixtureRoomBlock: RoomBlock = {

@@ -118,6 +118,10 @@
   color: var(--color-danger);
 }
 
+@utility bg-coral {
+  background-color: var(--color-danger);
+}
+
 @utility text-mint {
   color: var(--color-brand);
 }

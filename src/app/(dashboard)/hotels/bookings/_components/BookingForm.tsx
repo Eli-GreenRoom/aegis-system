@@ -284,9 +284,11 @@ export default function BookingForm({
           </select>
         </Field>
 
-        <Field label="Room type" error={errors.roomType?.message}>
-          <Input {...register("roomType")} placeholder="Deluxe sea view" />
-        </Field>
+        {isEdit && (
+          <Field label="Room type" error={errors.roomType?.message}>
+            <Input {...register("roomType")} placeholder="Deluxe sea view" />
+          </Field>
+        )}
 
         <Field label="Check-in" error={errors.checkin?.message} required>
           <Input type="date" {...register("checkin")} />
@@ -371,9 +373,11 @@ export default function BookingForm({
           />
         </Field>
 
-        <Field label="Booking number" error={errors.bookingNumber?.message}>
-          <Input {...register("bookingNumber")} placeholder="BSM-001" />
-        </Field>
+        {isEdit && (
+          <Field label="Booking number" error={errors.bookingNumber?.message}>
+            <Input {...register("bookingNumber")} placeholder="BSM-001" />
+          </Field>
+        )}
 
         <Field label="Status" error={errors.status?.message}>
           <select
@@ -390,23 +394,25 @@ export default function BookingForm({
           </select>
         </Field>
 
-        <div className="col-span-2">
-          <Field label="Confirmation" error={errors.confirmationUrl?.message}>
-            <Controller
-              control={control}
-              name="confirmationUrl"
-              render={({ field }) => (
-                <FileUpload
-                  value={field.value ?? ""}
-                  onChange={field.onChange}
-                  entityType="hotel_booking"
-                  entityId={booking?.id}
-                  tags={["confirmation"]}
-                />
-              )}
-            />
-          </Field>
-        </div>
+        {isEdit && (
+          <div className="col-span-2">
+            <Field label="Confirmation" error={errors.confirmationUrl?.message}>
+              <Controller
+                control={control}
+                name="confirmationUrl"
+                render={({ field }) => (
+                  <FileUpload
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    entityType="hotel_booking"
+                    entityId={booking?.id}
+                    tags={["confirmation"]}
+                  />
+                )}
+              />
+            </Field>
+          </div>
+        )}
       </div>
 
       <Field label="Comments" error={errors.comments?.message}>

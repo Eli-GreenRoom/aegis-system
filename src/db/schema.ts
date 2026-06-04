@@ -206,6 +206,9 @@ export const festivals = pgTable(
     paymentTermDaysAfterEnd: integer("payment_term_days_after_end")
       .notNull()
       .default(14),
+    groundArrivalBufferMins: integer("ground_arrival_buffer_mins")
+      .notNull()
+      .default(120),
     archivedAt: timestamp("archived_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
@@ -406,6 +409,9 @@ export const hotels = pgTable("hotels", {
   contactEmail: text("contact_email"),
   contactPhone: text("contact_phone"),
   notes: text("notes"),
+  minsToAirport: integer("mins_to_airport"),
+  minsFromAirport: integer("mins_from_airport"),
+  minsToVenue: integer("mins_to_venue"),
 });
 
 export const hotelRoomBlocks = pgTable("hotel_room_blocks", {

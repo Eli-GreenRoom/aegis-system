@@ -24,6 +24,8 @@ const optionalUrl = z
 
 // -- Hotel (venue catalogue) ---------------------------------------------
 
+const optionalMins = z.number().int().min(0).max(600).nullable().optional();
+
 export const hotelInputSchema = z.object({
   name: z.string().trim().min(1).max(200),
   location: optionalString,
@@ -32,6 +34,9 @@ export const hotelInputSchema = z.object({
   contactEmail: optionalEmail,
   contactPhone: optionalString,
   notes: optionalText,
+  minsToAirport: optionalMins,
+  minsFromAirport: optionalMins,
+  minsToVenue: optionalMins,
 });
 export type HotelInput = z.infer<typeof hotelInputSchema>;
 
@@ -50,6 +55,9 @@ export interface HotelDbValues {
   contactEmail: string | null;
   contactPhone: string | null;
   notes: string | null;
+  minsToAirport: number | null;
+  minsFromAirport: number | null;
+  minsToVenue: number | null;
 }
 
 const HOTEL_NULLABLE = [
@@ -74,6 +82,9 @@ export function hotelToDbValues(input: HotelInput): HotelDbValues {
     contactEmail: null,
     contactPhone: null,
     notes: null,
+    minsToAirport: intOrNull(input.minsToAirport),
+    minsFromAirport: intOrNull(input.minsFromAirport),
+    minsToVenue: intOrNull(input.minsToVenue),
   };
   for (const k of HOTEL_NULLABLE) out[k] = emptyToNull(input[k]);
   return out;
@@ -87,6 +98,9 @@ export function hotelToDbPatchValues(
   for (const k of HOTEL_NULLABLE) {
     if (k in input) out[k] = emptyToNull(input[k]);
   }
+  if ("minsToAirport" in input) out.minsToAirport = intOrNull(input.minsToAirport);
+  if ("minsFromAirport" in input) out.minsFromAirport = intOrNull(input.minsFromAirport);
+  if ("minsToVenue" in input) out.minsToVenue = intOrNull(input.minsToVenue);
   return out;
 }
 

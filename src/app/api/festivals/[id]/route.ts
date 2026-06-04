@@ -30,6 +30,7 @@ const PatchFestivalSchema = z
       .nullable()
       .optional(),
     paymentTermDaysAfterEnd: z.number().int().min(0).max(365).optional(),
+    groundArrivalBufferMins: z.number().int().min(0).max(480).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, {
     message: "Body must contain at least one field",
@@ -109,6 +110,8 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     patch.defaultNightsCovered = parsed.data.defaultNightsCovered ?? null;
   if (parsed.data.paymentTermDaysAfterEnd !== undefined)
     patch.paymentTermDaysAfterEnd = parsed.data.paymentTermDaysAfterEnd;
+  if (parsed.data.groundArrivalBufferMins !== undefined)
+    patch.groundArrivalBufferMins = parsed.data.groundArrivalBufferMins;
 
   const [updated] = await db
     .update(festivals)

@@ -98,9 +98,12 @@ export async function parseFlightText(
     throw new Error("No text in response");
   }
 
+  // Strip markdown code fences the model occasionally emits despite instructions.
+  const raw = block.text.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/i, "").trim();
+
   let parsed: unknown;
   try {
-    parsed = JSON.parse(block.text);
+    parsed = JSON.parse(raw);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     throw new Error(`Model returned invalid JSON: ${message}`);

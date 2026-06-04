@@ -4,7 +4,7 @@ import { useState } from "react";
 import SideSheet from "@/components/ui/SideSheet";
 import FlightForm from "@/app/(dashboard)/flights/_components/FlightForm";
 import BookingForm from "@/app/(dashboard)/hotels/bookings/_components/BookingForm";
-import PickupForm from "@/app/(dashboard)/ground/_components/PickupForm";
+import SuggestPickups from "@/app/(dashboard)/ground/_components/SuggestPickups";
 import ContractForm from "@/app/(dashboard)/contracts/_components/ContractForm";
 import RiderForm from "@/app/(dashboard)/riders/_components/RiderForm";
 import InvoiceSheet from "./InvoiceSheet";
@@ -33,14 +33,14 @@ interface Props {
     hotels: Hotel[];
     blocks: RoomBlock[];
   };
+  festivalId: string;
   /** Festival-wide defaults piped into Stay and Money panels. */
   festivalDefaultNights: number | null;
   festivalEndDate: string;
   festivalPaymentTermDays: number;
+  groundArrivalBufferMins: number;
   onClose: () => void;
   onSuccess: () => void;
-  /** Helper carried from the cockpit so pickup defaults stay consistent. */
-  pickupPrefill: ReturnType<typeof import("./pickup-prefill").pickupPrefill>;
 }
 
 export default function LogisticsSheet({
@@ -48,12 +48,13 @@ export default function LogisticsSheet({
   initialTab,
   sheet,
   reference,
+  festivalId,
   festivalDefaultNights,
   festivalEndDate,
   festivalPaymentTermDays,
+  groundArrivalBufferMins,
   onClose,
   onSuccess,
-  pickupPrefill,
 }: Props) {
   const { artist } = sheet;
   // initialTab seeds the state once; clicking the tab strip thereafter
@@ -91,8 +92,7 @@ export default function LogisticsSheet({
         {tab === "ground" && (
           <GroundPanel
             reference={reference}
-            artistId={artist.id}
-            pickupPrefill={pickupPrefill}
+            sheet={sheet}
             onSuccess={onSuccess}
           />
         )}
@@ -262,20 +262,17 @@ function StayPanel({
 
 function GroundPanel({
   reference,
-  artistId,
-  pickupPrefill,
+  sheet,
   onSuccess,
 }: {
   reference: Props["reference"];
-  artistId: string;
-  pickupPrefill: Props["pickupPrefill"];
+  sheet: ArtistRoadsheet;
   onSuccess: () => void;
 }) {
   return (
-    <PickupForm
+    <SuggestPickups
       people={reference.people}
-      defaultPerson={{ id: artistId, kind: "artist" }}
-      prefill={pickupPrefill}
+      defaultPerson={{ id: sheet.artist.id, kind: "artist" }}
       onSuccess={onSuccess}
     />
   );

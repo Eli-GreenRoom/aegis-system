@@ -36,6 +36,7 @@ interface FestivalTabProps {
   description: string | null;
   defaultNightsCovered: number | null;
   paymentTermDaysAfterEnd: number;
+  groundArrivalBufferMins: number;
   stages: StageRow[];
   canEdit: boolean;
 }
@@ -236,6 +237,7 @@ export function FestivalTab({
   description: initialDescription,
   defaultNightsCovered: initialDefaultNights,
   paymentTermDaysAfterEnd: initialPaymentTerm,
+  groundArrivalBufferMins: initialGroundBuffer,
   stages: initialStages,
   canEdit,
 }: FestivalTabProps) {
@@ -251,6 +253,7 @@ export function FestivalTab({
     initialDefaultNights == null ? "" : String(initialDefaultNights),
   );
   const [paymentTerm, setPaymentTerm] = useState(String(initialPaymentTerm));
+  const [groundBuffer, setGroundBuffer] = useState(String(initialGroundBuffer));
   const [festBusy, setFestBusy] = useState(false);
   const [festError, setFestError] = useState("");
   const [festSaved, setFestSaved] = useState(false);
@@ -290,6 +293,9 @@ export function FestivalTab({
         paymentTermDaysAfterEnd: Number.isFinite(parsedPaymentTerm)
           ? parsedPaymentTerm
           : 14,
+        groundArrivalBufferMins: Number.isFinite(Number(groundBuffer))
+          ? Number(groundBuffer)
+          : 120,
       }),
     });
     setFestBusy(false);
@@ -465,6 +471,23 @@ export function FestivalTab({
               />
               <p className="text-mono text-[10px] text-[--color-fg-subtle]">
                 used by &quot;pay after festival&quot; invoices
+              </p>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="fest-ground-buffer">Arrive before set (min)</Label>
+              <Input
+                id="fest-ground-buffer"
+                type="number"
+                min={0}
+                max={480}
+                step={15}
+                value={groundBuffer}
+                onChange={(e) => setGroundBuffer(e.target.value)}
+                placeholder="120"
+                disabled={!canEdit}
+              />
+              <p className="text-mono text-[10px] text-[--color-fg-subtle]">
+                hotel → venue pickup lead time (default 120 = 2 h)
               </p>
             </div>
           </div>

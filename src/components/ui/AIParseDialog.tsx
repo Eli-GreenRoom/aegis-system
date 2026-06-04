@@ -102,93 +102,110 @@ export default function AIParseDialog({
       role="dialog"
       aria-modal="true"
       onClick={onClose}
-      className="fixed inset-0 z-40 bg-[--color-bg]/70 flex items-center justify-center px-4"
+      className="fixed inset-0 z-40 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl rounded-md border border-[--color-border-strong] bg-[--color-surface] p-5 space-y-4 max-h-[90vh] overflow-auto"
+        className="w-full max-w-xl rounded-xl border border-[--color-border-strong] bg-[--color-bg] shadow-2xl p-6 space-y-5 max-h-[88vh] overflow-auto"
       >
-        <h2 className="text-[15px] text-[--color-fg]">{title}</h2>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-[--color-fg]">{title}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[--color-fg-muted] hover:text-[--color-fg] transition-colors text-lg leading-none"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
 
         {!parsed ? (
           <>
             {pdfEndpoint && (
-              <div className="rounded-md border border-dashed border-[--color-border-strong] bg-[--color-surface]/40 p-3 space-y-2">
-                <p className="text-xs text-[--color-fg-muted]">
-                  Upload the airline PDF and Claude will extract the inbound and
-                  outbound legs directly.
-                </p>
-                <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="file"
-                    accept="application/pdf,.pdf"
-                    className="text-xs text-[--color-fg-muted] file:mr-2 file:rounded-md file:border file:border-[--color-border-strong] file:bg-[--color-surface] file:px-3 file:py-1 file:text-xs file:text-[--color-fg] hover:file:border-brand"
-                    disabled={busy}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) void runPdfParse(f);
-                    }}
-                  />
-                </label>
-                {pdfFile && (
-                  <p className="text-mono text-[10px] text-[--color-fg-subtle]">
-                    selected: {pdfFile.name}
-                  </p>
+              <label className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[--color-border-strong] bg-[--color-surface]/30 px-4 py-6 cursor-pointer hover:border-[--color-brand]/50 hover:bg-[--color-surface]/50 transition-colors">
+                <span className="text-2xl text-[--color-fg-muted]">↑</span>
+                <span className="text-sm font-medium text-[--color-fg]">
+                  {busy && pdfFile ? "Parsing…" : "Drop PDF or click to upload"}
+                </span>
+                {pdfFile ? (
+                  <span className="text-mono text-[11px] text-[--color-brand]">
+                    {pdfFile.name}
+                  </span>
+                ) : (
+                  <span className="text-xs text-[--color-fg-muted]">
+                    Airline ticket PDF — Claude extracts both legs
+                  </span>
                 )}
-              </div>
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="sr-only"
+                  disabled={busy}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void runPdfParse(f);
+                  }}
+                />
+              </label>
             )}
-            <p className="text-xs text-[--color-fg-muted]">
-              {pdfEndpoint
-                ? "Or paste the email body / extracted text below."
-                : "Paste the email body or the document text. Claude extracts the structured fields; you confirm before saving."}
-            </p>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={pdfEndpoint ? 8 : 12}
-              placeholder="Paste here..."
-              className="w-full rounded-md border border-[--color-border-strong] bg-[--color-surface] px-3 py-2 text-sm text-[--color-fg] focus:border-brand focus:outline-none focus:ring-1 focus:ring-[--color-brand]"
-            />
-            {error && <p className="text-xs text-coral">{error}</p>}
-            <div className="flex items-center gap-2">
+
+            <div className="relative">
+              {pdfEndpoint && (
+                <div className="absolute inset-x-0 -top-2.5 flex justify-center">
+                  <span className="bg-[--color-bg] px-2 text-[10px] uppercase tracking-widest text-[--color-fg-muted]">
+                    or paste text
+                  </span>
+                </div>
+              )}
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows={pdfEndpoint ? 6 : 10}
+                placeholder="Paste email body or flight confirmation text…"
+                className="w-full rounded-lg border border-[--color-border-strong] bg-[--color-surface]/40 px-3 py-2.5 text-sm text-[--color-fg] placeholder:text-[--color-fg-subtle] focus:border-[--color-brand] focus:outline-none focus:ring-1 focus:ring-[--color-brand] resize-none"
+              />
+              <span className="absolute bottom-2 right-3 text-mono text-[10px] text-[--color-fg-subtle]">
+                {text.length}/50 000
+              </span>
+            </div>
+
+            {error && (
+              <p className="rounded-md bg-coral/10 border border-coral/30 px-3 py-2 text-xs text-coral">
+                {error}
+              </p>
+            )}
+
+            <div className="flex items-center gap-2 pt-1">
               <Button
                 type="button"
-                variant="secondary"
                 onClick={runParse}
                 loading={busy}
-                disabled={text.trim().length < 20}
-                className="border-[--color-sky]/40 text-[--color-sky] hover:bg-[--color-sky]/10 hover:border-[--color-sky]/60"
+                disabled={text.trim().length < 20 || busy}
               >
-                {busy ? "Parsing..." : "Parse with AI"}
+                {busy ? "Parsing…" : "Parse"}
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onClose}
-                disabled={busy}
-              >
+              <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
                 Cancel
               </Button>
-              <span className="text-mono text-[10px] text-[--color-fg-subtle] ml-auto">
-                {text.length}/50000
-              </span>
             </div>
           </>
         ) : (
           <>
             <p className="text-xs text-[--color-fg-muted]">
-              Review the extracted fields. Click{" "}
-              <span className="text-brand">Apply</span> to fill the form below;
-              you can still edit anything before saving.
+              Review the extracted fields — click{" "}
+              <span className="text-[--color-brand]">Apply</span> to fill the
+              form. You can edit anything before saving.
             </p>
             {Array.isArray(parsed) ? (
               <div className="space-y-3">
                 {parsed.map((leg, idx) => (
                   <div
                     key={idx}
-                    className="rounded-md border border-[--color-border] bg-[--color-surface]/40 p-3"
+                    className="rounded-lg border border-[--color-border] bg-[--color-surface]/40 p-4"
                   >
-                    <p className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-subtle] mb-2">
+                    <p className="text-mono text-[10px] uppercase tracking-[0.18em] text-[--color-fg-subtle] mb-3">
                       Leg {idx + 1}
                       {typeof leg.direction === "string"
                         ? ` · ${leg.direction}`
@@ -199,9 +216,16 @@ export default function AIParseDialog({
                 ))}
               </div>
             ) : (
-              <ParsedFields fields={parsed} />
+              <div className="rounded-lg border border-[--color-border] bg-[--color-surface]/40 p-4">
+                <ParsedFields fields={parsed} />
+              </div>
             )}
-            <div className="flex items-center gap-2 pt-2">
+            {error && (
+              <p className="rounded-md bg-coral/10 border border-coral/30 px-3 py-2 text-xs text-coral">
+                {error}
+              </p>
+            )}
+            <div className="flex items-center gap-2 pt-1">
               <Button type="button" onClick={applyAndClose}>
                 Apply
               </Button>
