@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import FileUpload from "@/components/ui/FileUpload";
+import AIParseDialog from "@/components/ui/AIParseDialog";
 
 const ISSUER_KINDS = [
   "agency",
@@ -93,12 +94,6 @@ export default function InvoiceSheet({
     festivalPaymentTermDays,
   );
   const [aiOpen, setAiOpen] = useState(false);
-  const [aiText, setAiText] = useState("");
-  const [aiParsed, setAiParsed] = useState<Record<string, unknown> | null>(
-    null,
-  );
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState("");
 
   const {
     register,
@@ -121,29 +116,6 @@ export default function InvoiceSheet({
     },
   });
 
-  async function runAiParse() {
-    setAiError("");
-    setAiLoading(true);
-    try {
-      const res = await fetch("/api/ai/parse-invoice", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text: aiText }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setAiError(body.error ?? `Parse failed (${res.status})`);
-        return;
-      }
-      const body = await res.json();
-      setAiParsed(body.parsed);
-    } catch (err) {
-      setAiError(err instanceof Error ? err.message : "Parse failed");
-    } finally {
-      setAiLoading(false);
-    }
-  }
-
   function applyParsed(p: Record<string, unknown>) {
     if (typeof p.invoiceNumber === "string")
       setValue("number", p.invoiceNumber, { shouldValidate: true });
@@ -163,8 +135,6 @@ export default function InvoiceSheet({
       });
     }
     setAiOpen(false);
-    setAiParsed(null);
-    setAiText("");
   }
 
   async function onSubmit(data: FormValues) {
@@ -232,105 +202,27 @@ export default function InvoiceSheet({
 
   return (
     <div className="space-y-5 pb-4">
-      {/* AI parse panel */}
-      {aiOpen ? (
-        <div className="rounded-md border border-[--color-border-strong] bg-[--color-surface] p-4 space-y-3">
-          <p className="text-[12px] text-[--color-fg-muted]">
-            Paste the invoice email or extracted PDF text. Haiku will extract
-            the fields and fill the form.
-          </p>
-          {!aiParsed ? (
-            <>
-              <textarea
-                value={aiText}
-                onChange={(e) => setAiText(e.target.value)}
-                rows={8}
-                placeholder="Paste invoice text here..."
-                className="w-full rounded-md border border-[--color-border-strong] bg-[--color-bg] px-3 py-2 text-sm text-[--color-fg] focus:border-brand focus:outline-none"
-              />
-              {aiError && <p className="text-xs text-coral">{aiError}</p>}
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={runAiParse}
-                  loading={aiLoading}
-                  disabled={aiText.trim().length < 20}
-                >
-                  {aiLoading ? "Parsing..." : "Parse"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    setAiOpen(false);
-                    setAiText("");
-                    setAiError("");
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-xs text-[--color-fg-muted]">
-                Review extracted fields. Click{" "}
-                <span className="text-brand">Apply</span> to fill the form.
-              </p>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
-                {Object.entries(aiParsed)
-                  .filter(([, v]) => v !== null && v !== undefined)
-                  .map(([k, v]) => (
-                    <div key={k} className="contents">
-                      <dt className="text-mono text-[10px] uppercase tracking-[0.14em] text-[--color-fg-subtle] self-center">
-                        {k}
-                      </dt>
-                      <dd className="text-[--color-fg] text-mono text-xs break-all">
-                        {typeof v === "object" ? JSON.stringify(v) : String(v)}
-                      </dd>
-                    </div>
-                  ))}
-              </dl>
-              <div className="flex items-center gap-2 pt-1">
-                <Button type="button" onClick={() => applyParsed(aiParsed)}>
-                  Apply
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    setAiParsed(null);
-                    setAiError("");
-                  }}
-                >
-                  Re-parse
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    setAiOpen(false);
-                    setAiParsed(null);
-                    setAiText("");
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setAiOpen(true)}
-          >
-            Parse with AI
-          </Button>
-        </div>
+      {/* AI parse button */}
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => setAiOpen(true)}
+        >
+          Parse with AI
+        </Button>
+      </div>
+
+      {aiOpen && (
+        <AIParseDialog
+          title="Parse invoice with AI"
+          pdfEndpoint="/api/ai/parse-invoice-pdf"
+          fileOnly
+          onApply={(p) => {
+            if (!Array.isArray(p)) applyParsed(p);
+          }}
+          onClose={() => setAiOpen(false)}
+        />
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
