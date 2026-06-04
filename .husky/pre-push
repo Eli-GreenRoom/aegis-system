@@ -3,7 +3,7 @@
 # Pre-push sweep - Aegis edition.
 
 echo "-> Non-ASCII byte sweep (.ts files)..."
-if node -e "
+if ! node -e "
 const fs=require('fs'),path=require('path'),found=[];
 function scan(d){for(const f of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,f.name);if(f.isDirectory()&&f.name!=='node_modules'){scan(p);continue;}if(!f.name.endsWith('.ts')&&!f.name.endsWith('.tsx'))continue;const b=fs.readFileSync(p);for(let i=0;i<b.length;i++){if(b[i]>127){found.push(p);break;}}}};scan('src');if(found.length){found.forEach(f=>console.log(f));process.exit(1);}
 " 2>&1; then
