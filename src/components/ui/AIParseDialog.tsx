@@ -5,12 +5,11 @@ import { Button } from "@/components/ui/button";
 
 interface Props {
   title: string;
-  endpoint: "/api/ai/parse-invoice" | "/api/ai/parse-flight";
-  /** Multipart endpoint accepting PDF/image. When provided, shown as the
-   *  primary upload zone. For invoice mode set fileOnly=true to hide
-   *  the text fallback entirely. */
+  /** Text endpoint — required when fileOnly is false. */
+  endpoint?: "/api/ai/parse-invoice" | "/api/ai/parse-flight";
+  /** Multipart endpoint that accepts a PDF or image file. */
   pdfEndpoint?: "/api/ai/parse-flight-pdf" | "/api/ai/parse-invoice-pdf";
-  /** When true, hides the text paste area — file upload is the only input. */
+  /** When true only the file upload is shown — no text paste area. */
   fileOnly?: boolean;
   onApply: (
     parsed: Record<string, unknown> | Record<string, unknown>[],
@@ -36,6 +35,7 @@ export default function AIParseDialog({
   const [busy, setBusy] = useState(false);
 
   async function runParse() {
+    if (!endpoint) return;
     setError("");
     setBusy(true);
     try {
@@ -91,10 +91,6 @@ export default function AIParseDialog({
     ? "application/pdf,.pdf,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
     : "application/pdf,.pdf";
 
-  const dropZoneHint = fileOnly
-    ? "PDF or image (jpg, png, webp)"
-    : "Airline ticket PDF — Claude extracts both legs";
-
   return (
     <div
       role="dialog"
@@ -136,7 +132,9 @@ export default function AIParseDialog({
                   </span>
                 ) : (
                   <span className="text-xs text-[--color-fg-muted]">
-                    {dropZoneHint}
+                    {fileOnly
+                      ? "PDF or image (jpg, png, webp)"
+                      : "Airline ticket PDF — Claude extracts both legs"}
                   </span>
                 )}
                 <input
@@ -152,7 +150,7 @@ export default function AIParseDialog({
               </label>
             )}
 
-            {/* Text fallback — hidden in fileOnly mode */}
+            {/* Text paste — only shown when not fileOnly */}
             {!fileOnly && (
               <div className="relative">
                 {pdfEndpoint && (
@@ -181,9 +179,8 @@ export default function AIParseDialog({
               </p>
             )}
 
-            {/* Text parse button — only shown when text area is visible */}
-            {!fileOnly && (
-              <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2 pt-1">
+              {!fileOnly && (
                 <Button
                   type="button"
                   onClick={runParse}
@@ -192,29 +189,16 @@ export default function AIParseDialog({
                 >
                   {busy ? "Parsing…" : "Parse"}
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={onClose}
-                  disabled={busy}
-                >
-                  Cancel
-                </Button>
-              </div>
-            )}
-
-            {fileOnly && (
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={onClose}
-                  disabled={busy}
-                >
-                  Cancel
-                </Button>
-              </div>
-            )}
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onClose}
+                disabled={busy}
+              >
+                Cancel
+              </Button>
+            </div>
           </>
         ) : (
           <>
@@ -260,6 +244,7 @@ export default function AIParseDialog({
                 onClick={() => {
                   setParsed(null);
                   setError("");
+                  setUploadedFile(null);
                 }}
               >
                 Re-parse
