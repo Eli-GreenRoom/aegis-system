@@ -25,6 +25,7 @@ interface PageProps {
     artistId?: string;
     vendorId?: string;
     invoiceId?: string;
+    from?: string;
   }>;
 }
 
@@ -42,6 +43,10 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
 
   const sp = await searchParams;
 
+  // Default: from today onwards. Pass ?from=all to see all.
+  const today = new Date().toISOString().slice(0, 10);
+  const fromDate = sp.from === "all" ? undefined : (sp.from ?? today);
+
   const statusParsed = sp.status
     ? paymentStatusEnum.safeParse(sp.status)
     : null;
@@ -54,6 +59,7 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
       artistId: sp.artistId,
       vendorId: sp.vendorId,
       invoiceId: sp.invoiceId,
+      fromDate,
     }),
     getPaymentsSummary(festival.id),
     listArtists({ festivalId: festival.id, archived: "active" }),
@@ -117,6 +123,7 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
 
         {/* Filters */}
         <form className="flex flex-wrap items-end gap-3">
+          <input type="hidden" name="from" value={sp.from ?? ""} />
           <Filter label="Status" name="status" value={sp.status ?? ""}>
             <option value="">Any</option>
             <option value="pending">Pending</option>
@@ -155,6 +162,21 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
           <Button type="submit" variant="secondary">
             Apply
           </Button>
+          {sp.from !== "all" ? (
+            <Link
+              href="?from=all"
+              className="text-mono text-[10px] text-[--color-fg-muted] hover:text-brand uppercase tracking-widest self-end pb-2"
+            >
+              Show all
+            </Link>
+          ) : (
+            <Link
+              href="/payments"
+              className="text-mono text-[10px] text-[--color-fg-muted] hover:text-brand uppercase tracking-widest self-end pb-2"
+            >
+              From today
+            </Link>
+          )}
         </form>
 
         {/* Payments table */}

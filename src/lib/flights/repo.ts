@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike, or } from "drizzle-orm";
+import { and, asc, eq, gte, ilike, or } from "drizzle-orm";
 import { db } from "@/db/client";
 import { flights } from "@/db/schema";
 import type {
@@ -17,6 +17,7 @@ export interface ListFlightsParams {
   status?: FlightStatus;
   personKind?: PersonKind;
   personId?: string;
+  fromDate?: string; // ISO date YYYY-MM-DD — only return flights on/after this date
 }
 
 export async function listFlights({
@@ -26,12 +27,14 @@ export async function listFlights({
   status,
   personKind,
   personId,
+  fromDate,
 }: ListFlightsParams): Promise<Flight[]> {
   const filters = [eq(flights.festivalId, festivalId)];
   if (direction) filters.push(eq(flights.direction, direction));
   if (status) filters.push(eq(flights.status, status));
   if (personKind) filters.push(eq(flights.personKind, personKind));
   if (personId) filters.push(eq(flights.personId, personId));
+  if (fromDate) filters.push(gte(flights.scheduledDt, new Date(fromDate)));
 
   if (search && search.trim() !== "") {
     const q = `%${search.trim()}%`;

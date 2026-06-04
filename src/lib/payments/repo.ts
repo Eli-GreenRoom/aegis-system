@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, or, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { invoices, payments } from "@/db/schema";
 import type { InvoiceDbValues, PaymentDbValues, PaymentStatus } from "./schema";
@@ -141,6 +141,7 @@ export interface ListPaymentsParams {
   artistId?: string;
   vendorId?: string;
   invoiceId?: string;
+  fromDate?: string; // YYYY-MM-DD — only return payments due on/after this date
 }
 
 export async function listPayments({
@@ -150,12 +151,14 @@ export async function listPayments({
   artistId,
   vendorId,
   invoiceId,
+  fromDate,
 }: ListPaymentsParams): Promise<Payment[]> {
   const filters = [eq(payments.festivalId, festivalId)];
   if (status) filters.push(eq(payments.status, status));
   if (artistId) filters.push(eq(payments.artistId, artistId));
   if (vendorId) filters.push(eq(payments.vendorId, vendorId));
   if (invoiceId) filters.push(eq(payments.invoiceId, invoiceId));
+  if (fromDate) filters.push(gte(payments.dueDate, fromDate));
 
   if (search && search.trim() !== "") {
     const q = `%${search.trim()}%`;
@@ -171,7 +174,7 @@ export async function listPayments({
     .select()
     .from(payments)
     .where(and(...filters))
-    .orderBy(desc(payments.createdAt));
+    .orderBy(asc(payments.dueDate), asc(payments.createdAt));
 }
 
 export async function getPayment(id: string): Promise<Payment | null> {

@@ -23,6 +23,7 @@ interface PageProps {
     status?: string;
     personKind?: string;
     personId?: string;
+    from?: string;
   }>;
 }
 
@@ -40,6 +41,10 @@ export default async function FlightsPage({ searchParams }: PageProps) {
 
   const sp = await searchParams;
 
+  // Default: show from today onwards. Pass ?from=all to see everything.
+  const today = new Date().toISOString().slice(0, 10);
+  const fromDate = sp.from === "all" ? undefined : (sp.from ?? today);
+
   const directionParsed = sp.direction
     ? directionEnum.safeParse(sp.direction)
     : null;
@@ -55,6 +60,7 @@ export default async function FlightsPage({ searchParams }: PageProps) {
     status: statusParsed?.success ? statusParsed.data : undefined,
     personKind: personKindParsed?.success ? personKindParsed.data : undefined,
     personId: sp.personId,
+    fromDate,
   });
 
   const people = await resolvePeople(
@@ -73,7 +79,24 @@ export default async function FlightsPage({ searchParams }: PageProps) {
         }
       />
       <div className="px-6 py-6">
-        <FlightsFilters />
+        <div className="flex items-center justify-between mb-3">
+          <FlightsFilters />
+          {sp.from !== "all" ? (
+            <Link
+              href="?from=all"
+              className="text-mono text-[10px] text-[--color-fg-muted] hover:text-brand uppercase tracking-widest"
+            >
+              Show all
+            </Link>
+          ) : (
+            <Link
+              href="/flights"
+              className="text-mono text-[10px] text-[--color-fg-muted] hover:text-brand uppercase tracking-widest"
+            >
+              From today
+            </Link>
+          )}
+        </div>
         <FlightsTable flights={flights} people={people} />
       </div>
     </>
