@@ -91,9 +91,14 @@ export async function parseInvoiceText(text: string): Promise<ParsedInvoice> {
     throw new Error("No text in response");
   }
 
+  const raw = block.text
+    .replace(/^```[a-z]*\n?/i, "")
+    .replace(/\n?```$/i, "")
+    .trim();
+
   let parsed: unknown;
   try {
-    parsed = JSON.parse(block.text);
+    parsed = JSON.parse(raw);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     throw new Error(`Model returned invalid JSON: ${message}`);
